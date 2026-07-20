@@ -8,7 +8,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.117",
@@ -19,6 +20,7 @@
     "@vueuse/core": "^14.3.0",
     "@vueuse/nuxt": "^14.3.0",
     "nuxt": "^4.5.0",
+    "ofetch": "^1.5.1",
     "pinia": "^4.0.2",
     "tailwindcss": "^4.3.2",
     "zod": "^4.4.3"

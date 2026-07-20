@@ -2,3 +2,9 @@ node_modules/
 exploration/certs/
 *.env
 .env*
+
+# Scripts d'exploration/vérification ad hoc : peuvent contenir des identifiants
+# de test en clair — jamais versionnés (les identifiants vivent hors dépôt).
+exploration/verify-*.mjs
+exploration/shot-*.mjs
+exploration/debug-*.mjs
