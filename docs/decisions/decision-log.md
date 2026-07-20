@@ -62,3 +62,35 @@ inchangé) — refondre le jeu interne est un projet distinct.
 `explore.mjs` écrasait `manifest.json` à chaque exécution (117 captures sans
 méta). Correctif : manifest cumulatif + reconstruction des métadonnées perdues
 (marquées `méta reconstruite`). Les captures elles-mêmes n'ont jamais été perdues.
+
+## 2026-07-20 — Phase d'audit multidisciplinaire
+
+### D9. 9 experts en agents parallèles, relancés sur Opus
+Les 9 audits experts ont été menés par des agents spécialisés parallèles (chacun
+avec ses fichiers d'audit + captures en entrée). Une limite d'API a interrompu
+les 4 derniers en cours ; ils ont été relancés sur le modèle Opus (à la demande
+du propriétaire), les 5 premiers rapports (produit, UX, UI, Nuxt, mobile) étant
+déjà complets et de qualité. Résultat : 9 rapports (`docs/experts/01…09`,
+~5 100 lignes), convergents sur le diagnostic central.
+
+### D10. Direction visuelle recommandée : « PHOSPHORE » + 2 greffes
+Le directeur artistique recommande **A · PHOSPHORE** en pilier (seul territoire
+qui *résout* les deux identités que le jeu possède déjà — sprites pixel + son
+chiptune — au lieu de les combattre ; coût d'assets le plus bas ; le plus loin
+du cliché casino ; risque licence maîtrisable par discipline), augmenté de la
+**voix de C · GUINGUETTE** (bonimenteur) sur les moments de spectacle et du
+**cadrage catalogue de B · CARNET** sur la collection/end-game. Second choix
+assumé : **B · CARNET DE TERRAIN**. **Décision à valider par le propriétaire**
+(cf. `docs/RECOMMANDATION-FINALE.md`).
+
+### D11. Diagnostic central convergent (produit + UX + motion)
+Trois experts indépendants convergent : *le gameplay est riche côté serveur mais
+l'interface ne le raconte pas.* Priorités partagées : résultat de tirage sous le
+fold (C1), célébration plate (M1), doublon/pity muets, hub absent, confiance
+entamée (Guide faux). Cette convergence fonde la recommandation finale.
+
+### D12. Aucune recommandation n'exige d'évolution backend pour la v1
+Toutes les recommandations prioritaires sont réalisables **frontend seul ou avec
+l'API existante**. Quatre souhaits backend sont regroupés (pity exact, temps réel
+hors chat, défis week-end, uniformisation des enveloppes), chacun avec un
+fallback frontend — aucun n'est bloquant.
