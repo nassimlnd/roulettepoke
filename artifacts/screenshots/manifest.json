@@ -1,0 +1,1426 @@
+[
+  {
+    "file": "authentication/after-logout.png",
+    "route": "#login",
+    "viewport": "1440x900",
+    "state": "retour à la connexion après déconnexion",
+    "action": "clic sur Déconnexion",
+    "notes": ""
+  },
+  {
+    "file": "authentication/forgot-password-desktop.png",
+    "route": "#forgot-password",
+    "viewport": "1440x900",
+    "state": "formulaire mot de passe oublié",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/forgot-password-mobile-compact.png",
+    "route": "#forgot-password",
+    "viewport": "375x812",
+    "state": "formulaire mot de passe oublié",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-desktop-xl.png",
+    "route": "#login",
+    "viewport": "1920x1080",
+    "state": "formulaire de connexion vide",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-desktop.png",
+    "route": "#login",
+    "viewport": "1440x900",
+    "state": "formulaire de connexion vide",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-mobile-compact.png",
+    "route": "#login",
+    "viewport": "375x812",
+    "state": "formulaire de connexion vide",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-mobile-large.png",
+    "route": "#login",
+    "viewport": "430x932",
+    "state": "formulaire de connexion vide",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-success-redirect-home.png",
+    "route": "#login",
+    "viewport": "1440x900",
+    "state": "connexion réussie → #home",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/login-tablet.png",
+    "route": "#login",
+    "viewport": "768x1024",
+    "state": "formulaire de connexion vide",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/register-desktop.png",
+    "route": "#register",
+    "viewport": "1440x900",
+    "state": "formulaire d'inscription",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/register-mobile-compact.png",
+    "route": "#register",
+    "viewport": "375x812",
+    "state": "formulaire d'inscription",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/rules-public-desktop.png",
+    "route": "#rules",
+    "viewport": "1440x900",
+    "state": "guide accessible sans connexion",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "authentication/rules-public-mobile-compact.png",
+    "route": "#rules",
+    "viewport": "375x812",
+    "state": "guide accessible sans connexion",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-after-first-rolls.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "collection après les premiers tirages (quelques cartes révélées)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "collection/collection-card-hover.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "survol de carte",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-desktop-fullpage.png",
+    "route": "#collection",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-desktop-xl.png",
+    "route": "#collection",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-desktop.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-filter-biome-foret.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "filtre biome Forêt",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-filter-biome-type-combo.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "combo Forêt+Feu (peut être vide)",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-filters-open.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "filtres dépliés",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-mobile-compact.png",
+    "route": "#collection",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-mobile-large.png",
+    "route": "#collection",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-sell-modal.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "modale de vente (annulée)",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-shiny-tab.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "onglet Shiny",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-sort-by-qty.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "tri par quantité",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "collection/collection-tablet.png",
+    "route": "#collection",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "edge-cases/back-navigation.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "retour arrière navigateur (#collection → #gyms)",
+    "action": "bouton Précédent",
+    "notes": ""
+  },
+  {
+    "file": "edge-cases/gyms-after-refresh.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "état après F5 (persistance de session OK ?)",
+    "action": "rechargement de la page",
+    "notes": ""
+  },
+  {
+    "file": "edge-cases/unknown-route.png",
+    "route": "#route-inexistante",
+    "viewport": "1440x900",
+    "state": "hash inconnu → fallback (page login rendue)",
+    "action": "navigation vers un hash invalide",
+    "notes": ""
+  },
+  {
+    "file": "empty-states/collection-empty-full.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "collection vide (pleine page)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/collection-empty.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "collection vide — toutes les cartes en « ??? », compteur 0/N",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/inventory-empty.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "inventaire sans aucun objet",
+    "action": "clic sur 🎒 Inventaire",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/league-locked-no-badges.png",
+    "route": "#league",
+    "viewport": "1440x900",
+    "state": "Ligue des 4 verrouillée sans les 8 badges",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/spin-locked-no-starter.png",
+    "route": "#spin",
+    "viewport": "1440x900",
+    "state": "Spin verrouillé — aucun Pokémon de base dans la collection",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/stats-fresh-account.png",
+    "route": "#stats",
+    "viewport": "1440x900",
+    "state": "statistiques d’un compte sans historique",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/team-empty.png",
+    "route": "#team",
+    "viewport": "1440x900",
+    "state": "équipe vide — 6 slots, 0 badge",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "empty-states/trades-locked-progress.png",
+    "route": "#trades",
+    "viewport": "1440x900",
+    "state": "échanges verrouillés — progression 0/120 cartes standards uniques",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "errors/invalid-token-collection.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "comportement avec token invalide (erreur ou redirection)",
+    "action": "token corrompu en localStorage",
+    "notes": ""
+  },
+  {
+    "file": "errors/invalid-token-home.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "home avec token invalide → redirection #login attendue",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "errors/leaderboard-offline.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "navigation hors ligne — messages d’erreur",
+    "action": "coupure réseau puis navigation",
+    "notes": ""
+  },
+  {
+    "file": "errors/login-wrong-password-desktop.png",
+    "route": "#login",
+    "viewport": "1440x900",
+    "state": "erreur identifiants invalides",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "errors/register-password-too-short.png",
+    "route": "#register",
+    "viewport": "1440x900",
+    "state": "validation navigateur : mot de passe < 8 caractères",
+    "action": "soumission invalide",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "errors/roll-offline-error.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "échec du tirage hors ligne (message d’erreur roulette)",
+    "action": "clic sur Lancer hors ligne",
+    "notes": ""
+  },
+  {
+    "file": "gyms/gyms-desktop-fullpage.png",
+    "route": "#gyms",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/gyms-desktop-xl.png",
+    "route": "#gyms",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/gyms-desktop.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/gyms-first-gym-no-team.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "première arène, joueur sans équipe (estimation 0 % ?)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "gyms/gyms-mobile-compact.png",
+    "route": "#gyms",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/gyms-mobile-large.png",
+    "route": "#gyms",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/gyms-tablet.png",
+    "route": "#gyms",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "gyms/training-already-done.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "entraînement déjà effectué",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-desktop-fullpage.png",
+    "route": "#home",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-desktop-xl.png",
+    "route": "#home",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-desktop.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-mobile-compact.png",
+    "route": "#home",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-mobile-large.png",
+    "route": "#home",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/home-tablet.png",
+    "route": "#home",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "home/multi-roll-all-results.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "rangée finale des 5 cartes obtenues",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/multi-roll-before.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "5 roulettes empilées, bouton série",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/multi-roll-cascade.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "lancements en cascade (décalage 550 ms)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/multi-roll-finishing.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "dernières roulettes en cours, premiers résultats affichés",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-before-fresh.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "avant premier tirage (solde 200 🪙)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-during-early.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "défilement rapide (0,6 s après le clic)",
+    "action": "clic sur 🎰 Lancer",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-during-landing.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "approche de la carte finale (3,8 s)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-during-mid.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "défilement en décélération (2,2 s)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-hidden-flip-reveal.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "flip de révélation des cartes après l’arrêt",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-hidden-result.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "résultat en mode masqué",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-hidden-strip.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "bande entièrement masquée (mode « Masquées »)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "home/roll-result-new-card.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "résultat — première carte (badge « nouvelle découverte » attendu)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "league/league-desktop-fullpage.png",
+    "route": "#league",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "league/league-desktop-xl.png",
+    "route": "#league",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "league/league-desktop.png",
+    "route": "#league",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "league/league-mobile-compact.png",
+    "route": "#league",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "league/league-mobile-large.png",
+    "route": "#league",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "league/league-status.png",
+    "route": "#league",
+    "viewport": "1440x900",
+    "state": "statut ligue (verrouillée sans les 8 badges / estimation sinon)",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "league/league-tablet.png",
+    "route": "#league",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "loading/collection-loading-slow-network.png",
+    "route": "#collection",
+    "viewport": "1440x900",
+    "state": "état de chargement (« Chargement... ») sur réseau lent",
+    "action": "navigation avec réseau throttlé",
+    "notes": ""
+  },
+  {
+    "file": "misc/nav-dropdown-0-jeux.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "menu « Jeux » ouvert",
+    "action": "clic sur le menu",
+    "notes": ""
+  },
+  {
+    "file": "misc/nav-dropdown-1-ma-progression.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "menu « Ma progression » ouvert",
+    "action": "clic sur le menu",
+    "notes": ""
+  },
+  {
+    "file": "misc/nav-dropdown-2-défis.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "menu « Défis » ouvert",
+    "action": "clic sur le menu",
+    "notes": ""
+  },
+  {
+    "file": "misc/nav-dropdown-3-social.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "menu « Social » ouvert",
+    "action": "clic sur le menu",
+    "notes": ""
+  },
+  {
+    "file": "misc/nav-dropdown-4-infos.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "menu « Infos » ouvert",
+    "action": "clic sur le menu",
+    "notes": ""
+  },
+  {
+    "file": "misc/patchnotes-desktop-fullpage.png",
+    "route": "#patchnotes",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/patchnotes-desktop-xl.png",
+    "route": "#patchnotes",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/patchnotes-desktop.png",
+    "route": "#patchnotes",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/patchnotes-mobile-compact.png",
+    "route": "#patchnotes",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/patchnotes-mobile-large.png",
+    "route": "#patchnotes",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/patchnotes-tablet.png",
+    "route": "#patchnotes",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-desktop-fullpage.png",
+    "route": "#rules",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-desktop-xl.png",
+    "route": "#rules",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-desktop.png",
+    "route": "#rules",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-mobile-compact.png",
+    "route": "#rules",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-mobile-large.png",
+    "route": "#rules",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "misc/rules-tablet.png",
+    "route": "#rules",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "onboarding/first-visit-home.png",
+    "route": "#home",
+    "viewport": "1440x900",
+    "state": "home juste après inscription (solde initial, roulette)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "onboarding/gyms-intro-modal.png",
+    "route": "#gyms",
+    "viewport": "1440x900",
+    "state": "modale d’introduction des arènes (première visite, 0 badge)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "onboarding/team-intro-modal.png",
+    "route": "#team",
+    "viewport": "1440x900",
+    "state": "modale d’introduction « Mon équipe » (roulette destructive expliquée)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "slot-machine/slot-already-played.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "quota quotidien épuisé",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-fresh-before.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "jackpot disponible (1 ligne gratuite)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "slot-machine/slot-fresh-result.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "résultat du spin gratuit + état du bouton « Revenez demain »",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "slot-machine/slot-fresh-spinning.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "les 3 rouleaux défilent",
+    "action": "clic sur LANCER !",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "slot-machine/slot-fresh-stopping.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "arrêts décalés (rouleau 1 immobile, 3 en course)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "slot-machine/slot-lines-2-selected.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "sélection 3 lignes",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-lines-3-selected.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "sélection 3+diagonales",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-desktop-fullpage.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-desktop-xl.png",
+    "route": "#slot-machine",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-desktop.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-mobile-compact.png",
+    "route": "#slot-machine",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-mobile-large.png",
+    "route": "#slot-machine",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-machine-tablet.png",
+    "route": "#slot-machine",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "slot-machine/slot-prize-table-open.png",
+    "route": "#slot-machine",
+    "viewport": "1440x900",
+    "state": "table des récompenses dépliée",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-desktop-fullpage.png",
+    "route": "#chat",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-desktop-xl.png",
+    "route": "#chat",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-desktop.png",
+    "route": "#chat",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-mobile-compact.png",
+    "route": "#chat",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-mobile-large.png",
+    "route": "#chat",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-page-mobile.png",
+    "route": "#chat",
+    "viewport": "375x812",
+    "state": "page chat dédiée (mobile)",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "social/chat-tablet.png",
+    "route": "#chat",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/chat-widget-open.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "panneau du widget de chat flottant ouvert",
+    "action": "clic sur la bulle 💬",
+    "notes": ""
+  },
+  {
+    "file": "social/leaderboard-cheaters.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "classement des tricheurs",
+    "action": "clic sur « Voir le classement des tricheurs »",
+    "notes": ""
+  },
+  {
+    "file": "social/leaderboard-desktop-fullpage.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/leaderboard-desktop-xl.png",
+    "route": "#leaderboard",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/leaderboard-desktop.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/leaderboard-mobile-compact.png",
+    "route": "#leaderboard",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/leaderboard-mobile-large.png",
+    "route": "#leaderboard",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/leaderboard-new-player-context.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "classement vu par un nouveau joueur (bloc « Votre position » en bas)",
+    "action": "",
+    "notes": "compte de test (nouveau joueur)"
+  },
+  {
+    "file": "social/leaderboard-tablet.png",
+    "route": "#leaderboard",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/notifications-dropdown.png",
+    "route": "#leaderboard",
+    "viewport": "1440x900",
+    "state": "centre de notifications déplié",
+    "action": "clic sur 🔔",
+    "notes": ""
+  },
+  {
+    "file": "social/suggestions-desktop-fullpage.png",
+    "route": "#suggestions",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/suggestions-desktop-xl.png",
+    "route": "#suggestions",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/suggestions-desktop.png",
+    "route": "#suggestions",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/suggestions-mobile-compact.png",
+    "route": "#suggestions",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/suggestions-mobile-large.png",
+    "route": "#suggestions",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "social/suggestions-tablet.png",
+    "route": "#suggestions",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-desktop-fullpage.png",
+    "route": "#spin",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-desktop-xl.png",
+    "route": "#spin",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-desktop.png",
+    "route": "#spin",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-mobile-compact.png",
+    "route": "#spin",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-mobile-large.png",
+    "route": "#spin",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "spin/spin-overlay-iframe-loaded.png",
+    "route": "#spin",
+    "viewport": "1440x900",
+    "state": "contenu de l’iframe après chargement",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "spin/spin-overlay-iframe.png",
+    "route": "#spin",
+    "viewport": "1440x900",
+    "state": "jeu d’aventure Spin embarqué en iframe plein écran",
+    "action": "clic sur 🌀 Lancer l’aventure",
+    "notes": ""
+  },
+  {
+    "file": "spin/spin-tablet.png",
+    "route": "#spin",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-desktop-fullpage.png",
+    "route": "#stats",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-desktop-xl.png",
+    "route": "#stats",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-desktop.png",
+    "route": "#stats",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-mobile-compact.png",
+    "route": "#stats",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-mobile-large.png",
+    "route": "#stats",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "stats/stats-player-selected.png",
+    "route": "#stats",
+    "viewport": "1440x900",
+    "state": "statistiques d’un joueur sélectionné",
+    "action": "choix dans le sélecteur de dresseur",
+    "notes": ""
+  },
+  {
+    "file": "stats/stats-tablet.png",
+    "route": "#stats",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-desktop-fullpage.png",
+    "route": "#team",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-desktop-xl.png",
+    "route": "#team",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-desktop.png",
+    "route": "#team",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-mobile-compact.png",
+    "route": "#team",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-mobile-large.png",
+    "route": "#team",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-reorder-first-selected.png",
+    "route": "#team",
+    "viewport": "1440x900",
+    "state": "premier Pokémon sélectionné",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-reorder-mode.png",
+    "route": "#team",
+    "viewport": "1440x900",
+    "state": "mode réorganisation",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "team/team-tablet.png",
+    "route": "#team",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-battle-replay.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "replay animé d’un combat (jauge + mini-log)",
+    "action": "clic sur ▶ Rejouer",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-desktop-fullpage.png",
+    "route": "#tournament",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-desktop-xl.png",
+    "route": "#tournament",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-desktop.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-history-modal.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "liste des tournois passés",
+    "action": "clic sur 📅 Tournois passés",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-intro-modal.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "modale d’introduction (calendrier, mise, gains)",
+    "action": "première visite (flag localStorage nettoyé)",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-match-summary.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "résumé d’un match (équipes, K.O., log)",
+    "action": "clic sur 📋 Résumé",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-mobile-compact.png",
+    "route": "#tournament",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-mobile-large.png",
+    "route": "#tournament",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "tournament/tournament-past-detail-full.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "détail complet (pleine page)",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-past-detail.png",
+    "route": "#tournament",
+    "viewport": "1440x900",
+    "state": "détail d’un tournoi passé (podium, bracket, participants)",
+    "action": "clic sur Voir →",
+    "notes": ""
+  },
+  {
+    "file": "tournament/tournament-tablet.png",
+    "route": "#tournament",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-card-picker.png",
+    "route": "#trades",
+    "viewport": "1440x900",
+    "state": "sélecteur de carte à demander (fermé sans choisir)",
+    "action": "clic sur un joueur",
+    "notes": ""
+  },
+  {
+    "file": "trades/trades-desktop-fullpage.png",
+    "route": "#trades",
+    "viewport": "1440x900 (pleine page)",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-desktop-xl.png",
+    "route": "#trades",
+    "viewport": "1920x1080",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-desktop.png",
+    "route": "#trades",
+    "viewport": "1440x900",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-mobile-compact.png",
+    "route": "#trades",
+    "viewport": "375x812",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-mobile-large.png",
+    "route": "#trades",
+    "viewport": "430x932",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  },
+  {
+    "file": "trades/trades-page.png",
+    "route": "#trades",
+    "viewport": "1440x900",
+    "state": "page échanges (éligibilité, joueurs, demandes)",
+    "action": "",
+    "notes": ""
+  },
+  {
+    "file": "trades/trades-tablet.png",
+    "route": "#trades",
+    "viewport": "768x1024",
+    "state": "état par défaut après chargement",
+    "action": "",
+    "notes": "méta reconstruite (manifest écrasé entre les runs)"
+  }
+]
