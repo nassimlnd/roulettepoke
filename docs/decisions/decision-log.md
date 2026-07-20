@@ -94,3 +94,22 @@ Toutes les recommandations prioritaires sont réalisables **frontend seul ou ave
 l'API existante**. Quatre souhaits backend sont regroupés (pity exact, temps réel
 hors chat, défis week-end, uniformisation des enveloppes), chacun avec un
 fallback frontend — aucun n'est bloquant.
+
+## 2026-07-20 — Validation du propriétaire, démarrage de la refonte
+
+### D13. Décisions validées par le propriétaire
+1. **Direction visuelle : PHOSPHORE + greffes** (retenue).
+2. **Périmètre v1 : « Tout »** — les 6 fondations P1 (résultat visible +
+   célébrations, doublon + pity, hub, Guide = vérité, fondations API/stores,
+   friction alignée au risque).
+3. **Compte de test `AuditNassim` conservé** (pour tests ultérieurs).
+
+### D14. Spin reconstruit nativement (révise D7)
+Le propriétaire décide de **reconstruire le jeu Spin de son côté avec une nouvelle
+direction artistique** (différente de l'actuelle) plutôt que de conserver l'iframe.
+Conséquence : Spin devient un **parcours natif de la refonte** (plus une boîte
+noire en iframe). Prérequis avant de l'implémenter : **explorer l'API interne de
+Spin** (`POST /api/spin/start` et suivants), non inventoriée pendant l'audit
+(jeu séparé). Traité en **parcours secondaire** (après le cœur), il ne bloque pas
+les 6 fondations P1. La nouvelle DA de Spin s'alignera sur Phosphore (à confirmer
+au moment de la conception de cet écran).
