@@ -51,7 +51,9 @@ export default defineNuxtConfig({
         changeOrigin: true,
         ws: true,
         headers: { origin: API_TARGET, referer: `${API_TARGET}/` }
-      }
+      },
+      // Sprites Pokémon, badges, icônes de types — servis par le backend.
+      '/images': { target: `${API_TARGET}/images`, changeOrigin: true }
     }
   },
 
