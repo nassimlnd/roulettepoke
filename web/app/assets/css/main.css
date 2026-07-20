@@ -1,6 +1,23 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* Polices auto-hébergées (aucun CDN au runtime) — Fredoka (display arrondie) +
+   Nunito (texte), variables couvrant leurs graisses. Direction « Mochidex ». */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/fredoka-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/nunito-latin.woff2') format('woff2');
+}
+
 /* ============================================================
    Direction visuelle : PHOSPHORE (console de poche émancipée)
    Socle de tokens en 3 couches (sémantique / rareté / types-biomes)
