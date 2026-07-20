@@ -147,3 +147,13 @@ export const notificationsRepo = {
   list: (api: Api) => api<NotificationsResponse>('/notifications'),
   readAll: (api: Api) => api('/notifications/read-all', { method: 'POST' })
 }
+
+export const eventRepo = {
+  confirmCardChoice: async (api: Api, choiceId: UUID, cardId: UUID) => {
+    const { card } = await api<{ card: WireCard & { isNew?: boolean } }>('/event/card-choice', {
+      method: 'POST',
+      body: { choiceId, cardId }
+    })
+    return { card: normalizeCard(card), isNew: !!card.isNew }
+  }
+}
