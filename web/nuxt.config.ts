@@ -15,6 +15,10 @@ export default defineNuxtConfig({
   ],
   ssr: false,
 
+  // Composants référencés par nom de fichier (sans préfixe de dossier) :
+  // <AppNavbar>, <GameCard>, <RouletteStrip>… plutôt que <BaseAppNavbar>.
+  components: [{ path: '~/components', pathPrefix: false }],
+
   devtools: { enabled: true },
 
   app: {
@@ -37,10 +41,17 @@ export default defineNuxtConfig({
 
   // En dev, on tape sur le vrai backend via un proxy same-origin (le WebSocket
   // du chat est proxifié par le devProxy nitro) ; en prod, le reverse-proxy sert
-  // /api à côté de l'app.
+  // /api à côté de l'app. On réécrit Origin/Referer sur l'origine du backend :
+  // celui-ci rejette (500) les requêtes cross-origin (Origin=localhost), ce qui
+  // ne se produit pas en production (app same-origin).
   nitro: {
     devProxy: {
-      '/api': { target: `${API_TARGET}/api`, changeOrigin: true, ws: true }
+      '/api': {
+        target: `${API_TARGET}/api`,
+        changeOrigin: true,
+        ws: true,
+        headers: { origin: API_TARGET, referer: `${API_TARGET}/` }
+      }
     }
   },
 
@@ -50,6 +61,15 @@ export default defineNuxtConfig({
         commaDangle: 'never',
         braceStyle: '1tbs'
       }
+    }
+  },
+
+  // SPA : on bundle les icônes utilisées côté client (scan du code) pour ne
+  // JAMAIS dépendre du réseau (l'API Iconify est bloquée dans cet environnement).
+  icon: {
+    clientBundle: {
+      scan: true,
+      sizeLimitKb: 512
     }
   }
 })
