@@ -1,0 +1,4 @@
+node_modules/
+exploration/certs/
+*.env
+.env*

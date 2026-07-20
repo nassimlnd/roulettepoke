@@ -1,0 +1,12 @@
+{
+  "name": "pokeroulette-exploration",
+  "private": true,
+  "type": "module",
+  "description": "Scripts Playwright d'exploration de l'application PokeRoulette en production (audit avant refonte)",
+  "scripts": {
+    "explore": "node --env-file=$ENV_FILE explore.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
