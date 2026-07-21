@@ -1,14 +1,28 @@
-# Build + run de l'app en prod (Nginx sert le SPA et proxifie /api & /images).
-# TLS à terminer en amont (reverse-proxy / load-balancer / Traefik) : ce conteneur
-# écoute en HTTP sur :80.
+# Prod en 2 services :
+#   web   — le frontend Nuxt buildé, lancé comme serveur Node (port 3000, interne)
+#   nginx — reverse-proxy : /api & /images → backend (Origin réécrit), le reste → web
+# TLS à terminer en amont (LB / Traefik) : nginx écoute en HTTP sur :80.
 services:
   web:
     build: .
     image: pokeroulette-web
+    environment:
+      NITRO_HOST: "0.0.0.0"
+      NITRO_PORT: "3000"
+    expose:
+      - "3000"          # visible des autres services seulement, non publié sur l'hôte
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:stable-alpine
+    depends_on:
+      - web
     ports:
       - "8080:80"
     environment:
       # Backend proxifié + origine réécrite (le backend rejette les Origins étrangers).
       API_TARGET: "https://pokeroulette.poulineau.ovh"
       API_HOST: "pokeroulette.poulineau.ovh"
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
     restart: unless-stopped
