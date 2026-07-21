@@ -19,6 +19,7 @@ const biomeRows = computed(() =>
 const sections = [
   {
     icon: 'i-lucide-dices',
+    color: '#dd3322',
     title: 'Tirages',
     items: [
       `Chaque tirage standard coûte ${BASE_ROLL_COST} coins ; les résultats sont pondérés par rareté.`,
@@ -29,6 +30,7 @@ const sections = [
   },
   {
     icon: 'i-lucide-sparkles',
+    color: '#e0a92e',
     title: 'Raretés & Shiny',
     items: [
       'Quatre raretés : Commun, Rare (1ʳᵉ évolution), Épique (2ᵉ évolution), Légendaire.',
@@ -39,6 +41,7 @@ const sections = [
   },
   {
     icon: 'i-lucide-layers',
+    color: '#5b9bd5',
     title: 'Collection, fusion & vente',
     items: [
       'Accumule 10 exemplaires identiques pour débloquer la fusion → tu obtiens la version évoluée.',
@@ -48,6 +51,7 @@ const sections = [
   },
   {
     icon: 'i-lucide-swords',
+    color: '#5bbf82',
     title: 'Équipe & arènes',
     items: [
       'Constitue une équipe de 6 Pokémon via la roulette d\'équipe — la carte tirée quitte définitivement ta collection (confirmation demandée).',
@@ -59,93 +63,99 @@ const sections = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-6">
-    <h1 class="font-display text-2xl font-extrabold">
-      Guide du jeu
-    </h1>
+  <div class="guide">
+    <header class="guide__head">
+      <h1 class="guide__title">
+        Guide du jeu
+      </h1>
+      <p class="guide__sub">
+        Tout ce qu'il faut savoir pour devenir Maître Dresseur.
+      </p>
+    </header>
 
-    <UAccordion
-      :items="sections.map(s => ({ label: s.title, icon: s.icon, slot: s.title }))"
-      type="multiple"
+    <PPanel
+      v-for="s in sections"
+      :key="s.title"
     >
-      <template
-        v-for="s in sections"
-        #[s.title]
-        :key="s.title"
-      >
-        <ul class="space-y-2 pb-2 pl-1">
-          <li
-            v-for="(item, i) in s.items"
-            :key="i"
-            class="flex gap-2 text-sm text-muted"
-          >
-            <UIcon
-              name="i-lucide-check"
-              class="mt-0.5 size-4 shrink-0 text-primary"
-            />
-            <span>{{ item }}</span>
-          </li>
-        </ul>
-      </template>
-    </UAccordion>
+      <div class="sec">
+        <div
+          class="sec__icon"
+          :style="{ background: `color-mix(in oklab, ${s.color} 15%, transparent)`, color: s.color }"
+        >
+          <UIcon
+            :name="s.icon"
+            class="size-5"
+          />
+        </div>
+        <div class="sec__body">
+          <h2 class="sec__title">
+            {{ s.title }}
+          </h2>
+          <ul class="sec__list">
+            <li
+              v-for="(item, i) in s.items"
+              :key="i"
+            >
+              <UIcon
+                name="i-lucide-check"
+                class="sec__check"
+              />
+              <span>{{ item }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </PPanel>
 
     <!-- Coûts de biome — lus en direct depuis l'API (résout C6) -->
-    <section
-      v-if="biomeRows.length"
-      class="space-y-2"
-    >
-      <h2 class="font-display text-lg font-bold">
+    <PPanel v-if="biomeRows.length">
+      <h2 class="sec__title mb-1">
         Coût des tirages par biome
       </h2>
-      <p class="text-sm text-muted">
-        Ces coûts sont lus en direct depuis le jeu — ils sont toujours exacts.
+      <p class="guide__note">
+        Lus en direct depuis le jeu — toujours exacts.
       </p>
-      <div class="overflow-hidden rounded-lg border border-default">
-        <table class="w-full text-sm">
+      <div class="tablewrap">
+        <table class="tbl">
           <thead>
-            <tr class="border-b border-default bg-elevated text-left text-xs uppercase text-muted">
-              <th class="px-3 py-2">
-                Biome
-              </th>
-              <th class="px-3 py-2">
-                Cartes
-              </th>
-              <th class="px-3 py-2 text-right">
+            <tr>
+              <th>Biome</th>
+              <th>Cartes</th>
+              <th class="right">
                 Coût
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr class="border-b border-default">
-              <td class="px-3 py-2 font-medium">
+            <tr>
+              <td class="strong">
                 Tous
               </td>
-              <td class="px-3 py-2 text-muted">
+              <td class="muted">
                 —
               </td>
-              <td class="px-3 py-2 text-right tabular text-secondary">
-                {{ BASE_ROLL_COST }} 🪙
+              <td class="right cost">
+                {{ BASE_ROLL_COST }}
               </td>
             </tr>
             <tr
               v-for="b in biomeRows"
               :key="b.biome"
-              class="border-b border-default last:border-0"
             >
-              <td class="px-3 py-2 font-medium">
+              <td class="strong">
                 {{ b.biome }}
               </td>
-              <td class="px-3 py-2 tabular text-muted">
+              <td class="muted tabular">
                 {{ b.ownedCount }}/{{ b.cardCount }}
               </td>
-              <td class="px-3 py-2 text-right tabular text-secondary">
-                {{ b.cost }} 🪙
+              <td class="right cost">
+                {{ b.cost }}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </section>
+    </PPanel>
     <UAlert
       v-else-if="!auth.isAuthenticated"
       color="info"
@@ -155,3 +165,88 @@ const sections = [
     />
   </div>
 </template>
+
+<style scoped>
+.guide {
+  max-width: 42rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.guide__head { text-align: center; margin-bottom: 4px; }
+.guide__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.9rem;
+  margin: 0;
+  color: var(--ui-text-highlighted);
+}
+.guide__sub { color: var(--ui-text-muted); margin: 6px 0 0; }
+.guide__note { color: var(--ui-text-muted); font-size: .85rem; margin: 0 0 12px; }
+
+.sec { display: flex; gap: 14px; align-items: flex-start; }
+.sec__icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+}
+.sec__body { flex: 1; min-width: 0; }
+.sec__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin: 2px 0 10px;
+  color: var(--ui-text-highlighted);
+}
+.sec__list { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.sec__list li {
+  display: flex;
+  gap: 9px;
+  font-size: .92rem;
+  color: var(--ui-text-toned);
+  line-height: 1.45;
+}
+.sec__check {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: .18rem;
+  color: var(--color-poke-500);
+}
+
+.tablewrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--ui-border); }
+.tbl { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.tbl th {
+  text-align: left;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ui-text-muted);
+  font-weight: 700;
+  padding: 10px 14px;
+  background: var(--ui-bg-muted);
+}
+.tbl td { padding: 10px 14px; border-top: 1px solid var(--ui-border); }
+.tbl .right { text-align: right; }
+.tbl .strong { font-weight: 700; color: var(--ui-text); }
+.tbl .muted { color: var(--ui-text-muted); }
+.tbl .cost {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #b07d12;
+}
+.tbl .cost::after {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 5px;
+  vertical-align: -1px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f6c453 62%, #e0a92e);
+}
+</style>
