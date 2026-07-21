@@ -16,5 +16,6 @@ onMounted(() => {
     </main>
     <BottomTabBar />
     <ChatWidget />
+    <BattleStage />
   </div>
 </template>

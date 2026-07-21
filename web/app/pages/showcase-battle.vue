@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import type { BattleRound } from '~/types/domain'
+import { useBattleStore } from '~/stores/battle'
 
-// Showcase de dev pour valider BattleScene (données factices, sprites réels via
-// le proxy /images). Non lié dans la navigation.
+// Showcase de dev : lance un combat plein écran (BattleStage) avec des données
+// factices et de vrais sprites (proxy /images). Non lié dans la navigation ;
+// public pour prévisualiser le combat sans compte.
+definePageMeta({ public: true })
+
+const battle = useBattleStore()
+
 const MONS = {
   articuno: { name: 'Artikodin', imageUrl: '/images/articuno.webp' },
   moltres: { name: 'Sulfura', imageUrl: '/images/moltres.webp' },
@@ -23,71 +29,43 @@ const THEMES = [
   { label: 'Roche', color: '#cbb083' },
   { label: 'Psy', color: '#e88bb6' }
 ]
-const theme = ref(THEMES[0]!.color)
-const runKey = ref(0)
-function replay() {
-  runKey.value++
-}
-function pickTheme(color: string) {
-  theme.value = color
-  replay()
+
+function launch(label: string, color: string) {
+  battle.present({
+    rounds,
+    won: true,
+    themeColor: color,
+    badgeUrl: '/images/badges/Kanto_1.png',
+    title: `Arène ${label}`,
+    winSub: `Badge ${label} obtenu !`
+  })
 }
 </script>
 
 <template>
   <div class="sc">
-    <header>
-      <h1 class="font-display">
-        BattleScene — showcase
-      </h1>
-      <div class="sc__ctrls">
-        <button
-          v-for="t in THEMES"
-          :key="t.color"
-          class="chip"
-          :class="{ 'chip--on': theme === t.color }"
-          :style="{ '--c': t.color }"
-          @click="pickTheme(t.color)"
-        >
-          {{ t.label }}
-        </button>
-        <PButton
-          color="primary"
-          @click="replay"
-        >
-          Rejouer
-        </PButton>
-      </div>
-    </header>
-
-    <div class="sc__stage">
-      <BattleScene
-        :key="runKey"
-        :rounds="rounds"
-        :won="true"
-        :theme-color="theme"
-        badge-url="/images/badges/Kanto_1.png"
-        win-sub="Badge Roche obtenu — Arène d'Argenta."
-      />
+    <h1 class="font-display">
+      BattleScene — showcase
+    </h1>
+    <p class="sc__lead">
+      Lance un combat plein écran (overlay immersif) pour valider le rendu.
+    </p>
+    <div class="sc__ctrls">
+      <PButton
+        v-for="t in THEMES"
+        :key="t.color"
+        color="primary"
+        @click="launch(t.label, t.color)"
+      >
+        Combat {{ t.label }}
+      </PButton>
     </div>
   </div>
 </template>
 
 <style scoped>
-.sc { display: flex; flex-direction: column; gap: 16px; max-width: 44rem; margin: 0 auto; }
+.sc { display: flex; flex-direction: column; gap: 12px; max-width: 40rem; margin: 0 auto; }
 .sc h1 { font-weight: 700; font-size: 1.5rem; }
-.sc__ctrls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
-.chip {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: .8rem;
-  color: #fff;
-  background: var(--c);
-  padding: 6px 14px;
-  border-radius: 999px;
-  opacity: .5;
-  transition: opacity .15s ease, transform .15s ease;
-}
-.chip--on { opacity: 1; transform: translateY(-1px); }
-.sc__stage { max-width: 620px; }
+.sc__lead { color: var(--ui-text-muted); font-size: .9rem; }
+.sc__ctrls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 </style>
