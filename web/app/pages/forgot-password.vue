@@ -28,13 +28,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h1 class="font-display text-2xl font-extrabold">
-        Mot de passe oublié
-      </h1>
-    </template>
-
+  <PAuthPanel
+    title="Mot de passe oublié ?"
+    subtitle="On t'envoie un lien de réinitialisation."
+  >
     <UAlert
       v-if="sent"
       color="success"
@@ -58,7 +55,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.email"
           type="email"
           autocomplete="email"
+          icon="i-lucide-mail"
+          size="lg"
           class="w-full"
+          placeholder="toi@exemple.fr"
         />
       </UFormField>
       <UAlert
@@ -68,21 +68,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :title="error"
         icon="i-lucide-triangle-alert"
       />
-      <UButton
+      <PButton
         type="submit"
         block
+        icon="i-lucide-send"
         :loading="loading"
-        label="Envoyer le lien"
-      />
+        class="mt-1 w-full"
+      >
+        Envoyer le lien
+      </PButton>
     </UForm>
 
     <template #footer>
-      <p class="text-center text-sm text-muted">
+      <p class="text-sm text-muted">
         <ULink
           to="/login"
           class="text-primary"
         >Retour à la connexion</ULink>
       </p>
     </template>
-  </UCard>
+  </PAuthPanel>
 </template>

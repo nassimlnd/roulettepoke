@@ -35,13 +35,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h1 class="font-display text-2xl font-extrabold">
-        Nouveau mot de passe
-      </h1>
-    </template>
-
+  <PAuthPanel
+    title="Nouveau mot de passe"
+    subtitle="Choisis un nouveau mot de passe pour ton compte."
+  >
     <UAlert
       v-if="done"
       color="success"
@@ -72,7 +69,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.password"
           type="password"
           autocomplete="new-password"
+          icon="i-lucide-lock"
+          size="lg"
           class="w-full"
+          placeholder="••••••••"
         />
       </UFormField>
       <UAlert
@@ -82,12 +82,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :title="error"
         icon="i-lucide-triangle-alert"
       />
-      <UButton
+      <PButton
         type="submit"
         block
+        icon="i-lucide-key"
         :loading="loading"
-        label="Réinitialiser"
-      />
+        class="mt-1 w-full"
+      >
+        Réinitialiser
+      </PButton>
     </UForm>
-  </UCard>
+
+    <template #footer>
+      <p class="text-sm text-muted">
+        <ULink
+          to="/login"
+          class="text-primary"
+        >Retour à la connexion</ULink>
+      </p>
+    </template>
+  </PAuthPanel>
 </template>
