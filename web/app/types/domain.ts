@@ -345,3 +345,43 @@ export interface ChatMessage {
   message: string
   createdAt: ISODate
 }
+
+// ─── Ligue des 4 (Elite Four) ─────────────────────────────────────────────────
+export interface LeagueLegendary { id: UUID, name: string, imageUrl: string }
+
+export interface LeagueStage {
+  opponentName: string
+  opponentType: 'player' | 'npc'
+  winProbability: number
+}
+
+export interface LeagueEstimate {
+  overallWinProbability: number
+  stages: LeagueStage[]
+  toPrivilege: string[]
+  toAvoid: string[]
+}
+
+export interface LeagueBattleStage {
+  opponentName: string
+  opponentType: 'player' | 'npc'
+  won: boolean
+  rounds: BattleRound[]
+}
+
+export interface LeagueRun {
+  runId: UUID
+  won: boolean
+  stages: LeagueBattleStage[]
+}
+
+export interface DomainLeagueStatus {
+  eligible: boolean
+  cycleStart: ISODate | null
+  alreadyAttempted: boolean
+  lastRun: LeagueRun | null
+  legendaries: LeagueLegendary[]
+}
+
+export interface LegendaryOdds { captureProbability: number, challengers: string[] }
+export interface LegendaryReward { won: boolean, card: DomainCard, rounds: BattleRound[] }

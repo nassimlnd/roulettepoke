@@ -5,13 +5,15 @@ import type {
   WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny,
   WireGym, WireGymDetail, WireGymEstimate, WireBattleRound, WireBattleResult, WireTrainingResult,
   WireLineResult, WireSpinResult, WireRecentWin, WireChampionMon, WireTournament, WireMyAnalysis,
-  WireTrade, WireTradePlayer, WireTradeCard, WireStats, WireChatMessage, Rarity
+  WireTrade, WireTradePlayer, WireTradeCard, WireStats, WireChatMessage,
+  LeagueStatus, WireLeagueEstimate, WireLeagueRun, WireLegendaryReward, Rarity
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleRound, BattleResult, TrainingOutcome,
   LineReward, SpinResult, RecentWin, ChampionMon, DomainTournament, TournamentAnalysis,
-  DomainTrade, TradePlayer, TradeCard, DomainStats, OddsKey, ChatMessage, RealRarity
+  DomainTrade, TradePlayer, TradeCard, DomainStats, OddsKey, ChatMessage,
+  DomainLeagueStatus, LeagueEstimate, LeagueRun, LegendaryReward, RealRarity
 } from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
@@ -366,5 +368,50 @@ export function normalizeChatMessage(m: WireChatMessage): ChatMessage {
     username: m.username,
     message: m.message,
     createdAt: m.created_at
+  }
+}
+
+// ─── Ligue des 4 ──────────────────────────────────────────────────────────────
+export function normalizeLeagueRun(r: WireLeagueRun): LeagueRun {
+  return {
+    runId: r.runId,
+    won: r.won,
+    stages: (r.battleLog ?? []).map(s => ({
+      opponentName: s.opponent_name,
+      opponentType: s.opponent_type,
+      won: s.won,
+      rounds: (s.log ?? []).map(normalizeBattleRound)
+    }))
+  }
+}
+
+export function normalizeLeagueStatus(s: LeagueStatus): DomainLeagueStatus {
+  return {
+    eligible: s.eligible,
+    cycleStart: s.cycleStart,
+    alreadyAttempted: s.alreadyAttempted,
+    lastRun: s.lastRun ? normalizeLeagueRun(s.lastRun) : null,
+    legendaries: (s.legendaries ?? []).map(l => ({ id: l.id, name: l.name, imageUrl: l.image_url }))
+  }
+}
+
+export function normalizeLeagueEstimate(e: WireLeagueEstimate): LeagueEstimate {
+  return {
+    overallWinProbability: e.overall_win_probability,
+    stages: (e.stages ?? []).map(s => ({
+      opponentName: s.opponent_name,
+      opponentType: s.opponent_type,
+      winProbability: s.estimated_win_probability
+    })),
+    toPrivilege: (e.typeRecommendations?.toPrivilege ?? []).map(t => t.type),
+    toAvoid: (e.typeRecommendations?.toAvoid ?? []).map(t => t.type)
+  }
+}
+
+export function normalizeLegendaryReward(r: WireLegendaryReward): LegendaryReward {
+  return {
+    won: r.won,
+    card: normalizeCard(r.card),
+    rounds: (r.log ?? []).map(normalizeBattleRound)
   }
 }
