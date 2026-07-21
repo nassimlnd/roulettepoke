@@ -199,7 +199,6 @@ onMounted(() => {
                 :owned="b.owned"
                 :total="b.total"
                 size="md"
-                :floating="selected === b.biome && motionOn"
               />
             </button>
           </div>
@@ -305,9 +304,12 @@ onMounted(() => {
   gap: 16px;
   width: 100%;
   max-width: 100%;
-  padding: 26px 12px;
+  /* Marge suffisante : l'item sélectionné grossit (scale 1.06) + anneau ;
+     overflow-x:auto force overflow-y:auto, donc on évite tout rognage. */
+  padding: 34px 30px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 30px;
   scrollbar-width: thin;
   justify-content: safe center;
 }
