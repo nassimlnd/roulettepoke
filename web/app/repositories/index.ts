@@ -7,15 +7,17 @@ import type {
   SellResult, WireInventory, WireTeamMember, WireBadge, WireGym, TrainingStatus,
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
-  WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult, UUID
+  WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult,
+  WireSpinResult, WireRecentWin, UUID
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
-  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome
+  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin
 } from '~/types/domain'
 import {
   normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
-  normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome
+  normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome,
+  normalizeSpinResult, normalizeRecentWin
 } from './normalize'
 
 type Api = ReturnType<typeof useApi>
@@ -155,7 +157,15 @@ export const trainingRepo = {
 }
 
 export const slotRepo = {
-  status: (api: Api) => api<SlotStatus>('/slot-machine/status')
+  status: (api: Api) => api<SlotStatus>('/slot-machine/status'),
+  spin: async (api: Api, lines: 1 | 2 | 3): Promise<SpinResult> => {
+    const w = await api<WireSpinResult>('/slot-machine/spin', { method: 'POST', body: { lines } })
+    return normalizeSpinResult(w)
+  },
+  recentWins: async (api: Api): Promise<RecentWin[]> => {
+    const { wins } = await api<{ wins: WireRecentWin[] }>('/slot-machine/recent-wins')
+    return wins.map(normalizeRecentWin)
+  }
 }
 
 export const leagueRepo = {
