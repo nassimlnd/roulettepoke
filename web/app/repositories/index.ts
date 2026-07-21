@@ -8,18 +8,18 @@ import type {
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
   WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult,
-  WireSpinResult, WireRecentWin, WireMyAnalysis, WireTradePlayer, WireTradeCard, WireStats, UUID
+  WireSpinResult, WireRecentWin, WireMyAnalysis, WireTradePlayer, WireTradeCard, WireStats, WireChatHistory, UUID
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin,
-  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, DomainStats, RealRarity
+  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, DomainStats, ChatMessage, RealRarity
 } from '~/types/domain'
 import {
   normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
   normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome,
   normalizeSpinResult, normalizeRecentWin, normalizeTournament, normalizeTournamentAnalysis,
-  normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeStats
+  normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeStats, normalizeChatMessage
 } from './normalize'
 
 type Api = ReturnType<typeof useApi>
@@ -255,4 +255,15 @@ export const eventRepo = {
 
 export const statsRepo = {
   get: async (api: Api): Promise<DomainStats> => normalizeStats(await api<WireStats>('/stats'))
+}
+
+export const chatRepo = {
+  history: async (api: Api): Promise<{ messages: ChatMessage[], isAdmin: boolean }> => {
+    const { messages, isAdmin } = await api<WireChatHistory>('/chat/history')
+    return { messages: messages.map(normalizeChatMessage), isAdmin }
+  },
+  ban: (api: Api, userId: UUID, reason: string) =>
+    api(`/chat/ban/${userId}`, { method: 'POST', body: { reason } }),
+  unban: (api: Api, userId: UUID) =>
+    api(`/chat/unban/${userId}`, { method: 'POST' })
 }

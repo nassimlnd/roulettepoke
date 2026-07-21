@@ -5,13 +5,13 @@ import type {
   WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny,
   WireGym, WireGymDetail, WireGymEstimate, WireBattleRound, WireBattleResult, WireTrainingResult,
   WireLineResult, WireSpinResult, WireRecentWin, WireChampionMon, WireTournament, WireMyAnalysis,
-  WireTrade, WireTradePlayer, WireTradeCard, WireStats, Rarity
+  WireTrade, WireTradePlayer, WireTradeCard, WireStats, WireChatMessage, Rarity
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleRound, BattleResult, TrainingOutcome,
   LineReward, SpinResult, RecentWin, ChampionMon, DomainTournament, TournamentAnalysis,
-  DomainTrade, TradePlayer, TradeCard, DomainStats, OddsKey, RealRarity
+  DomainTrade, TradePlayer, TradeCard, DomainStats, OddsKey, ChatMessage, RealRarity
 } from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
@@ -355,5 +355,16 @@ export function normalizeStats(s: WireStats): DomainStats {
       spinDetermined: { names: a.spin_determined.players, attempts: a.spin_determined.attempts_count, transfers: a.spin_determined.transfers_count }
     },
     spin: { totalRuns: s.spin.total_runs, totalTransfers: s.spin.total_transfers }
+  }
+}
+
+// ─── Tchat ────────────────────────────────────────────────────────────────────
+export function normalizeChatMessage(m: WireChatMessage): ChatMessage {
+  return {
+    id: String(m.id),
+    userId: m.user_id,
+    username: m.username,
+    message: m.message,
+    createdAt: m.created_at
   }
 }

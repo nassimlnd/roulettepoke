@@ -336,3 +336,12 @@ export interface DomainStats {
   anecdotes: DomainAnecdotes
   spin: { totalRuns: number, totalTransfers: number }
 }
+
+// ─── Tchat ────────────────────────────────────────────────────────────────────
+export interface ChatMessage {
+  id: string
+  userId: UUID
+  username: string
+  message: string
+  createdAt: ISODate
+}
