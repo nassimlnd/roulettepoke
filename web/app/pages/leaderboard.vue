@@ -76,6 +76,15 @@ onMounted(async () => {
         <p class="lb__lead">
           Score de <b>diversité</b> — les doublons ne comptent pas.
         </p>
+        <NuxtLink
+          to="/stats"
+          class="lb__statslink"
+        >
+          <UIcon
+            name="i-lucide-chart-column"
+            class="size-4"
+          /> Statistiques globales
+        </NuxtLink>
       </div>
       <ul class="scale">
         <li
@@ -296,6 +305,21 @@ onMounted(async () => {
 }
 .lb__title { font-weight: 700; font-size: 1.7rem; margin: 0; }
 .lb__lead { font-weight: 600; font-size: .9rem; color: var(--ui-text-muted); margin: 4px 0 0; }
+.lb__statslink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: .84rem;
+  color: var(--color-poke-600);
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--color-poke-50);
+  transition: background .15s ease;
+}
+.lb__statslink:hover { background: color-mix(in oklab, var(--color-poke-100) 80%, transparent); }
 .scale {
   display: flex;
   flex-wrap: wrap;
