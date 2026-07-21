@@ -7,15 +7,15 @@ WORKDIR /app
 # pnpm est piloté par le champ "packageManager" du package.json.
 RUN corepack enable
 
-# Dépendances d'abord (cache Docker). --ignore-scripts : le postinstall
-# `nuxt prepare` a besoin du code source (copié juste après), et les binaires
-# natifs (esbuild, oxide…) sont en "allowBuilds:false" → prebuilt, rien à compiler.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# L'app Nuxt vit dans web/. Dépendances d'abord (cache Docker). --ignore-scripts :
+# le postinstall `nuxt prepare` a besoin du code source (copié juste après), et les
+# binaires natifs (esbuild, oxide…) sont en "allowBuilds:false" → prebuilt.
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Code source + génération statique. Le build télécharge les polices
 # (@nuxt/fonts) : cette étape a besoin d'un accès réseau sortant.
-COPY . .
+COPY web/ ./
 RUN pnpm exec nuxi generate
 
 # ─── Étape 2 : runtime Nginx (sert le statique + proxifie /api & /images) ──────
