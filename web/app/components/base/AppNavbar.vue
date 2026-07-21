@@ -64,16 +64,19 @@ const links = [
             />
           </button>
         </UChip>
-        <button
-          class="icon-btn"
-          aria-label="Déconnexion"
-          @click="auth.logout()"
+        <NuxtLink
+          to="/settings"
+          class="avatar-link"
+          active-class="avatar-link--on"
+          aria-label="Profil et réglages"
         >
-          <UIcon
-            name="i-lucide-log-out"
-            class="size-5"
+          <TourneyAvatar
+            :src="auth.user?.avatar_url ?? null"
+            :shiny="auth.user?.avatar_is_alt"
+            :size="34"
+            :alt="auth.user?.username ?? 'Profil'"
           />
-        </button>
+        </NuxtLink>
       </div>
     </div>
   </header>
@@ -154,4 +157,16 @@ const links = [
   transition: color .15s ease, background .15s ease;
 }
 .icon-btn:hover { color: var(--ui-text); background: var(--ui-bg-muted); }
+
+.avatar-link {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition: transform .15s var(--ease-pop);
+}
+.avatar-link:hover { transform: translateY(-1px); }
+.avatar-link:focus-visible { outline: 2px solid var(--color-poke-400); outline-offset: 2px; }
+.avatar-link--on :deep(.tav) {
+  box-shadow: 0 0 0 2px var(--ui-bg-elevated), 0 0 0 3px var(--color-poke-500);
+}
 </style>
