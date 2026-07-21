@@ -1,56 +1,58 @@
 # Déploiement (Docker + Nginx)
 
-L'app est un **SPA statique** (`ssr: false`) : le navigateur appelle `/api` et
-`/images` en **relatif** (même origine). Le conteneur Nginx sert les fichiers
-statiques **et** proxifie `/api` + `/images` vers le backend, en **réécrivant
-l'en-tête `Origin`** (le backend rejette toute origine étrangère par un 500).
-C'est l'équivalent prod du `devProxy` de dev.
+Deux services :
+
+- **`web`** — le frontend Nuxt buildé, lancé comme **serveur Node** (Nitro) sur
+  le port **3000** (interne au réseau Docker).
+- **`nginx`** — **reverse-proxy** : `/api` et `/images` → backend (en réécrivant
+  l'en-tête `Origin`, sinon le backend rejette l'origine étrangère par un 500) ;
+  tout le reste → le service `web`. C'est l'équivalent prod du `devProxy` de dev.
+
+Le navigateur ne voit qu'une seule origine (nginx) : les appels `/api` du SPA
+restent same-origin, et nginx les réécrit/route vers le backend.
 
 ## Construire & lancer
 
 ```bash
 # depuis la racine du repo
-docker build -t pokeroulette-web .
-docker run -d -p 8080:80 --name pokeroulette pokeroulette-web
+docker compose up -d --build
 # → http://localhost:8080
 ```
 
-Ou avec Compose :
-
-```bash
-docker compose up -d --build
-```
+`web` est buildé depuis le `Dockerfile` (Node build → serveur Nitro autonome) ;
+`nginx` utilise l'image officielle + le template monté en volume.
 
 ## Configuration
 
-Deux variables d'environnement (surchargeables au run), avec les valeurs par défaut :
+Variables d'environnement du service **nginx** (le proxy), surchargeables :
 
-| Variable     | Rôle                                              | Défaut                               |
-|--------------|---------------------------------------------------|--------------------------------------|
-| `API_TARGET` | Origine backend proxifiée (schéma + hôte) ; sert aussi de valeur pour `Origin`/`Referer` réécrits | `https://pokeroulette.poulineau.ovh` |
-| `API_HOST`   | Hôte envoyé dans l'en-tête `Host` (+ SNI TLS)     | `pokeroulette.poulineau.ovh`         |
+| Variable     | Rôle                                                                 | Défaut                               |
+|--------------|----------------------------------------------------------------------|--------------------------------------|
+| `API_TARGET` | Origine backend proxifiée (schéma + hôte) ; sert aussi à réécrire `Origin`/`Referer` | `https://pokeroulette.poulineau.ovh` |
+| `API_HOST`   | Hôte envoyé dans `Host` (+ SNI TLS) vers le backend                  | `pokeroulette.poulineau.ovh`         |
 
-```bash
-docker run -d -p 8080:80 \
-  -e API_TARGET=https://mon-backend.example.fr \
-  -e API_HOST=mon-backend.example.fr \
-  pokeroulette-web
-```
+Le service **web** écoute sur `NITRO_HOST=0.0.0.0` / `NITRO_PORT=3000` (réglables).
 
 > Il n'y a **aucune** URL d'API dans le build : le SPA appelle toujours `/api`
-> en relatif. C'est Nginx (`API_TARGET`) qui décide où ça part. `NUXT_API_TARGET`
+> en relatif. C'est nginx (`API_TARGET`) qui décide où ça part. `NUXT_API_TARGET`
 > ne concerne que le `devProxy` de développement.
 
 ## TLS
 
-Le conteneur écoute en **HTTP sur :80**. En prod, termine le **TLS en amont**
-(load-balancer cloud, Traefik, ou un Nginx/Caddy de bord avec tes certificats)
-qui transmet ensuite à ce conteneur. Le WebSocket du chat (`/api/ws/chat`) passe
-par la même règle `/api/` — l'upgrade fonctionne car l'`Origin` y est réécrit.
+Nginx écoute en **HTTP sur :80** (publié sur `:8080`). En prod, termine le **TLS
+en amont** (load-balancer cloud, Traefik, ou un Nginx/Caddy de bord avec tes
+certificats) qui transmet à ce service. Le WebSocket du chat (`/api/ws/chat`)
+passe par la règle `/api/` — l'upgrade fonctionne car l'`Origin` y est réécrit.
 
-## Cas « même domaine que le backend »
+## Lancer sans Compose (2 conteneurs sur un réseau)
 
-Si tu sers l'app depuis le domaine du backend lui-même, la réécriture d'`Origin`
-n'est pas nécessaire (l'origine correspond déjà). Tu peux alors te passer du proxy
-`/api` et pointer Nginx uniquement sur le statique — mais garder ce conteneur
-tel quel marche aussi.
+```bash
+docker network create pkrnet
+docker build -t pokeroulette-web .
+docker run -d --name web --network pkrnet \
+  -e NITRO_HOST=0.0.0.0 -e NITRO_PORT=3000 pokeroulette-web
+docker run -d --name nginx --network pkrnet -p 8080:80 \
+  -e API_TARGET=https://pokeroulette.poulineau.ovh -e API_HOST=pokeroulette.poulineau.ovh \
+  -v "$PWD/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro" \
+  nginx:stable-alpine
+```
