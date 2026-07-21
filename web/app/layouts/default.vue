@@ -15,5 +15,6 @@ onMounted(() => {
       <slot />
     </main>
     <BottomTabBar />
+    <ChatWidget />
   </div>
 </template>

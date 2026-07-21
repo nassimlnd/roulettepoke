@@ -448,3 +448,17 @@ export interface WireStats {
   anecdotes: WireStatsAnecdotes
   spin: { total_runs: number, total_transfers: number }
 }
+
+// ─── Tchat (GET /chat/history + WebSocket /api/ws/chat) ────────────────────────
+export interface WireChatMessage {
+  id: string | number
+  user_id: UUID
+  message: string
+  created_at: ISODate
+  username: string
+}
+
+export interface WireChatHistory {
+  messages: WireChatMessage[]
+  isAdmin: boolean
+}
