@@ -6,10 +6,10 @@ import type {
   AuthResponse, MeResponse, WireCard, WireOwnedCard, WireBiome, WireRollResult,
   SellResult, WireInventory, WireTeamMember, WireBadge, WireGym, TrainingStatus,
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
-  NotificationsResponse, UUID
+  NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny, UUID
 } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember } from '~/types/domain'
-import { normalizeCard, normalizeOwnedCard, normalizeTeamMember } from './normalize'
+import type { DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny } from '~/types/domain'
+import { normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny } from './normalize'
 
 type Api = ReturnType<typeof useApi>
 
@@ -152,6 +152,31 @@ export const tradesRepo = {
 export const notificationsRepo = {
   list: (api: Api) => api<NotificationsResponse>('/notifications'),
   readAll: (api: Api) => api('/notifications/read-all', { method: 'POST' })
+}
+
+export const leaderboardRepo = {
+  get: async (api: Api): Promise<LeaderboardData> => {
+    const res = await api<WireLeaderboardResponse>('/leaderboard')
+    const ctx = res.playerContext
+    return {
+      top: res.top10.map(normalizeLeaderboardRow),
+      player: ctx
+        ? {
+            above: ctx.above ? normalizeLeaderboardRow(ctx.above) : null,
+            current: normalizeLeaderboardRow(ctx.current),
+            below: ctx.below ? normalizeLeaderboardRow(ctx.below) : null
+          }
+        : null
+    }
+  },
+  cheaters: async (api: Api): Promise<LeaderboardRow[]> => {
+    const { cheaters } = await api<{ cheaters: WireLeaderboardRow[] }>('/leaderboard/cheaters')
+    return cheaters.map(normalizeLeaderboardRow)
+  },
+  recentShinies: async (api: Api): Promise<RecentShiny[]> => {
+    const { shinies } = await api<{ shinies: WireRecentShiny[] }>('/leaderboard/recent-shinies')
+    return shinies.map(normalizeRecentShiny)
+  }
 }
 
 export const eventRepo = {
