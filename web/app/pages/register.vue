@@ -31,17 +31,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h1 class="flex items-center gap-2 font-display text-2xl font-extrabold">
-        <UIcon
-          name="i-lucide-dices"
-          class="size-6 text-primary"
-        />
-        Inscription
-      </h1>
-    </template>
-
+  <PAuthPanel
+    title="Rejoins l'aventure !"
+    subtitle="Crée ton compte de dresseur."
+  >
     <UForm
       :schema="schema"
       :state="state"
@@ -55,7 +48,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         <UInput
           v-model="state.username"
           autocomplete="username"
+          icon="i-lucide-user"
+          size="lg"
           class="w-full"
+          placeholder="TonPseudo"
         />
       </UFormField>
       <UFormField
@@ -66,7 +62,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.email"
           type="email"
           autocomplete="email"
+          icon="i-lucide-mail"
+          size="lg"
           class="w-full"
+          placeholder="toi@exemple.fr"
         />
       </UFormField>
       <UFormField
@@ -78,7 +77,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.password"
           type="password"
           autocomplete="new-password"
+          icon="i-lucide-lock"
+          size="lg"
           class="w-full"
+          placeholder="••••••••"
         />
       </UFormField>
 
@@ -90,21 +92,25 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         icon="i-lucide-triangle-alert"
       />
 
-      <UButton
+      <PButton
         type="submit"
         block
+        icon="i-lucide-sparkles"
         :loading="loading"
-        label="Créer mon compte"
-      />
+        class="mt-1 w-full"
+      >
+        Créer mon compte
+      </PButton>
     </UForm>
 
     <template #footer>
-      <p class="text-center text-sm text-muted">
-        Déjà un compte ? <ULink
+      <p class="text-sm text-muted">
+        Déjà un compte ?
+        <ULink
           to="/login"
-          class="text-primary"
+          class="font-semibold text-primary"
         >Se connecter</ULink>
       </p>
     </template>
-  </UCard>
+  </PAuthPanel>
 </template>
