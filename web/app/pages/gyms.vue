@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { DomainGym, TeamMember, BattleResult } from '~/types/domain'
+import type { DomainGym, TeamMember } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { useGymStore, TOTAL_GYMS } from '~/stores/gyms'
+import { useBattleStore } from '~/stores/battle'
 
 // Page Arènes — 8 arènes, badges, estimation + combat hebdo (1/sem), et
 // entraînement quotidien (+2 % de bonus d'arène). Confirmations là où l'action
 // est limitée (combat 1/semaine).
 const gym = useGymStore()
+const battle = useBattleStore()
 const toast = useToast()
 
 const loading = ref(true)
@@ -21,7 +23,6 @@ const selectedId = ref<UUID | null>(null)
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const fighting = ref(false)
-const battleResult = ref<BattleResult | null>(null)
 
 const selectedGym = computed(() => gym.gyms.find(g => g.id === selectedId.value) ?? null)
 const detail = computed(() => (selectedId.value ? gym.details[selectedId.value] : null) ?? null)
@@ -48,7 +49,6 @@ function probColor(p: number): string {
 
 async function openDetail(g: DomainGym) {
   selectedId.value = g.id
-  battleResult.value = null
   detailOpen.value = true
   detailLoading.value = true
   try {
@@ -65,8 +65,19 @@ async function fight() {
   const g = selectedGym.value
   if (!g || fighting.value) return
   fighting.value = true
+  const themeColor = detail.value?.typeColor
   try {
-    battleResult.value = await gym.battle(g.id)
+    const res = await gym.battle(g.id)
+    detailOpen.value = false
+    await battle.present({
+      rounds: res.rounds,
+      won: res.won,
+      themeColor,
+      badgeUrl: g.badgeImageUrl,
+      title: g.name,
+      winSub: `Badge ${g.badgeName} obtenu — ${g.name}.`,
+      loseSub: 'Reviens tenter ta chance la semaine prochaine.'
+    })
   } catch (err) {
     toast.add({ title: humanizeError(err), color: 'error' })
   } finally {
@@ -208,7 +219,7 @@ onMounted(async () => {
     <!-- ═══ Détail / Combat ═══ -->
     <UModal
       v-model:open="detailOpen"
-      :title="battleResult ? 'Combat' : (selectedGym?.name || 'Arène')"
+      :title="selectedGym?.name || 'Arène'"
       :dismissible="!fighting"
       :ui="{ footer: 'justify-end gap-2' }"
     >
@@ -222,17 +233,6 @@ onMounted(async () => {
             class="size-7 animate-spin"
           />
         </div>
-
-        <!-- Combat en cours / résultat -->
-        <BattleScene
-          v-else-if="battleResult && selectedGym"
-          :rounds="battleResult.rounds"
-          :won="battleResult.won"
-          :theme-color="detail?.typeColor"
-          :badge-url="selectedGym.badgeImageUrl"
-          :win-sub="`Badge ${selectedGym.badgeName} obtenu — ${selectedGym.name}.`"
-          lose-sub="Reviens tenter ta chance la semaine prochaine."
-        />
 
         <!-- Vue détail -->
         <div
@@ -339,18 +339,8 @@ onMounted(async () => {
         v-if="!detailLoading"
         #footer
       >
-        <!-- Après combat -->
-        <template v-if="battleResult">
-          <PButton
-            :to="battleResult.won ? undefined : '/team'"
-            :color="battleResult.won ? 'primary' : 'neutral'"
-            @click="detailOpen = false"
-          >
-            {{ battleResult.won ? 'Génial !' : 'Gérer mon équipe' }}
-          </PButton>
-        </template>
-        <!-- Détail -->
-        <template v-else-if="selectedGym">
+        <!-- Actions du détail -->
+        <template v-if="selectedGym">
           <PButton
             v-if="teamEmpty"
             color="neutral"
