@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import type {
   TrainingStatus, SlotStatus, LeagueStatus, WireTournament, SpinStatus,
-  WireTrade, TradeEligibility, WireGym, NotificationsResponse
+  WireTrade, TradeEligibility, NotificationsResponse
 } from '~/types/api'
+import type { DomainGym } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
   tradesRepo, gymRepo, notificationsRepo
@@ -30,7 +31,7 @@ export const useHubStore = defineStore('hub', {
     spin: null as SpinStatus | null,
     trades: [] as WireTrade[],
     tradeEligibility: null as TradeEligibility | null,
-    gyms: [] as WireGym[],
+    gyms: [] as DomainGym[],
     notifications: null as NotificationsResponse | null,
     shortFetchedAt: 0,
     longFetchedAt: 0
@@ -47,7 +48,7 @@ export const useHubStore = defineStore('hub', {
     },
     unreadNotifications: state => state.notifications?.unreadCount ?? 0,
     leagueUnlocked: state => !!state.league?.cycleStart || !!state.league?.eligible,
-    currentGym: state => state.gyms.find(g => !g.has_badge) ?? null,
+    currentGym: state => state.gyms.find(g => !g.hasBadge) ?? null,
 
     // Tuiles « Aujourd'hui »
     dailyTiles(state): QuotaTile[] {
@@ -74,12 +75,12 @@ export const useHubStore = defineStore('hub', {
     weeklyTiles(state): QuotaTile[] {
       const monday = nextWeekly(1, 0)
       const thursday = nextWeekly(4, 12)
-      const gym = state.gyms.find(g => !g.has_badge)
+      const gym = state.gyms.find(g => !g.hasBadge)
       const tiles: QuotaTile[] = [
         {
           key: 'gym',
           label: gym ? gym.name : 'Arènes',
-          available: !!gym?.can_attempt,
+          available: !!gym?.canAttempt,
           nextResetAt: monday,
           to: '/gyms'
         },
@@ -146,7 +147,7 @@ export const useHubStore = defineStore('hub', {
         dedupe('training/status', () => trainingRepo.status(api)).catch(() => null),
         dedupe('slot/status', () => slotRepo.status(api)).catch(() => null),
         dedupe('spin/status', () => spinRepo.status(api)).catch(() => null),
-        dedupe('gym', () => gymRepo.getAll(api)).catch(() => [] as WireGym[]),
+        dedupe('gym', () => gymRepo.getAll(api)).catch(() => [] as DomainGym[]),
         dedupe('trades/eligibility', () => tradesRepo.eligibility(api)).catch(() => null)
       ])
       this.training = training

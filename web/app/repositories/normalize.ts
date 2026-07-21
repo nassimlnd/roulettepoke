@@ -1,8 +1,14 @@
 // Réconciliation des formes « wire » de l'API en types domaine.
 // Notamment : la rareté 'Alt' (shiny dans /collection) → isShiny + rareté réelle.
 
-import type { WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny, Rarity } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny, RealRarity } from '~/types/domain'
+import type {
+  WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny,
+  WireGym, WireGymDetail, WireGymEstimate, WireBattleRound, WireBattleResult, WireTrainingResult, Rarity
+} from '~/types/api'
+import type {
+  DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny,
+  DomainGym, GymDetail, GymEstimate, BattleRound, BattleResult, TrainingOutcome, RealRarity
+} from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
 // rareté de sa version standard (Commun par défaut si non déductible).
@@ -66,6 +72,73 @@ export function normalizeRecentShiny(s: WireRecentShiny): RecentShiny {
     rolledAt: s.rolled_at,
     isDuplicate: s.is_duplicate,
     source: s.source
+  }
+}
+
+export function normalizeGym(g: WireGym): DomainGym {
+  return {
+    id: g.id,
+    order: g.order_num,
+    name: g.name,
+    type: g.type,
+    badgeName: g.badge_name,
+    badgeImageUrl: g.badge_image_url,
+    badgeObtainedAt: g.badge_obtained_at,
+    hasBadge: g.has_badge,
+    canAttempt: g.can_attempt,
+    lastAttemptThisWeek: g.last_attempt_this_week
+  }
+}
+
+export function normalizeGymDetail(d: WireGymDetail): GymDetail {
+  return {
+    id: d.id,
+    typeColor: d.type_color,
+    typeImageUrl: d.type_image_url,
+    champions: (d.champion_team ?? []).map(c => ({
+      position: c.position,
+      name: c.name,
+      type: c.type,
+      rarity: realRarity(c.rarity),
+      isShiny: c.rarity === 'Alt',
+      imageUrl: c.image_url
+    })),
+    recommendedTypes: (d.recommended_types ?? []).map(t => ({ name: t.name, imageUrl: t.image_url, color: t.color }))
+  }
+}
+
+export function normalizeGymEstimate(e: WireGymEstimate): GymEstimate {
+  return {
+    winProbability: e.estimated_win_probability,
+    trainingBonus: e.training_bonus ?? 0,
+    matchups: e.matchups ?? []
+  }
+}
+
+function normalizeBattleRound(r: WireBattleRound): BattleRound {
+  return {
+    round: r.round,
+    player: { name: r.player_pokemon.name, imageUrl: r.player_pokemon.image_url ?? null },
+    champion: { name: r.champion_pokemon.name, imageUrl: r.champion_pokemon.image_url ?? null },
+    winProbability: r.win_probability,
+    playerWon: r.player_wins_duel
+  }
+}
+
+export function normalizeBattleResult(b: WireBattleResult): BattleResult {
+  return {
+    won: b.won,
+    badgeName: b.badge_name ?? null,
+    rounds: (b.log ?? []).map(normalizeBattleRound)
+  }
+}
+
+export function normalizeTrainingOutcome(t: WireTrainingResult): TrainingOutcome {
+  return {
+    won: t.won,
+    coinsGained: t.coins_gained ?? 0,
+    newBonus: t.new_bonus,
+    rounds: (t.log ?? []).map(normalizeBattleRound)
   }
 }
 
