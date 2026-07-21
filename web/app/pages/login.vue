@@ -33,17 +33,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h1 class="flex items-center gap-2 font-display text-2xl font-extrabold">
-        <UIcon
-          name="i-lucide-dices"
-          class="size-6 text-primary"
-        />
-        Connexion
-      </h1>
-    </template>
-
+  <PAuthPanel
+    title="Content de te revoir !"
+    subtitle="Connecte-toi pour continuer l'aventure."
+  >
     <UForm
       :schema="schema"
       :state="state"
@@ -58,6 +51,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.email"
           type="email"
           autocomplete="email"
+          icon="i-lucide-mail"
+          size="lg"
           class="w-full"
           placeholder="toi@exemple.fr"
         />
@@ -70,7 +65,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           v-model="state.password"
           type="password"
           autocomplete="current-password"
+          icon="i-lucide-lock"
+          size="lg"
           class="w-full"
+          placeholder="••••••••"
         />
       </UFormField>
 
@@ -82,20 +80,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         icon="i-lucide-triangle-alert"
       />
 
-      <UButton
+      <PButton
         type="submit"
         block
+        icon="i-lucide-log-in"
         :loading="loading"
-        label="Se connecter"
-      />
+        class="mt-1 w-full"
+      >
+        Se connecter
+      </PButton>
     </UForm>
 
     <template #footer>
-      <div class="space-y-1 text-center text-sm text-muted">
+      <div class="space-y-1.5 text-sm text-muted">
         <p>
-          Pas encore de compte ? <ULink
+          Pas encore de compte ?
+          <ULink
             to="/register"
-            class="text-primary"
+            class="font-semibold text-primary"
           >S'inscrire</ULink>
         </p>
         <p>
@@ -106,5 +108,5 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </p>
       </div>
     </template>
-  </UCard>
+  </PAuthPanel>
 </template>
