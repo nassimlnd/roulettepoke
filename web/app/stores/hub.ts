@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import type {
   TrainingStatus, SlotStatus, LeagueStatus, SpinStatus,
-  WireTrade, TradeEligibility, NotificationsResponse
+  TradeEligibility, NotificationsResponse
 } from '~/types/api'
-import type { DomainGym, DomainTournament } from '~/types/domain'
+import type { DomainGym, DomainTournament, DomainTrade } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
   tradesRepo, gymRepo, notificationsRepo
@@ -29,7 +29,7 @@ export const useHubStore = defineStore('hub', {
     league: null as LeagueStatus | null,
     tournament: null as DomainTournament | null,
     spin: null as SpinStatus | null,
-    trades: [] as WireTrade[],
+    trades: [] as DomainTrade[],
     tradeEligibility: null as TradeEligibility | null,
     gyms: [] as DomainGym[],
     notifications: null as NotificationsResponse | null,
@@ -42,8 +42,8 @@ export const useHubStore = defineStore('hub', {
     tradeActionsRequired(state): number {
       const myId = useAuthStore().userId
       return state.trades.filter(t =>
-        (t.status === 'pending_target' && t.target_id === myId)
-        || (t.status === 'pending_initiator' && t.initiator_id === myId)
+        (t.status === 'pending_target' && t.targetId === myId)
+        || (t.status === 'pending_initiator' && t.initiatorId === myId)
       ).length
     },
     unreadNotifications: state => state.notifications?.unreadCount ?? 0,
@@ -127,7 +127,7 @@ export const useHubStore = defineStore('hub', {
       if (!force && this.shortFetchedAt && Date.now() - this.shortFetchedAt < TTL_SHORT) return
       const api = useApi()
       const [trades, tournament, league, notifications] = await Promise.all([
-        dedupe('trades', () => tradesRepo.list(api)).catch(() => [] as WireTrade[]),
+        dedupe('trades', () => tradesRepo.list(api)).catch(() => [] as DomainTrade[]),
         dedupe('tournament/current', () => tournamentRepo.current(api)).catch(() => null),
         dedupe('league/status', () => leagueRepo.status(api)).catch(() => null),
         dedupe('notifications', () => notificationsRepo.list(api)).catch(() => null)

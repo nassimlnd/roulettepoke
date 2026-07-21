@@ -292,11 +292,16 @@ export interface WireTrade {
   initiator_username: string
   target_id: UUID
   target_username: string
+  requested_card_id?: UUID
   requested_card_name: string
+  requested_card_image?: string
   requested_card_rarity: Rarity
+  offered_card_id?: UUID
   offered_card_name?: string
+  offered_card_image?: string
   offered_card_rarity?: Rarity
   created_at: ISODate
+  target_responded_at?: ISODate
   completed_at?: ISODate
 }
 
@@ -305,6 +310,23 @@ export interface TradeEligibility {
   minRequired: number
   tradedThisWeek: boolean
   eligible: boolean
+}
+
+export interface WireTradePlayer {
+  id: UUID
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  cooldown_until: ISODate | null
+}
+
+export interface WireTradeCard {
+  id: UUID
+  name: string
+  image_url: string
+  rarity: Rarity
+  quantity: number
+  viewer_owns: boolean
 }
 
 export interface WireNotification {
