@@ -2,6 +2,7 @@
 import type { Biome } from '~/types/api'
 import type { DomainCard, RollOutcome } from '~/types/domain'
 import type { RevealView } from '~/components/game/BoosterReveal.vue'
+import type { RevealMode } from '~/stores/preferences'
 import { BASE_ROLL_COST } from '~/stores/roll'
 import { eventRepo } from '~/repositories'
 import { biomeSlug } from '~/utils/poke'
@@ -25,6 +26,11 @@ const choiceResolving = ref(false)
 const errorMsg = ref('')
 
 const motionOn = computed(() => !prefs.effectiveReducedMotion)
+
+// Durée du tourbillon selon la préférence de révélation (le mouvement réduit
+// force l'instantané). Le tirage serveur reste attendu quoi qu'il arrive.
+const REVEAL_MS: Record<RevealMode, number> = { visible: 3000, smart: 1400, hidden: 60 }
+const orbitMs = computed(() => (motionOn.value ? REVEAL_MS[prefs.revealMode] : 60))
 
 // ─── Carrousel de boosters ────────────────────────────────────────────────────
 interface BoosterOption { biome: string, cost: number, owned?: number, total?: number }
@@ -83,7 +89,7 @@ async function open() {
     // Le tourbillon joue ~3 s ; la carte n'est révélée qu'une fois le serveur prêt.
     const [o] = await Promise.all([
       rollStore.perform(biome, currentCost.value),
-      wait(motionOn.value ? 3000 : 60)
+      wait(orbitMs.value)
     ])
     outcome.value = o
     if (o.kind === 'card') {
