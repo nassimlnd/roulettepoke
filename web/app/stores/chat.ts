@@ -5,16 +5,19 @@ import { chatRepo } from '~/repositories'
 import { normalizeChatMessage } from '~/repositories/normalize'
 
 // Tchat temps réel. Un seul WebSocket partagé (au niveau module, comme le
-// singleton d'auth) : historique via REST puis flux live. Reconnexion 3 s ;
-// fermetures 4001 (session expirée) / 4003 (banni) sont définitives.
+// singleton d'auth) : historique via REST puis flux live. Reconnexion avec
+// backoff exponentiel plafonné (2,5 s → 30 s) + jitter, remis à zéro dès qu'une
+// session s'établit ; fermetures 4001 (session expirée) / 4003 (banni) définitives.
 export const CHAT_MAX_LEN = 300
 const HISTORY_CAP = 300
-const RECONNECT_MS = 3000
+const RECONNECT_BASE_MS = 2500
+const RECONNECT_CAP_MS = 30_000
 
 export type ChatStatus = 'idle' | 'connecting' | 'open' | 'closed' | 'banned' | 'expired'
 
 let socket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
 let manualClose = false
 
 interface ChatFrame {
@@ -85,6 +88,7 @@ export const useChatStore = defineStore('chat', {
       }
       if (frame.type === 'authenticated') {
         this.status = 'open'
+        reconnectAttempts = 0 // session établie : on repart d'un délai court
         return
       }
       if (frame.type === 'purge' && frame.user_id) {
@@ -117,9 +121,19 @@ export const useChatStore = defineStore('chat', {
         return
       }
       this.status = 'closed'
+      this._scheduleReconnect()
+    },
+
+    // Backoff exponentiel plafonné + jitter : après un échec on attend
+    // 2,5 s, puis 5, 10, 20, 30 s… (±20 % d'aléa pour désynchroniser les
+    // clients). Évite de marteler le backend quand le WS n'aboutit pas.
+    _scheduleReconnect() {
       if (manualClose) return
       if (reconnectTimer) clearTimeout(reconnectTimer)
-      reconnectTimer = setTimeout(() => this._loadHistory().finally(() => this._connect()), RECONNECT_MS)
+      const capped = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempts, RECONNECT_CAP_MS)
+      const delay = Math.round(capped * (0.8 + Math.random() * 0.4))
+      reconnectAttempts++
+      reconnectTimer = setTimeout(() => this._loadHistory().finally(() => this._connect()), delay)
     },
 
     send(text: string): boolean {
@@ -151,6 +165,7 @@ export const useChatStore = defineStore('chat', {
       this.started = false
       if (reconnectTimer) clearTimeout(reconnectTimer)
       reconnectTimer = null
+      reconnectAttempts = 0
       socket?.close()
       socket = null
       this.status = 'idle'
