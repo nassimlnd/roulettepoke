@@ -31,6 +31,7 @@ watch(() => battle.active, (a) => {
 
           <BattleScene
             :rounds="battle.config.rounds"
+            :stages="battle.config.stages"
             :won="battle.config.won"
             :theme-color="battle.config.themeColor"
             :badge-url="battle.config.badgeUrl"
@@ -69,7 +70,7 @@ watch(() => battle.active, (a) => {
 }
 .stage__inner {
   width: 100%;
-  max-width: 640px;
+  max-width: 720px;
   display: flex;
   flex-direction: column;
   gap: 16px;

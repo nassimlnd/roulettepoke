@@ -3,8 +3,19 @@ import type { BattleRound } from '~/types/domain'
 
 // Service de combat plein écran : n'importe quelle page appelle `present(...)`
 // pour lancer un combat animé en overlay ; la promesse se résout à la fermeture.
-export interface BattleConfig {
+
+// Un « stage » = un adversaire et ses duels. Un combat simple (Arène,
+// entraînement) tient en un seul stage implicite via `rounds` ; la Ligue en
+// fournit plusieurs (un par Maître), chacun introduit par une bannière.
+export interface BattleStageInput {
+  label: string
   rounds: BattleRound[]
+  won?: boolean
+}
+
+export interface BattleConfig {
+  rounds?: BattleRound[]
+  stages?: BattleStageInput[]
   won: boolean
   themeColor?: string
   badgeUrl?: string | null
