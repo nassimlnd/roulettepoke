@@ -1,0 +1,14 @@
+# Build + run de l'app en prod (Nginx sert le SPA et proxifie /api & /images).
+# TLS à terminer en amont (reverse-proxy / load-balancer / Traefik) : ce conteneur
+# écoute en HTTP sur :80.
+services:
+  web:
+    build: .
+    image: pokeroulette-web
+    ports:
+      - "8080:80"
+    environment:
+      # Backend proxifié + origine réécrite (le backend rejette les Origins étrangers).
+      API_TARGET: "https://pokeroulette.poulineau.ovh"
+      API_HOST: "pokeroulette.poulineau.ovh"
+    restart: unless-stopped
