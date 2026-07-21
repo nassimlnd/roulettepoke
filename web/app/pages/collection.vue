@@ -31,6 +31,7 @@ const cards = computed(() => {
 
 const ownedCount = computed(() => cards.value.filter(c => c.owned).length)
 const total = computed(() => cards.value.length)
+const progress = computed(() => (total.value ? Math.round((ownedCount.value / total.value) * 100) : 0))
 
 // ─── Détail / actions ─────────────────────────────────────────────────────────
 const selected = ref<DomainOwnedCard | null>(null)
@@ -96,38 +97,48 @@ async function confirmMerge() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-2xl font-extrabold">
-        Ma collection
-      </h1>
+  <div class="col">
+    <!-- En-tête + progression -->
+    <header class="col__head">
+      <div>
+        <h1 class="col__title">
+          Ma collection
+        </h1>
+        <div class="col__progress">
+          <span class="tabular">{{ ownedCount }} / {{ total }} obtenues</span>
+          <div class="bar">
+            <i :style="{ width: progress + '%' }" />
+          </div>
+          <span class="tabular col__pct">{{ progress }} %</span>
+        </div>
+      </div>
       <CoinBalance />
-    </div>
+    </header>
 
     <!-- Onglets + tri -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex rounded-lg border border-default p-0.5">
+    <div class="col__controls">
+      <div class="pills">
         <button
           v-for="t in (['standard', 'shiny'] as const)"
           :key="t"
-          class="rounded-md px-3 py-1 text-sm font-medium transition-colors"
-          :class="tab === t ? 'bg-primary text-inverted' : 'text-muted hover:text-default'"
+          class="pill"
+          :class="{ 'pill--on': tab === t }"
           @click="tab = t"
         >
           {{ t === 'standard' ? 'Standard' : '✦ Shiny' }}
         </button>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-sm text-muted tabular">{{ ownedCount }} / {{ total }} obtenues</span>
-        <UButton
-          :variant="sortByPity ? 'solid' : 'outline'"
-          color="neutral"
-          size="sm"
-          icon="i-lucide-sparkles"
-          label="Chance shiny"
-          @click="sortByPity = !sortByPity"
+      <button
+        class="pill pill--solo"
+        :class="{ 'pill--on': sortByPity }"
+        @click="sortByPity = !sortByPity"
+      >
+        <UIcon
+          name="i-lucide-sparkles"
+          class="size-4"
         />
-      </div>
+        Chance shiny
+      </button>
     </div>
 
     <UAlert
@@ -137,38 +148,36 @@ async function confirmMerge() {
       :title="errorMsg"
     />
 
-    <!-- Grille -->
+    <!-- Grille (classeur) -->
     <div
       v-if="loading"
-      class="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-3"
+      class="grid"
     >
       <USkeleton
         v-for="i in 18"
         :key="i"
-        class="aspect-[3/4] rounded-xl"
+        class="aspect-[63/88] w-[132px] rounded-2xl"
       />
     </div>
     <div
       v-else
-      class="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-3"
+      class="grid"
     >
       <button
         v-for="card in cards"
         :key="card.id"
-        class="group relative text-left focus-visible:outline-none"
+        class="cell"
         :disabled="!card.owned"
         @click="openDetail(card)"
       >
-        <GameCard
+        <HoloCard
           :card="card"
           size="sm"
-          :owned="card.owned"
           :quantity="card.quantity"
-          class="w-full transition-transform group-hover:-translate-y-0.5"
         />
         <span
           v-if="sortByPity && card.owned && !card.isShiny"
-          class="absolute inset-x-1 bottom-1 rounded bg-default/85 py-0.5 text-center text-[0.6rem] font-semibold text-rarity-shiny"
+          class="pity"
         >✦ {{ shinyChance(card) }}</span>
       </button>
     </div>
@@ -181,39 +190,40 @@ async function confirmMerge() {
       <template #body>
         <div
           v-if="selected"
-          class="flex flex-col items-center gap-3"
+          class="detail"
         >
-          <GameCard
+          <HoloCard
             :card="selected"
             size="lg"
             :quantity="selected.quantity"
           />
-          <div class="text-center">
+          <div class="detail__info">
             <RarityBadge
               :rarity="selected.rarity"
               :shiny="selected.isShiny"
             />
-            <p class="mt-1 text-sm text-muted">
+            <p class="detail__sub">
               {{ selected.quantity }} exemplaire{{ selected.quantity > 1 ? 's' : '' }}
               <template v-if="!selected.isShiny">
                 · chance shiny estimée {{ shinyChance(selected) }}
               </template>
             </p>
           </div>
-          <div class="flex gap-2">
-            <UButton
+          <div class="detail__actions">
+            <PButton
               v-if="canMerge(selected)"
               icon="i-lucide-arrow-up-circle"
-              label="Fusionner"
               @click="mergeOpen = true"
-            />
-            <UButton
-              icon="i-lucide-coins"
+            >
+              Fusionner
+            </PButton>
+            <PButton
               color="neutral"
-              variant="outline"
-              :label="selected.isShiny ? 'Vendre (Charme)' : `Vendre (${sellPrice} 🪙)`"
+              icon="i-lucide-coins"
               @click="sellOpen = true"
-            />
+            >
+              {{ selected.isShiny ? 'Vendre (Charme)' : `Vendre (${sellPrice} 🪙)` }}
+            </PButton>
           </div>
         </div>
       </template>
@@ -244,3 +254,141 @@ async function confirmMerge() {
     />
   </div>
 </template>
+
+<style scoped>
+.col { display: flex; flex-direction: column; gap: 18px; }
+.col__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.col__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.7rem;
+  margin: 0;
+}
+.col__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  color: var(--ui-text-muted);
+  font-size: .9rem;
+}
+.col__progress .bar {
+  width: 130px;
+  height: 9px;
+  border-radius: 99px;
+  background: var(--ui-bg-accented);
+  overflow: hidden;
+}
+.col__progress .bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ffd67f, var(--color-poke-500));
+  transition: width .6s var(--ease-glide);
+}
+.col__pct { color: var(--ui-text); font-weight: 700; }
+
+.col__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pills {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
+}
+.pill {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: .9rem;
+  border: none;
+  background: transparent;
+  color: var(--ui-text-muted);
+  padding: 7px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s ease;
+}
+.pill--on {
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-highlighted);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .1);
+}
+.pill:not(.pill--on):hover { color: var(--ui-text); }
+.pill--solo {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg-elevated);
+}
+.pill--solo.pill--on {
+  background: var(--color-poke-500);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 0 var(--color-poke-700);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 132px);
+  justify-content: center;
+  gap: 14px;
+}
+.cell {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px;
+}
+.cell:disabled { cursor: default; }
+.cell:focus-visible {
+  outline: 2px solid var(--color-poke-400);
+  outline-offset: 3px;
+}
+.pity {
+  position: absolute;
+  inset-inline: 7px;
+  bottom: 7px;
+  text-align: center;
+  font-size: .6rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(0, 0, 0, .58);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.detail__info { text-align: center; }
+.detail__sub {
+  color: var(--ui-text-muted);
+  font-size: .88rem;
+  margin: 6px 0 0;
+}
+.detail__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+</style>
