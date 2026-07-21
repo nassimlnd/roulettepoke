@@ -8,3 +8,4 @@ exploration/certs/
 exploration/verify-*.mjs
 exploration/shot-*.mjs
 exploration/debug-*.mjs
+exploration/dump-*.mjs
