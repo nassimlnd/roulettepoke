@@ -44,6 +44,44 @@ export interface BiomeInfo {
   ownedCount: number
 }
 
+// ─── Classement ───────────────────────────────────────────────────────────────
+export interface LeaderboardRow {
+  rank: number
+  username: string
+  avatarUrl: string | null
+  avatarRarity: RealRarity | null
+  isShinyAvatar: boolean
+  crowned: boolean
+  medal: 1 | 2 | 3 | null // médaille de tournoi (couronne prioritaire)
+  standardCount: number
+  legendaryCount: number
+  shinyCount: number
+  score: number
+  badges: { imageUrl: string, name: string }[]
+}
+
+export interface PlayerContext {
+  above: LeaderboardRow | null
+  current: LeaderboardRow
+  below: LeaderboardRow | null
+}
+
+export interface LeaderboardData {
+  top: LeaderboardRow[]
+  player: PlayerContext | null
+}
+
+export interface RecentShiny {
+  username: string
+  name: string
+  imageUrl: string
+  isShiny: boolean
+  rarity: RealRarity
+  rolledAt: ISODate
+  isDuplicate: boolean
+  source: string
+}
+
 // Membre d'équipe — forme normalisée de WireTeamMember. Un membre ne porte pas
 // toutes les infos d'une carte (pas de num/biome/niveau) : il s'affiche via
 // TeamCard, pas HoloCard.

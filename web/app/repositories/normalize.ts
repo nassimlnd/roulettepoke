@@ -1,8 +1,8 @@
 // Réconciliation des formes « wire » de l'API en types domaine.
 // Notamment : la rareté 'Alt' (shiny dans /collection) → isShiny + rareté réelle.
 
-import type { WireCard, WireOwnedCard, WireTeamMember, Rarity } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, TeamMember, RealRarity } from '~/types/domain'
+import type { WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny, Rarity } from '~/types/api'
+import type { DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny, RealRarity } from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
 // rareté de sa version standard (Commun par défaut si non déductible).
@@ -36,6 +36,36 @@ export function normalizeOwnedCard(c: WireOwnedCard): DomainOwnedCard {
     quantity: c.quantity ?? 0,
     owned: c.owned,
     obtainedAt: c.obtained_at
+  }
+}
+
+export function normalizeLeaderboardRow(r: WireLeaderboardRow): LeaderboardRow {
+  return {
+    rank: r.rank,
+    username: r.username,
+    avatarUrl: r.avatar_url,
+    avatarRarity: r.avatar_rarity ? realRarity(r.avatar_rarity) : null,
+    isShinyAvatar: !!r.avatar_is_alt || r.avatar_rarity === 'Alt',
+    crowned: r.crowned,
+    medal: r.tournament_medal_placement,
+    standardCount: r.standard_count,
+    legendaryCount: r.legendary_count,
+    shinyCount: r.shiny_count,
+    score: r.score,
+    badges: (r.badges ?? []).map(b => ({ imageUrl: b.image_url, name: b.name }))
+  }
+}
+
+export function normalizeRecentShiny(s: WireRecentShiny): RecentShiny {
+  return {
+    username: s.username,
+    name: s.name,
+    imageUrl: s.image_url,
+    isShiny: s.is_alt,
+    rarity: realRarity(s.rarity),
+    rolledAt: s.rolled_at,
+    isDuplicate: s.is_duplicate,
+    source: s.source
   }
 }
 

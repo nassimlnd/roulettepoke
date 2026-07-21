@@ -214,3 +214,43 @@ export interface NotificationsResponse {
   notifications: WireNotification[]
   unreadCount: number
 }
+
+export interface WireBadgeRef {
+  image_url: string
+  name: string
+}
+
+export interface WireLeaderboardRow {
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  avatar_rarity: Rarity | null
+  crowned: boolean
+  tournament_medal_placement: 1 | 2 | 3 | null
+  standard_count: number
+  legendary_count: number
+  shiny_count: number
+  score: number
+  badges: WireBadgeRef[]
+  rank: number
+}
+
+export interface WireLeaderboardResponse {
+  top10: WireLeaderboardRow[]
+  playerContext: {
+    above: WireLeaderboardRow | null
+    current: WireLeaderboardRow
+    below: WireLeaderboardRow | null
+  } | null
+}
+
+export interface WireRecentShiny {
+  username: string
+  name: string
+  image_url: string
+  is_alt: boolean
+  rarity: Rarity
+  rolled_at: ISODate
+  is_duplicate: boolean
+  source: string
+}
