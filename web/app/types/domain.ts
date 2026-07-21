@@ -273,3 +273,66 @@ export interface TeamMember {
   imageUrl: string
   typeImageUrl: string | null
 }
+
+// ─── Statistiques (forme normalisée de WireStats) ─────────────────────────────
+export interface StatsGlobal {
+  totalRolls: number
+  shinyObtained: number
+  shinyRate: number
+  legendaryRate: number
+}
+
+export interface StatGym {
+  name: string
+  type: PokeType
+  badgeName: string
+  badgeImageUrl: string
+  orderNum: number
+  holders: number
+}
+
+export interface StatPlayer {
+  username: string
+  totalRolls: number
+  shinyRolls: number
+  legendaryRolls: number
+  ownedStd: number
+  ownedShiny: number
+  spinRuns: number
+  spinTransfers: number
+}
+
+export type OddsKey = 'commun' | 'rare' | 'epic' | 'shiny' | 'legendary'
+
+// Probabilité par tirage d'une rareté, calculée depuis le pool
+// (count × weight / total_weight).
+export interface RarityOdds {
+  key: OddsKey
+  label: string
+  color: string
+  count: number
+  probability: number
+}
+
+export interface SpinAnecdote { names: string[], attempts: number, transfers: number }
+
+export interface DomainAnecdotes {
+  mostShinyDupes: { names: string[], dupes: number, shinyTotal: number }
+  unluckiest: { names: string[], lossHigh: number }
+  luckiest: { names: string[], winLow: number }
+  mostOwnedCards: { name: string, totalQty: number }[]
+  leastOwnedCards: { name: string, totalQty: number }[]
+  spinLucky: SpinAnecdote
+  spinUnlucky: SpinAnecdote
+  spinDetermined: SpinAnecdote
+}
+
+export interface DomainStats {
+  global: StatsGlobal
+  gyms: StatGym[]
+  players: StatPlayer[]
+  odds: RarityOdds[]
+  pool: { totalStd: number, totalLeg: number, totalShiny: number }
+  anecdotes: DomainAnecdotes
+  spin: { totalRuns: number, totalTransfers: number }
+}

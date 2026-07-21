@@ -8,18 +8,18 @@ import type {
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
   WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult,
-  WireSpinResult, WireRecentWin, WireMyAnalysis, WireTradePlayer, WireTradeCard, UUID
+  WireSpinResult, WireRecentWin, WireMyAnalysis, WireTradePlayer, WireTradeCard, WireStats, UUID
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin,
-  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, RealRarity
+  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, DomainStats, RealRarity
 } from '~/types/domain'
 import {
   normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
   normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome,
   normalizeSpinResult, normalizeRecentWin, normalizeTournament, normalizeTournamentAnalysis,
-  normalizeTrade, normalizeTradePlayer, normalizeTradeCard
+  normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeStats
 } from './normalize'
 
 type Api = ReturnType<typeof useApi>
@@ -251,4 +251,8 @@ export const eventRepo = {
     })
     return { card: normalizeCard(card), isNew: !!card.isNew }
   }
+}
+
+export const statsRepo = {
+  get: async (api: Api): Promise<DomainStats> => normalizeStats(await api<WireStats>('/stats'))
 }

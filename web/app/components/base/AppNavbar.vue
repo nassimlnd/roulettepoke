@@ -11,6 +11,7 @@ const links = [
   { label: 'Arènes', to: '/gyms', icon: 'i-lucide-swords' },
   { label: 'Jackpot', to: '/slot-machine', icon: 'i-lucide-cherry' },
   { label: 'Classement', to: '/leaderboard', icon: 'i-lucide-trophy' },
+  { label: 'Stats', to: '/stats', icon: 'i-lucide-chart-column' },
   { label: 'Guide', to: '/rules', icon: 'i-lucide-book-open' }
 ]
 </script>

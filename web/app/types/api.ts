@@ -381,3 +381,70 @@ export interface WireRecentShiny {
   is_duplicate: boolean
   source: string
 }
+
+// ─── Statistiques (GET /stats — gros payload agrégé, une requête) ──────────────
+export interface WireStatsGlobal {
+  total_rolls: number
+  shiny_obtained: number
+  shiny_rate: number
+  legendary_rate: number
+}
+
+export interface WireStatsGym {
+  name: string
+  type: PokeType
+  badge_name: string
+  badge_image_url: string
+  order_num: number
+  badge_holders: number
+}
+
+export interface WireStatsPlayer {
+  username: string
+  total_rolls: number
+  shiny_rolls: number
+  legendary_rolls: number
+  owned_std: number
+  owned_shiny: number
+  spin_runs: number
+  spin_transfers: number
+}
+
+export interface WireStatsRarity { weight: number, count: number }
+
+export interface WireStatsPool {
+  total_weight: number
+  total_std: number
+  total_leg: number
+  total_shiny: number
+  rarities: {
+    commun: WireStatsRarity
+    rare: WireStatsRarity
+    epic: WireStatsRarity
+    legendary: WireStatsRarity
+    shiny: WireStatsRarity
+  }
+}
+
+export interface WireStatsCardQty { name: string, total_qty: number }
+export interface WireStatsSpinAnec { players: string[], attempts_count: number, transfers_count: number }
+
+export interface WireStatsAnecdotes {
+  most_shiny_dupes: { players: string[], dupes: number, shiny_total: number }
+  unluckiest: { players: string[], loss_high: number }
+  luckiest: { players: string[], win_low: number }
+  most_owned_cards: WireStatsCardQty[]
+  least_owned_cards: WireStatsCardQty[]
+  spin_lucky: WireStatsSpinAnec
+  spin_unlucky: WireStatsSpinAnec
+  spin_determined: WireStatsSpinAnec
+}
+
+export interface WireStats {
+  global: WireStatsGlobal
+  gyms: WireStatsGym[]
+  players: WireStatsPlayer[]
+  pool: WireStatsPool
+  anecdotes: WireStatsAnecdotes
+  spin: { total_runs: number, total_transfers: number }
+}
