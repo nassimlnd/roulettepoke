@@ -1,0 +1,25 @@
+# Contexte de build = racine du repo. On n'envoie que ce qui sert à builder
+# l'app (web/) + la config nginx ; le reste est exclu pour un contexte léger.
+.git
+.gitignore
+**/node_modules
+**/*.log
+.DS_Store
+
+# Artefacts de build de l'app
+web/.nuxt
+web/.output
+web/.data
+web/dist
+web/coverage
+
+# Hors-app : docs, scripts d'exploration, captures
+docs
+exploration
+artifacts
+
+# Fichiers Docker eux-mêmes (inutiles dans l'image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+DEPLOY.md

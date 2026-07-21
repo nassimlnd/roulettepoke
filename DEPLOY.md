@@ -9,7 +9,7 @@ C'est l'équivalent prod du `devProxy` de dev.
 ## Construire & lancer
 
 ```bash
-# depuis web/
+# depuis la racine du repo
 docker build -t pokeroulette-web .
 docker run -d -p 8080:80 --name pokeroulette pokeroulette-web
 # → http://localhost:8080
