@@ -220,12 +220,50 @@ export interface WireRecentWin {
   spun_at: ISODate
 }
 
+export interface WireLeagueLegendary { id: UUID, name: string, image_url: string }
+
 export interface LeagueStatus {
   eligible: boolean
   cycleStart: ISODate | null
   alreadyAttempted: boolean
-  lastRun: unknown | null
-  legendaries: { id: UUID, name: string, image_url: string }[]
+  lastRun: WireLeagueRun | null
+  legendaries: WireLeagueLegendary[]
+}
+
+export interface WireLeagueStage {
+  opponent_name: string
+  opponent_type: 'player' | 'npc'
+  estimated_win_probability: number
+}
+
+export interface WireLeagueEstimate {
+  overall_win_probability: number
+  stages: WireLeagueStage[]
+  typeRecommendations: { toPrivilege: { type: string }[], toAvoid: { type: string }[] }
+}
+
+export interface WireLeagueBattleStage {
+  opponent_name: string
+  opponent_type: 'player' | 'npc'
+  won: boolean
+  log: WireBattleRound[]
+}
+
+export interface WireLeagueRun {
+  runId: UUID
+  won: boolean
+  battleLog: WireLeagueBattleStage[]
+}
+
+export interface WireLegendaryEstimate {
+  capture_probability: number
+  challengers: string[]
+}
+
+export interface WireLegendaryReward {
+  won: boolean
+  card: WireCard
+  log: WireBattleRound[]
 }
 
 export interface WireTournamentParticipant {

@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import type {
-  TrainingStatus, SlotStatus, LeagueStatus, SpinStatus,
+  TrainingStatus, SlotStatus, SpinStatus,
   TradeEligibility, NotificationsResponse
 } from '~/types/api'
-import type { DomainGym, DomainTournament, DomainTrade } from '~/types/domain'
+import type { DomainGym, DomainTournament, DomainTrade, DomainLeagueStatus } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
   tradesRepo, gymRepo, notificationsRepo
@@ -26,7 +26,7 @@ export const useHubStore = defineStore('hub', {
   state: () => ({
     training: null as TrainingStatus | null,
     slot: null as SlotStatus | null,
-    league: null as LeagueStatus | null,
+    league: null as DomainLeagueStatus | null,
     tournament: null as DomainTournament | null,
     spin: null as SpinStatus | null,
     trades: [] as DomainTrade[],

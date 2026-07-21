@@ -5,7 +5,8 @@
 import type {
   AuthResponse, MeResponse, WireCard, WireOwnedCard, WireBiome, WireRollResult,
   SellResult, WireInventory, WireTeamMember, WireBadge, WireGym, TrainingStatus,
-  SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
+  SlotStatus, LeagueStatus, WireLeagueEstimate, WireLeagueRun, WireLegendaryEstimate, WireLegendaryReward,
+  WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
   WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult,
   WireSpinResult, WireRecentWin, WireMyAnalysis, WireTradePlayer, WireTradeCard, WireStats, WireChatHistory, UUID
@@ -13,13 +14,15 @@ import type {
 import type {
   DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin,
-  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, DomainStats, ChatMessage, RealRarity
+  DomainTournament, TournamentAnalysis, DomainTrade, TradePlayer, TradeCard, DomainStats, ChatMessage,
+  DomainLeagueStatus, LeagueEstimate, LeagueRun, LegendaryOdds, LegendaryReward, RealRarity
 } from '~/types/domain'
 import {
   normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
   normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome,
   normalizeSpinResult, normalizeRecentWin, normalizeTournament, normalizeTournamentAnalysis,
-  normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeStats, normalizeChatMessage
+  normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeStats, normalizeChatMessage,
+  normalizeLeagueStatus, normalizeLeagueEstimate, normalizeLeagueRun, normalizeLegendaryReward
 } from './normalize'
 
 type Api = ReturnType<typeof useApi>
@@ -171,7 +174,20 @@ export const slotRepo = {
 }
 
 export const leagueRepo = {
-  status: (api: Api) => api<LeagueStatus>('/league/status')
+  status: async (api: Api): Promise<DomainLeagueStatus> =>
+    normalizeLeagueStatus(await api<LeagueStatus>('/league/status')),
+  estimate: async (api: Api): Promise<LeagueEstimate> =>
+    normalizeLeagueEstimate(await api<WireLeagueEstimate>('/league/estimate')),
+  challenge: async (api: Api): Promise<LeagueRun> =>
+    normalizeLeagueRun(await api<WireLeagueRun>('/league/challenge', { method: 'POST' })),
+  rewardCoins: (api: Api, runId: UUID) =>
+    api(`/league/${runId}/reward/coins`, { method: 'POST' }),
+  legendaryEstimate: async (api: Api, runId: UUID, cardId: UUID): Promise<LegendaryOdds> => {
+    const e = await api<WireLegendaryEstimate>(`/league/${runId}/legendary-estimate/${cardId}`)
+    return { captureProbability: e.capture_probability, challengers: e.challengers ?? [] }
+  },
+  rewardLegendary: async (api: Api, runId: UUID, cardId: UUID): Promise<LegendaryReward> =>
+    normalizeLegendaryReward(await api<WireLegendaryReward>(`/league/${runId}/reward/legendary`, { method: 'POST', body: { cardId } }))
 }
 
 export const tournamentRepo = {
