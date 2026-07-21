@@ -40,6 +40,34 @@ function launch(label: string, color: string) {
     winSub: `Badge ${label} obtenu !`
   })
 }
+
+// Combat multi-stages (Ligue des 4) : une bannière par Maître, verdict global.
+const leagueStages = [
+  { label: 'Maître 1/4 · Olga', won: true, rounds: [
+    { round: 1, player: MONS.moltres, champion: MONS.articuno, winProbability: 62, playerWon: true },
+    { round: 2, player: MONS.zapdos, champion: MONS.articuno, winProbability: 55, playerWon: true }
+  ] },
+  { label: 'Maître 2/4 · Aldo', won: true, rounds: [
+    { round: 1, player: MONS.mewtwo, champion: MONS.mew, winProbability: 58, playerWon: true }
+  ] },
+  { label: 'Maître 3/4 · Agatha', won: false, rounds: [
+    { round: 1, player: MONS.mew, champion: MONS.mewtwo, winProbability: 40, playerWon: false },
+    { round: 2, player: MONS.articuno, champion: MONS.moltres, winProbability: 47, playerWon: true }
+  ] },
+  { label: 'Maître 4/4 · Peter', won: true, rounds: [
+    { round: 1, player: MONS.zapdos, champion: MONS.moltres, winProbability: 64, playerWon: true }
+  ] }
+]
+function launchLeague() {
+  battle.present({
+    stages: leagueStages,
+    won: true,
+    themeColor: '#8b5cc4',
+    title: 'Ligue des 4',
+    winTitle: 'Ligue vaincue ! 🏆',
+    winSub: '3/4 Maîtres battus — choisis ta récompense.'
+  })
+}
 </script>
 
 <template>
@@ -58,6 +86,14 @@ function launch(label: string, color: string) {
         @click="launch(t.label, t.color)"
       >
         Combat {{ t.label }}
+      </PButton>
+    </div>
+    <div class="sc__ctrls">
+      <PButton
+        color="secondary"
+        @click="launchLeague"
+      >
+        Combat Ligue (4 maîtres)
       </PButton>
     </div>
   </div>

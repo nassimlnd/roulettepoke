@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { LeagueLegendary } from '~/types/domain'
+import type { LeagueLegendary, LeagueRun } from '~/types/domain'
 import type { PokeType } from '~/types/api'
 import { typeSlug } from '~/utils/poke'
 import { useLeagueStore, LEAGUE_COINS_REWARD } from '~/stores/league'
 import { useGymStore, TOTAL_GYMS } from '~/stores/gyms'
+import { useBattleStore } from '~/stores/battle'
 
 // Ligue des 4 (Elite Four) — défi ultime hebdomadaire. États : verrouillé
 // (8 badges requis) / en attente (post-tournoi) / prêt (estimation + défi) /
@@ -12,7 +13,29 @@ const league = useLeagueStore()
 const gyms = useGymStore()
 const wallet = useWalletStore()
 const collection = useCollectionStore()
+const battle = useBattleStore()
 const toast = useToast()
+
+// Le combat de la Ligue se joue en plein écran (overlay), teinté violet, un
+// « chapitre » par Maître. Réutilisable pour rejouer le dernier défi.
+const LEAGUE_THEME = '#8b5cc4'
+function presentRun(run: LeagueRun | null): Promise<void> {
+  if (!run) return Promise.resolve()
+  const wonStages = run.stages.filter(s => s.won).length
+  return battle.present({
+    stages: run.stages.map((s, i) => ({
+      label: `Maître ${i + 1}/${run.stages.length} · ${s.opponentName}`,
+      rounds: s.rounds,
+      won: s.won
+    })),
+    won: run.won,
+    themeColor: LEAGUE_THEME,
+    title: 'Ligue des 4',
+    winTitle: 'Ligue vaincue ! 🏆',
+    winSub: `${wonStages}/${run.stages.length} Maîtres battus — choisis ta récompense.`,
+    loseSub: `${wonStages}/${run.stages.length} Maîtres battus — retente la semaine prochaine.`
+  })
+}
 
 const loading = ref(true)
 const errorMsg = ref('')
@@ -45,8 +68,9 @@ const confirmOpen = ref(false)
 async function doChallenge() {
   busy.value = true
   try {
-    await league.challenge()
+    const run = await league.challenge()
     confirmOpen.value = false
+    await presentRun(run)
   } catch (err) {
     toast.add({ title: humanizeError(err), color: 'error' })
   } finally {
@@ -159,6 +183,15 @@ onMounted(async () => {
       <template v-if="phase === 'result' && league.run">
         <PPanel>
           <LeagueBattle :run="league.run" />
+          <button
+            class="replay"
+            @click="presentRun(league.run)"
+          >
+            <UIcon
+              name="i-lucide-play"
+              class="size-4"
+            /> Revoir le combat
+          </button>
         </PPanel>
 
         <!-- Choix de récompense -->
@@ -356,6 +389,15 @@ onMounted(async () => {
             Ton défi de la semaine
           </p>
           <LeagueBattle :run="status.lastRun" />
+          <button
+            class="replay"
+            @click="presentRun(status?.lastRun ?? null)"
+          >
+            <UIcon
+              name="i-lucide-play"
+              class="size-4"
+            /> Revoir le combat
+          </button>
         </PPanel>
         <p class="nextweek">
           <UIcon
@@ -644,6 +686,25 @@ onMounted(async () => {
 /* CTA défi */
 .cta { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0 8px; }
 .cta__note { font-size: .76rem; color: var(--ui-text-dimmed); font-weight: 600; }
+
+/* Rejouer le combat en plein écran */
+.replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  margin-top: 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .84rem;
+  color: #8b5cc4;
+  background: color-mix(in oklab, #8b5cc4 12%, transparent);
+  padding: 8px 16px;
+  border-radius: 12px;
+  transition: transform .14s var(--ease-pop), background-color .14s ease;
+}
+.replay:hover { transform: translateY(-2px); background: color-mix(in oklab, #8b5cc4 18%, transparent); }
+.replay:active { transform: translateY(1px); }
 
 /* Recap déjà tenté */
 .recap__cap { font-family: var(--font-display); font-weight: 700; font-size: .9rem; color: var(--ui-text-muted); margin-bottom: 10px; }

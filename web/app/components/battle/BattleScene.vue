@@ -4,8 +4,10 @@ import type { BattleRound } from '~/types/domain'
 // Moteur de combat animé façon Pokémon (démo Mochidex). Rejoue un battleLog
 // (suite de duels résolus côté serveur) en auto : chaque duel = un clash, PV qui
 // descendent, K.O., puis verdict. Décor thématisé par `themeColor` (type d'arène).
+// Multi-stages (Ligue) : plusieurs adversaires enchaînés, un par bannière.
 const props = withDefaults(defineProps<{
-  rounds: BattleRound[]
+  rounds?: BattleRound[]
+  stages?: { label: string, rounds: BattleRound[], won?: boolean }[]
   won: boolean
   themeColor?: string
   badgeUrl?: string | null
@@ -13,6 +15,8 @@ const props = withDefaults(defineProps<{
   winSub?: string
   loseSub?: string
 }>(), {
+  rounds: () => [],
+  stages: undefined,
   themeColor: '#7fc98a',
   badgeUrl: null,
   winTitle: 'Victoire !',
@@ -22,6 +26,14 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ finished: [] }>()
 const reduced = usePreferredReducedMotion()
+
+// Un combat simple = un stage implicite ; la Ligue en fournit plusieurs.
+const stageList = computed(() =>
+  props.stages?.length ? props.stages : [{ label: '', rounds: props.rounds ?? [], won: props.won }]
+)
+const multi = computed(() => (props.stages?.length ?? 0) > 1)
+const totalDuels = computed(() => stageList.value.reduce((n, s) => n + s.rounds.length, 0))
+const wonDuels = computed(() => stageList.value.reduce((n, s) => n + s.rounds.filter(r => r.playerWon).length, 0))
 
 function hpColor(hp: number): string {
   if (hp > 50) return 'linear-gradient(90deg,#8fd6a8,#5bbf82)'
@@ -37,8 +49,10 @@ const me = reactive(blank()) // mon champion (bas-gauche)
 const message = ref('Le combat commence !')
 const phase = ref<'fight' | 'done'>('fight')
 const duelNo = ref(0)
-
-const wins = computed(() => props.rounds.filter(r => r.playerWon).length)
+const duelTotal = ref(0) // duels du stage courant
+const stageNo = ref(0) // maître courant (multi-stages)
+const chapter = ref('') // texte de la bannière d'introduction du maître
+const showChapter = ref(false)
 
 let cancelled = false
 const wait = (ms: number) => new Promise<void>((r) => {
@@ -60,34 +74,58 @@ async function strike(attacker: Side, defender: Side, dmg: number) {
 }
 
 async function play() {
-  for (let i = 0; i < props.rounds.length; i++) {
+  for (let si = 0; si < stageList.value.length; si++) {
     if (cancelled) return
-    const r = props.rounds[i]
-    if (!r) continue
-    duelNo.value = i + 1
-    Object.assign(me, blank(), { name: r.player.name, imageUrl: r.player.imageUrl })
-    Object.assign(foe, blank(), { name: r.champion.name, imageUrl: r.champion.imageUrl })
-    message.value = `${r.player.name} affronte ${r.champion.name} !`
-    await wait(760)
+    const stage = stageList.value[si]
+    if (!stage) continue
+    stageNo.value = si + 1
 
-    // Deux échanges puis le perdant tombe K.O.
-    const winnerRemain = Math.max(28, Math.round((r.playerWon ? r.winProbability : 100 - r.winProbability) * 0.6))
-    if (r.playerWon) {
-      await strike(me, foe, 42)
-      await strike(foe, me, 100 - winnerRemain)
-      message.value = `${r.player.name} inflige le coup décisif !`
-      await strike(me, foe, 100)
-      foe.fainted = true
-      message.value = `${r.champion.name} est K.O. !`
-    } else {
-      await strike(foe, me, 42)
-      await strike(me, foe, 100 - winnerRemain)
-      message.value = `${r.champion.name} riposte durement…`
-      await strike(foe, me, 100)
-      me.fainted = true
-      message.value = `${r.player.name} est K.O.`
+    // Bannière d'introduction du maître (Ligue uniquement).
+    if (multi.value && stage.label) {
+      chapter.value = stage.label
+      showChapter.value = true
+      await wait(1050)
+      if (cancelled) return
+      showChapter.value = false
+      await wait(200)
     }
-    await wait(760)
+
+    duelTotal.value = stage.rounds.length
+    for (let i = 0; i < stage.rounds.length; i++) {
+      if (cancelled) return
+      const r = stage.rounds[i]
+      if (!r) continue
+      duelNo.value = i + 1
+      Object.assign(me, blank(), { name: r.player.name, imageUrl: r.player.imageUrl })
+      Object.assign(foe, blank(), { name: r.champion.name, imageUrl: r.champion.imageUrl })
+      message.value = `${r.player.name} affronte ${r.champion.name} !`
+      await wait(760)
+
+      // Deux échanges puis le perdant tombe K.O.
+      const winnerRemain = Math.max(28, Math.round((r.playerWon ? r.winProbability : 100 - r.winProbability) * 0.6))
+      if (r.playerWon) {
+        await strike(me, foe, 42)
+        await strike(foe, me, 100 - winnerRemain)
+        message.value = `${r.player.name} inflige le coup décisif !`
+        await strike(me, foe, 100)
+        foe.fainted = true
+        message.value = `${r.champion.name} est K.O. !`
+      } else {
+        await strike(foe, me, 42)
+        await strike(me, foe, 100 - winnerRemain)
+        message.value = `${r.champion.name} riposte durement…`
+        await strike(foe, me, 100)
+        me.fainted = true
+        message.value = `${r.player.name} est K.O.`
+      }
+      await wait(760)
+    }
+
+    // Petit temps mort entre deux maîtres (multi-stages).
+    if (multi.value && si < stageList.value.length - 1) {
+      message.value = stage.won ? `Maître ${stageNo.value} vaincu !` : `Maître ${stageNo.value} résiste…`
+      await wait(720)
+    }
   }
   if (cancelled) return
   phase.value = 'done'
@@ -157,9 +195,19 @@ onBeforeUnmount(() => {
       </div>
 
       <span
-        v-if="phase === 'fight'"
+        v-if="phase === 'fight' && !showChapter"
         class="duel-chip"
-      >Duel {{ duelNo }}/{{ rounds.length }}</span>
+      ><template v-if="multi">Maître {{ stageNo }}/{{ stageList.length }} · </template>Duel {{ duelNo }}/{{ duelTotal }}</span>
+
+      <!-- Bannière d'introduction du maître (multi-stages) -->
+      <Transition name="chapter">
+        <div
+          v-if="showChapter"
+          class="chapter"
+        >
+          <span class="chapter__lbl font-display">{{ chapter }}</span>
+        </div>
+      </Transition>
     </div>
 
     <!-- Boîte de message / verdict -->
@@ -184,7 +232,7 @@ onBeforeUnmount(() => {
             {{ won ? winTitle : 'Défaite' }}
           </p>
           <p class="msg__sub">
-            {{ won ? (winSub || `${wins}/${rounds.length} duels remportés.`) : `${wins}/${rounds.length} duels — ${loseSub}` }}
+            {{ won ? (winSub || `${wonDuels}/${totalDuels} duels remportés.`) : (loseSub || `${wonDuels}/${totalDuels} duels remportés.`) }}
           </p>
         </div>
       </template>
@@ -205,7 +253,7 @@ onBeforeUnmount(() => {
   position: relative;
   border-radius: 20px;
   padding: 16px;
-  min-height: 260px;
+  min-height: 300px;
   overflow: hidden;
   border: 3px solid color-mix(in oklab, var(--tc) 55%, #3a2f2a);
   background:
@@ -249,8 +297,8 @@ onBeforeUnmount(() => {
 .mon--foe { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 .mon--me { grid-column: 1; grid-row: 2 / span 2; align-self: end; }
 .mon__img { object-fit: contain; filter: drop-shadow(0 8px 10px rgba(40, 30, 30, .28)); }
-.mon--foe .mon__img { width: 116px; height: 116px; }
-.mon--me .mon__img { width: 150px; height: 150px; }
+.mon--foe .mon__img { width: 132px; height: 132px; }
+.mon--me .mon__img { width: 174px; height: 174px; }
 .mon__ph { font-family: var(--font-display); font-size: 2rem; color: rgba(255, 255, 255, .7); }
 
 .mon__img--lunge { animation: lunge .34s var(--ease-pop); }
@@ -277,6 +325,33 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, .2);
 }
+
+/* Bannière d'introduction du maître (Ligue) */
+.chapter {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in oklab, var(--tc) 32%, rgba(20, 14, 22, .8));
+  backdrop-filter: blur(2px);
+}
+.chapter__lbl {
+  font-weight: 800;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+  animation: chapterPop .5s var(--ease-pop) both;
+}
+@keyframes chapterPop {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+.chapter-enter-active, .chapter-leave-active { transition: opacity .3s ease; }
+.chapter-enter-from, .chapter-leave-to { opacity: 0; }
 
 .msg {
   min-height: 58px;
@@ -307,6 +382,7 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .mon__img--lunge, .mon__img--hit { animation: none; }
   .mon__img--faint { animation: none; opacity: 0; }
-  .msg__badge { animation: none; }
+  .msg__badge, .chapter__lbl { animation: none; }
+  .chapter-enter-active, .chapter-leave-active { transition: none; }
 }
 </style>

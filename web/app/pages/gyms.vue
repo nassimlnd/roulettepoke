@@ -90,12 +90,14 @@ async function train() {
   trainingLoading.value = true
   try {
     const res = await gym.train()
-    toast.add({
-      title: res.won
-        ? `Entraînement gagné ! +${res.coinsGained} 🪙 · bonus d'arène ${res.newBonus} %`
-        : `Entraînement perdu — bonus d'arène ${res.newBonus} %`,
-      color: res.won ? 'success' : 'neutral',
-      icon: res.won ? 'i-lucide-dumbbell' : 'i-lucide-info'
+    await battle.present({
+      rounds: res.rounds,
+      won: res.won,
+      themeColor: '#8aa0c8', // teinte « dojo » neutre : c'est un entraînement
+      title: 'Entraînement',
+      winTitle: 'Entraînement réussi !',
+      winSub: `+${res.coinsGained} 🪙 · bonus d'arène ${res.newBonus} %.`,
+      loseSub: `Pas de gain cette fois — bonus d'arène ${res.newBonus} %.`
     })
   } catch (err) {
     toast.add({ title: humanizeError(err), color: 'error' })
