@@ -32,7 +32,10 @@ export const useCollectionStore = defineStore('collection', {
   actions: {
     async ensureFresh(force = false) {
       if (!force && this.cards.length && Date.now() - this.fetchedAt < TTL) return
-      const cards = await dedupe('collection/all', () => collectionRepo.all(useApi()))
+      // /collection renvoie le dex complet AVEC la possession de l'utilisateur
+      // (owned + quantity). /collection/all renvoie le catalogue sans possession
+      // (owned toujours false), inutilisable pour la vue joueur.
+      const cards = await dedupe('collection/mine', () => collectionRepo.mine(useApi()))
       this.cards = cards
       this.fetchedAt = Date.now()
     },
