@@ -6,10 +6,17 @@ import type {
   AuthResponse, MeResponse, WireCard, WireOwnedCard, WireBiome, WireRollResult,
   SellResult, WireInventory, WireTeamMember, WireBadge, WireGym, TrainingStatus,
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
-  NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny, UUID
+  NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
+  WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult, UUID
 } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny } from '~/types/domain'
-import { normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny } from './normalize'
+import type {
+  DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
+  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome
+} from '~/types/domain'
+import {
+  normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
+  normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome
+} from './normalize'
 
 type Api = ReturnType<typeof useApi>
 
@@ -119,13 +126,32 @@ export const teamRepo = {
 }
 
 export const gymRepo = {
-  getAll: (api: Api) => api<WireGym[]>('/gym'),
+  getAll: async (api: Api): Promise<DomainGym[]> => {
+    const gyms = await api<WireGym[]>('/gym')
+    return gyms.map(normalizeGym)
+  },
   getBadges: (api: Api) => api<WireBadge[]>('/gym/badges'),
+  detail: async (api: Api, id: UUID): Promise<GymDetail> => {
+    const d = await api<WireGymDetail>(`/gym/${id}`)
+    return normalizeGymDetail(d)
+  },
+  estimate: async (api: Api, id: UUID): Promise<GymEstimate> => {
+    const e = await api<WireGymEstimate>(`/gym/${id}/estimate`)
+    return normalizeGymEstimate(e)
+  },
+  battle: async (api: Api, id: UUID): Promise<BattleResult> => {
+    const b = await api<WireBattleResult>(`/gym/${id}/battle`, { method: 'POST' })
+    return normalizeBattleResult(b)
+  },
   getHistory: (api: Api) => api<unknown[]>('/gym/history')
 }
 
 export const trainingRepo = {
-  status: (api: Api) => api<TrainingStatus>('/training/status')
+  status: (api: Api) => api<TrainingStatus>('/training/status'),
+  battle: async (api: Api): Promise<TrainingOutcome> => {
+    const t = await api<WireTrainingResult>('/training/battle', { method: 'POST' })
+    return normalizeTrainingOutcome(t)
+  }
 }
 
 export const slotRepo = {

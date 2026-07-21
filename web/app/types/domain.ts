@@ -44,6 +44,64 @@ export interface BiomeInfo {
   ownedCount: number
 }
 
+// ─── Arènes ─────────────────────────────────────────────────────────────────────
+export interface DomainGym {
+  id: UUID
+  order: number
+  name: string
+  type: PokeType
+  badgeName: string
+  badgeImageUrl: string
+  badgeObtainedAt: ISODate | null
+  hasBadge: boolean
+  canAttempt: boolean
+  lastAttemptThisWeek: ISODate | null
+}
+
+export interface ChampionMon {
+  position: number
+  name: string
+  type: PokeType
+  rarity: RealRarity
+  isShiny: boolean
+  imageUrl: string
+}
+
+export interface GymDetail {
+  id: UUID
+  typeColor: string
+  typeImageUrl: string
+  champions: ChampionMon[]
+  recommendedTypes: { name: string, imageUrl: string, color: string }[]
+}
+
+export interface GymEstimate {
+  winProbability: number
+  trainingBonus: number
+  matchups: { player: string, champion: string, probability: number }[]
+}
+
+export interface BattleRound {
+  round: number
+  player: { name: string, imageUrl: string | null }
+  champion: { name: string, imageUrl: string | null }
+  winProbability: number
+  playerWon: boolean
+}
+
+export interface BattleResult {
+  won: boolean
+  badgeName: string | null
+  rounds: BattleRound[]
+}
+
+export interface TrainingOutcome {
+  won: boolean
+  coinsGained: number
+  newBonus: number
+  rounds: BattleRound[]
+}
+
 // ─── Classement ───────────────────────────────────────────────────────────────
 export interface LeaderboardRow {
   rank: number

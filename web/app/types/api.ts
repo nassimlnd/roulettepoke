@@ -136,6 +136,60 @@ export interface TrainingStatus {
   coins: number
 }
 
+export interface WireChampionMon {
+  position: number
+  id: UUID
+  name: string
+  type: PokeType
+  rarity: Rarity
+  image_url: string
+}
+
+export interface WireGymDetail {
+  id: UUID
+  order_num: number
+  name: string
+  type: PokeType
+  badge_name: string
+  badge_image_url: string
+  type_image_url: string
+  type_color: string
+  champion_team: WireChampionMon[]
+  recommended_types?: { name: string, image_url: string, color: string }[]
+}
+
+export interface WireGymEstimate {
+  estimated_win_probability: number
+  training_bonus?: number
+  matchups: { player: string, champion: string, probability: number }[]
+}
+
+export interface WireBattleRound {
+  round: number
+  player_pokemon: { name: string, image_url?: string }
+  champion_pokemon: { name: string, image_url?: string }
+  win_probability: number
+  player_wins_duel: boolean
+  roll_value?: number
+}
+
+export interface WireBattleResult {
+  won: boolean
+  badge_name?: string
+  log: WireBattleRound[]
+  player_team: WireCard[]
+  champion_team: WireCard[]
+}
+
+export interface WireTrainingResult {
+  won: boolean
+  coins_gained?: number
+  new_bonus: number
+  log: WireBattleRound[]
+  player_team: WireCard[]
+  trainer_team: WireCard[]
+}
+
 export interface SlotStatus {
   canSpin: boolean
   lastSpin: ISODate | null
