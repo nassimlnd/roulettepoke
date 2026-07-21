@@ -196,6 +196,30 @@ export interface SlotStatus {
   coins: number
 }
 
+export type SlotSymbol = 'legendary' | 'charme' | 'biome_ticket' | 'type_ticket' | 'coins'
+export type SlotLine = 'L1' | 'L2' | 'L3' | 'D1' | 'D2'
+
+export type WireLineResult
+  = | { line: SlotLine, type: 'nothing' }
+    | { line: SlotLine, type: 'coins', amount: number }
+    | { line: SlotLine, type: 'charme' }
+    | { line: SlotLine, type: 'biome_ticket', slug: string, biome: Biome }
+    | { line: SlotLine, type: 'type_ticket', slug: string, typeName: PokeType }
+    | { line: SlotLine, type: 'legendary', card: WireCard }
+
+export interface WireSpinResult {
+  cells: Record<string, SlotSymbol>
+  lineResults: WireLineResult[]
+  cost: number
+  newCoins: number
+}
+
+export interface WireRecentWin {
+  username: string
+  prizes: WireLineResult[]
+  spun_at: ISODate
+}
+
 export interface LeagueStatus {
   eligible: boolean
   cycleStart: ISODate | null

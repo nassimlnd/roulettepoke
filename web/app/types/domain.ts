@@ -3,7 +3,7 @@
 // notamment la rareté 'Alt' (shiny dans /collection) est réconciliée en
 // `isShiny` + rareté réelle.
 
-import type { UUID, Biome, PokeType, ISODate } from './api'
+import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine } from './api'
 
 export type RealRarity = 'Commun' | 'Rare' | 'Épique' | 'Légendaire'
 
@@ -42,6 +42,28 @@ export interface BiomeInfo {
   cardCount: number
   cost: number
   ownedCount: number
+}
+
+// ─── Jackpot (machine à sous) ────────────────────────────────────────────────
+export type LineReward
+  = | { line: SlotLine, type: 'nothing' }
+    | { line: SlotLine, type: 'coins', amount: number }
+    | { line: SlotLine, type: 'charme' }
+    | { line: SlotLine, type: 'biome_ticket', biome: Biome }
+    | { line: SlotLine, type: 'type_ticket', typeName: PokeType }
+    | { line: SlotLine, type: 'legendary', card: DomainCard }
+
+export interface SpinResult {
+  cells: Record<string, SlotSymbol>
+  lines: LineReward[]
+  cost: number
+  newCoins: number
+}
+
+export interface RecentWin {
+  username: string
+  prizes: LineReward[]
+  spunAt: ISODate
 }
 
 // ─── Arènes ─────────────────────────────────────────────────────────────────────
