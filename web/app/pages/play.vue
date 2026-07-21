@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import type { RollOutcome } from '~/types/domain'
+import type { Biome } from '~/types/api'
+import type { DomainCard, RollOutcome } from '~/types/domain'
+import type { RevealView } from '~/components/game/BoosterReveal.vue'
 import { BASE_ROLL_COST } from '~/stores/roll'
+import { eventRepo } from '~/repositories'
+import { biomeSlug } from '~/utils/poke'
 
+// Page « Ouverture de booster » (direction Mochidex). Trois temps :
+//   idle → carrousel de boosters par biome + bouton d'ouverture
+//   opening → tourbillon (OrbitSwirl) pendant le tirage serveur (~3 s)
+//   reveal → révélation (carte / pièces / charme / choix) via BoosterReveal
 const auth = useAuthStore()
 const wallet = useWalletStore()
 const prefs = usePreferencesStore()
@@ -9,85 +17,122 @@ const rollStore = useRollStore()
 const collection = useCollectionStore()
 const { celebrate, tierFor } = useCelebration()
 
-const band = ref<{ spin: (w: unknown, p: unknown) => Promise<void>, reset: () => void } | null>(null)
-
-const spinning = ref(false)
-const lastOutcome = ref<RollOutcome | null>(null)
-const lastQuantity = ref<number | undefined>()
+type Phase = 'idle' | 'opening' | 'reveal'
+const phase = ref<Phase>('idle')
+const outcome = ref<RollOutcome | null>(null)
+const resolvedCard = ref<{ card: DomainCard, isNew: boolean, quantity?: number } | null>(null)
+const choiceResolving = ref(false)
 const errorMsg = ref('')
 
-// ─── Filtres ────────────────────────────────────────────────────────────────
-const revealModes = [
-  { value: 'visible', label: 'Visibles', icon: 'i-lucide-eye' },
-  { value: 'smart', label: 'Si possédée', icon: 'i-lucide-sparkle' },
-  { value: 'hidden', label: 'Masquées', icon: 'i-lucide-eye-off' }
-] as const
+const motionOn = computed(() => !prefs.effectiveReducedMotion)
 
-const biomeItems = computed(() => [
-  { label: 'Tous les biomes', value: '', cost: BASE_ROLL_COST },
-  ...rollStore.biomes.map(b => ({ label: `${b.biome} (${b.ownedCount}/${b.cardCount})`, value: b.biome, cost: b.cost }))
+// ─── Carrousel de boosters ────────────────────────────────────────────────────
+interface BoosterOption { biome: string, cost: number, owned?: number, total?: number }
+const boosters = computed<BoosterOption[]>(() => [
+  { biome: '', cost: BASE_ROLL_COST },
+  ...rollStore.biomes.map(b => ({ biome: b.biome, cost: b.cost, owned: b.ownedCount, total: b.cardCount }))
 ])
-const selectedBiome = computed({
-  get: () => prefs.selectedBiome,
-  set: v => (prefs.selectedBiome = v)
-})
+const selected = computed(() => prefs.selectedBiome)
 const currentCost = computed(() => rollStore.costForBiome(prefs.selectedBiome))
+const currentTint = computed(() =>
+  prefs.selectedBiome ? `var(--color-biome-${biomeSlug(prefs.selectedBiome as Biome)})` : 'var(--color-poke-500)')
 
-// ─── Tirage ───────────────────────────────────────────────────────────────────
-async function spin() {
-  if (spinning.value || !band.value) return
-  if (!wallet.canAfford(currentCost.value)) {
-    errorMsg.value = `Il te manque ${currentCost.value - (wallet.balance ?? 0)} coins. Gagne-en via l'entraînement, le jackpot ou le bonus quotidien.`
+function selectBooster(biome: string) {
+  prefs.selectedBiome = biome
+  errorMsg.value = ''
+}
+
+// ─── Solde / accessibilité ──────────────────────────────────────────────────
+const balance = computed(() => wallet.balance)
+const affordable = computed(() => wallet.canAfford(currentCost.value))
+const shortfall = computed(() => Math.max(0, currentCost.value - (wallet.balance ?? 0)))
+
+// ─── Vue de révélation dérivée de l'état ──────────────────────────────────────
+const revealView = computed<RevealView | null>(() => {
+  if (resolvedCard.value) {
+    return { kind: 'card', card: resolvedCard.value.card, isNew: resolvedCard.value.isNew, quantity: resolvedCard.value.quantity }
+  }
+  const o = outcome.value
+  if (o?.kind === 'coins') return { kind: 'coins', amount: o.amount }
+  if (o?.kind === 'charme') return { kind: 'charme' }
+  if (o?.kind === 'choice') return { kind: 'choice', left: o.left, right: o.right, resolving: choiceResolving.value }
+  return null
+})
+
+// ─── Ouverture ────────────────────────────────────────────────────────────────
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+function qtyFor(card: DomainCard, isNew: boolean): number {
+  const existing = collection.cards.find(c => c.id === card.id)
+  return isNew ? 1 : (existing?.quantity ?? 0) + 1
+}
+
+async function open() {
+  if (phase.value !== 'idle') return
+  if (!affordable.value) {
+    errorMsg.value = `Il te manque ${shortfall.value} pièce${shortfall.value > 1 ? 's' : ''}. Gagne-en via l'entraînement, le jackpot ou le bonus quotidien.`
     return
   }
   errorMsg.value = ''
-  spinning.value = true
-  lastOutcome.value = null
+  outcome.value = null
+  resolvedCard.value = null
+  phase.value = 'opening'
   const biome = prefs.selectedBiome || null
 
   try {
-    const [outcome, pool] = await Promise.all([
+    // Le tourbillon joue ~3 s ; la carte n'est révélée qu'une fois le serveur prêt.
+    const [o] = await Promise.all([
       rollStore.perform(biome, currentCost.value),
-      rollStore.previewBatch(19, biome, null).catch(() => [])
+      wait(motionOn.value ? 3000 : 60)
     ])
-
-    if (outcome.kind === 'card') {
-      // Quantité après ce tirage (pour le doublon/pity).
-      const existing = collection.cards.find(c => c.id === outcome.card.id)
-      lastQuantity.value = outcome.isNew ? 1 : (existing?.quantity ?? 0) + 1
-      await band.value.spin(outcome.card, pool)
-      lastOutcome.value = outcome
-      celebrate(tierFor(outcome.card))
-      collection.invalidate()
-      collection.ensureFresh(true).catch(() => {})
-    } else if (outcome.kind === 'coins' || outcome.kind === 'charme') {
-      // Événement spécial : révélation directe (pas de carte gagnante à centrer).
-      band.value.reset()
-      lastOutcome.value = outcome
-    } else {
-      // choice — résolu plus tard (v1 : révélation simple des deux options à venir).
-      band.value.reset()
-      lastOutcome.value = outcome
+    outcome.value = o
+    if (o.kind === 'card') {
+      resolvedCard.value = { card: o.card, isNew: o.isNew, quantity: qtyFor(o.card, o.isNew) }
+      celebrate(tierFor(o.card))
+      refreshCollection()
     }
-    // Solde exact resynchronisé (le tirage a pu déclencher un événement coins).
+    phase.value = 'reveal'
     refreshBalance()
   } catch (err) {
     errorMsg.value = humanizeError(err)
-    band.value?.reset()
-  } finally {
-    spinning.value = false
+    phase.value = 'idle'
   }
 }
 
+// ─── Choix (event card-choice) : on retient une carte sur deux ────────────────
+async function pickChoice(card: DomainCard) {
+  const o = outcome.value
+  if (choiceResolving.value || o?.kind !== 'choice') return
+  choiceResolving.value = true
+  try {
+    const { card: chosen, isNew } = await eventRepo.confirmCardChoice(useApi(), o.choiceId, card.id)
+    resolvedCard.value = { card: chosen, isNew, quantity: qtyFor(chosen, isNew) }
+    celebrate(tierFor(chosen))
+    refreshCollection()
+    refreshBalance()
+  } catch (err) {
+    errorMsg.value = humanizeError(err)
+  } finally {
+    choiceResolving.value = false
+  }
+}
+
+function finish() {
+  phase.value = 'idle'
+  outcome.value = null
+  resolvedCard.value = null
+}
+
+// ─── Synchronisations ─────────────────────────────────────────────────────────
+function refreshCollection() {
+  collection.invalidate()
+  collection.ensureFresh(true).catch(() => {})
+}
 async function refreshBalance() {
   try {
-    const me = await authRepoMe()
-    if (me) wallet.reconcile(me, 'roll-refresh')
+    const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
+    if (user) wallet.reconcile(user.coins, 'roll-refresh')
   } catch { /* silencieux */ }
-}
-async function authRepoMe(): Promise<number | null> {
-  const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-  return user?.coins ?? null
 }
 
 onMounted(() => {
@@ -97,10 +142,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="play">
     <!-- Bandeau utilisateur -->
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
+    <div class="play__bar">
+      <div class="play__who">
         <UAvatar
           :src="auth.user?.avatar_url || undefined"
           :alt="auth.user?.username"
@@ -112,84 +157,223 @@ onMounted(() => {
       <CoinBalance />
     </div>
 
-    <!-- Contrôles compacts : mode de révélation + biome -->
-    <div class="flex flex-wrap items-center gap-2">
-      <div
-        class="flex rounded-lg border border-default p-0.5"
-        role="group"
-        aria-label="Mode de révélation"
+    <!-- Scène -->
+    <div class="play__stage">
+      <Transition
+        name="phase"
+        mode="out-in"
       >
-        <button
-          v-for="m in revealModes"
-          :key="m.value"
-          class="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-          :class="prefs.revealMode === m.value ? 'bg-primary text-inverted' : 'text-muted hover:text-default'"
-          :aria-pressed="prefs.revealMode === m.value"
-          @click="prefs.revealMode = m.value"
+        <!-- IDLE : carrousel + ouverture -->
+        <section
+          v-if="phase === 'idle'"
+          key="idle"
+          class="idle"
         >
-          <UIcon
-            :name="m.icon"
-            class="size-3.5"
-          /> <span class="hidden sm:inline">{{ m.label }}</span>
-        </button>
-      </div>
-      <USelectMenu
-        v-model="selectedBiome"
-        :items="biomeItems"
-        value-key="value"
-        label-key="label"
-        icon="i-lucide-map"
-        class="min-w-44"
-        :search-input="false"
-      />
+          <div class="idle__intro">
+            <h1 class="idle__title font-display">
+              Ouvre un booster
+            </h1>
+            <p class="idle__lead">
+              Choisis ta région, ouvre le paquet — une carte t'attend derrière le tourbillon.
+            </p>
+          </div>
+
+          <div
+            class="carousel"
+            role="radiogroup"
+            aria-label="Choix du booster par région"
+          >
+            <button
+              v-for="b in boosters"
+              :key="b.biome || 'all'"
+              type="button"
+              class="carousel__item"
+              :class="{ 'carousel__item--on': selected === b.biome }"
+              role="radio"
+              :aria-checked="selected === b.biome"
+              @click="selectBooster(b.biome)"
+            >
+              <BoosterPack
+                :biome="b.biome"
+                :cost="b.cost"
+                :owned="b.owned"
+                :total="b.total"
+                size="md"
+                :floating="selected === b.biome && motionOn"
+              />
+            </button>
+          </div>
+
+          <div class="idle__cta">
+            <PButton
+              :disabled="!affordable"
+              @click="open"
+            >
+              <UIcon
+                name="i-lucide-sparkles"
+                class="size-5"
+              />
+              Ouvrir le paquet — <span class="coin" />{{ currentCost }}
+            </PButton>
+            <p class="idle__solde">
+              <span
+                v-if="balance !== null"
+                class="tabular"
+              >Solde&nbsp;: <b>{{ balance }}</b> pièces</span>
+              <span
+                v-if="!affordable"
+                class="idle__short"
+              >· il te manque {{ shortfall }}</span>
+            </p>
+            <p
+              v-if="errorMsg"
+              class="idle__err"
+            >
+              {{ errorMsg }}
+            </p>
+          </div>
+        </section>
+
+        <!-- OPENING : tourbillon -->
+        <section
+          v-else-if="phase === 'opening'"
+          key="opening"
+          class="opening"
+        >
+          <OrbitSwirl :tint="currentTint" />
+          <p class="opening__hint font-display">
+            Les cartes tourbillonnent…
+          </p>
+        </section>
+
+        <!-- REVEAL : révélation -->
+        <section
+          v-else
+          key="reveal"
+          class="reveal-wrap"
+        >
+          <BoosterReveal
+            v-if="revealView"
+            :view="revealView"
+            @pick="pickChoice"
+            @finish="finish"
+          />
+          <p
+            v-if="errorMsg"
+            class="idle__err"
+          >
+            {{ errorMsg }}
+          </p>
+        </section>
+      </Transition>
     </div>
 
-    <!-- Roulette -->
-    <RouletteBand ref="band" />
-
-    <!-- Action principale -->
-    <div class="flex flex-col items-center gap-2">
-      <UButton
-        size="xl"
-        :loading="spinning"
-        :disabled="spinning"
-        class="min-w-56 justify-center font-display text-base"
-        @click="spin"
-      >
-        <UIcon
-          name="i-lucide-dices"
-          class="size-5"
-        />
-        Lancer&nbsp;<span class="tabular">({{ currentCost }}</span>
-        <UIcon
-          name="i-lucide-coins"
-          class="size-4"
-        />)
-      </UButton>
-      <p
-        v-if="errorMsg"
-        class="text-center text-sm text-error"
-      >
-        {{ errorMsg }}
-      </p>
-    </div>
-
-    <!-- Zone de résultat RÉSERVÉE (au-dessus du fold — résout C1) -->
-    <div class="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-default/60 p-4">
-      <RollResult
-        v-if="lastOutcome"
-        :outcome="lastOutcome"
-        :quantity="lastQuantity"
-      />
-      <p
-        v-else
-        class="text-sm text-dimmed"
-      >
-        Lance la roulette pour découvrir ta carte.
-      </p>
-    </div>
-
-    <!-- Hub : Aujourd'hui / Cette semaine -->
-    <HubPanel />
+    <!-- Hub : quotas du jour / de la semaine (masqué pendant l'ouverture) -->
+    <HubPanel v-if="phase === 'idle'" />
   </div>
 </template>
+
+<style scoped>
+.play { display: flex; flex-direction: column; gap: 20px; }
+.play__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.play__who { display: flex; align-items: center; gap: 8px; }
+
+.play__stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* piste = largeur du conteneur, pas max-content */
+  align-items: center;
+  min-height: 62vh;
+  overflow-x: clip; /* borne le tourbillon sans rogner verticalement */
+  padding: 8px 0;
+}
+
+/* ── IDLE ── */
+.idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+}
+.idle__intro { text-align: center; display: flex; flex-direction: column; gap: 6px; max-width: 34rem; }
+.idle__title { font-weight: 700; font-size: clamp(1.6rem, 5vw, 2rem); }
+.idle__lead { font-weight: 600; font-size: 0.9rem; color: var(--ui-text-muted); }
+
+.carousel {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  padding: 26px 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  justify-content: safe center;
+}
+.carousel__item {
+  flex: none;
+  scroll-snap-align: center;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 24px;
+  transition: transform .24s var(--ease-pop), filter .24s ease;
+  filter: saturate(.86) opacity(.72);
+  transform: scale(.9);
+}
+.carousel__item:hover { filter: saturate(1) opacity(1); transform: scale(.95); }
+.carousel__item--on {
+  filter: none;
+  transform: scale(1.06);
+}
+.carousel__item--on :deep(.pack__body) {
+  outline: 3px solid color-mix(in oklab, var(--color-poke-500) 65%, white);
+  outline-offset: 5px;
+}
+.carousel__item:focus-visible {
+  outline: 3px solid var(--color-poke-400);
+  outline-offset: 4px;
+}
+
+.idle__cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.coin {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin: 0 2px 0 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f6c453 62%, #e0a92e);
+  box-shadow: 0 0 6px rgba(246, 196, 83, .8);
+  vertical-align: -2px;
+}
+.idle__solde { font-weight: 700; font-size: 0.85rem; color: var(--ui-text-muted); }
+.idle__solde b { color: var(--ui-text-highlighted); }
+.idle__short { color: var(--color-poke-600); margin-left: 4px; }
+.idle__err { font-size: 0.85rem; color: var(--color-poke-600); text-align: center; }
+
+/* ── OPENING ── */
+.opening { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+.opening__hint { font-weight: 700; font-size: 1.15rem; color: var(--color-poke-600); }
+.opening__hint { animation: wobble .6s ease-in-out infinite; }
+
+/* ── REVEAL ── */
+.reveal-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Transition entre les temps de la scène */
+.phase-enter-active { transition: opacity .3s var(--ease-glide), transform .3s var(--ease-pop); }
+.phase-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.phase-enter-from { opacity: 0; transform: translateY(14px) scale(.98); }
+.phase-leave-to { opacity: 0; transform: scale(.98); }
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening__hint { animation: none; }
+  .phase-enter-active, .phase-leave-active { transition: opacity .12s ease; }
+  .phase-enter-from, .phase-leave-to { transform: none; }
+}
+</style>

@@ -17,7 +17,7 @@ export default defineNuxtConfig({
   ssr: false,
 
   // Composants référencés par nom de fichier (sans préfixe de dossier) :
-  // <AppNavbar>, <GameCard>, <RouletteStrip>… plutôt que <BaseAppNavbar>.
+  // <AppNavbar>, <HoloCard>, <BoosterPack>… plutôt que <BaseAppNavbar>.
   components: [{ path: '~/components', pathPrefix: false }],
 
   devtools: { enabled: true },
