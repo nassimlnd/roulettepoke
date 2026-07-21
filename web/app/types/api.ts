@@ -250,6 +250,33 @@ export interface WireTournament {
   results?: { placement: number, username: string, prize: number, avatar_url: string | null, avatar_is_alt: boolean | null }[]
 }
 
+export interface WireTypeRec {
+  type: PokeType
+  covered: number
+  threatened: number
+  netScore: number
+}
+
+export interface WireTournamentMatchup {
+  user_id: UUID
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  team: WireChampionMon[]
+  winProbability: number
+  oppWinProbability: number
+}
+
+export interface WireMyAnalysis {
+  myTeam: WireChampionMon[]
+  myTeamIsLocked: boolean
+  teamsAreLocked: boolean
+  hasOpponents: boolean
+  analysis: { strongPokemon: WireChampionMon[], weakPokemon: WireChampionMon[] }
+  matchups: WireTournamentMatchup[]
+  typeRecommendations: { toPrivilege: WireTypeRec[], toAvoid: WireTypeRec[] }
+}
+
 export interface SpinStatus {
   hasStarters: boolean
   rewardedThisWeek: boolean

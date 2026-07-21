@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import type {
-  TrainingStatus, SlotStatus, LeagueStatus, WireTournament, SpinStatus,
+  TrainingStatus, SlotStatus, LeagueStatus, SpinStatus,
   WireTrade, TradeEligibility, NotificationsResponse
 } from '~/types/api'
-import type { DomainGym } from '~/types/domain'
+import type { DomainGym, DomainTournament } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
   tradesRepo, gymRepo, notificationsRepo
@@ -27,7 +27,7 @@ export const useHubStore = defineStore('hub', {
     training: null as TrainingStatus | null,
     slot: null as SlotStatus | null,
     league: null as LeagueStatus | null,
-    tournament: null as WireTournament | null,
+    tournament: null as DomainTournament | null,
     spin: null as SpinStatus | null,
     trades: [] as WireTrade[],
     tradeEligibility: null as TradeEligibility | null,
@@ -87,7 +87,7 @@ export const useHubStore = defineStore('hub', {
         {
           key: 'tournament',
           label: 'Tournoi',
-          available: state.tournament?.status === 'registration_open' && !state.tournament?.is_registered,
+          available: state.tournament?.status === 'registration_open' && !state.tournament?.isRegistered,
           nextResetAt: thursday,
           to: '/tournament'
         }
@@ -128,7 +128,7 @@ export const useHubStore = defineStore('hub', {
       const api = useApi()
       const [trades, tournament, league, notifications] = await Promise.all([
         dedupe('trades', () => tradesRepo.list(api)).catch(() => [] as WireTrade[]),
-        dedupe('tournament/current', () => tournamentRepo.current(api)).then(r => r.tournament).catch(() => null),
+        dedupe('tournament/current', () => tournamentRepo.current(api)).catch(() => null),
         dedupe('league/status', () => leagueRepo.status(api)).catch(() => null),
         dedupe('notifications', () => notificationsRepo.list(api)).catch(() => null)
       ])

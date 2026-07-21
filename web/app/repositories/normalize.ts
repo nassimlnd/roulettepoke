@@ -4,12 +4,12 @@
 import type {
   WireCard, WireOwnedCard, WireTeamMember, WireLeaderboardRow, WireRecentShiny,
   WireGym, WireGymDetail, WireGymEstimate, WireBattleRound, WireBattleResult, WireTrainingResult,
-  WireLineResult, WireSpinResult, WireRecentWin, Rarity
+  WireLineResult, WireSpinResult, WireRecentWin, WireChampionMon, WireTournament, WireMyAnalysis, Rarity
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, TeamMember, LeaderboardRow, RecentShiny,
   DomainGym, GymDetail, GymEstimate, BattleRound, BattleResult, TrainingOutcome,
-  LineReward, SpinResult, RecentWin, RealRarity
+  LineReward, SpinResult, RecentWin, ChampionMon, DomainTournament, TournamentAnalysis, RealRarity
 } from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
@@ -120,20 +120,69 @@ export function normalizeGym(g: WireGym): DomainGym {
   }
 }
 
+export function normalizeChampionMon(c: WireChampionMon): ChampionMon {
+  return {
+    position: c.position,
+    name: c.name,
+    type: c.type,
+    rarity: realRarity(c.rarity),
+    isShiny: c.rarity === 'Alt',
+    imageUrl: c.image_url
+  }
+}
+
 export function normalizeGymDetail(d: WireGymDetail): GymDetail {
   return {
     id: d.id,
     typeColor: d.type_color,
     typeImageUrl: d.type_image_url,
-    champions: (d.champion_team ?? []).map(c => ({
-      position: c.position,
-      name: c.name,
-      type: c.type,
-      rarity: realRarity(c.rarity),
-      isShiny: c.rarity === 'Alt',
-      imageUrl: c.image_url
-    })),
+    champions: (d.champion_team ?? []).map(normalizeChampionMon),
     recommendedTypes: (d.recommended_types ?? []).map(t => ({ name: t.name, imageUrl: t.image_url, color: t.color }))
+  }
+}
+
+export function normalizeTournament(t: WireTournament): DomainTournament {
+  return {
+    id: t.id,
+    date: t.tournament_date,
+    status: t.status,
+    prizePool: t.prize_pool,
+    participants: (t.participants ?? []).map(p => ({
+      userId: p.user_id,
+      username: p.username,
+      avatarUrl: p.avatar_url,
+      avatarIsShiny: !!p.avatar_is_alt
+    })),
+    isRegistered: !!t.is_registered,
+    teamsAreLocked: !!t.teamsAreLocked,
+    results: (t.results ?? []).map(r => ({
+      placement: r.placement,
+      username: r.username,
+      prize: r.prize,
+      avatarUrl: r.avatar_url,
+      avatarIsShiny: !!r.avatar_is_alt
+    }))
+  }
+}
+
+export function normalizeTournamentAnalysis(a: WireMyAnalysis): TournamentAnalysis {
+  return {
+    myTeam: (a.myTeam ?? []).map(normalizeChampionMon),
+    myTeamLocked: a.myTeamIsLocked,
+    teamsLocked: a.teamsAreLocked,
+    hasOpponents: a.hasOpponents,
+    strong: (a.analysis?.strongPokemon ?? []).map(normalizeChampionMon),
+    weak: (a.analysis?.weakPokemon ?? []).map(normalizeChampionMon),
+    matchups: (a.matchups ?? []).map(m => ({
+      username: m.username,
+      avatarUrl: m.avatar_url,
+      avatarIsShiny: !!m.avatar_is_alt,
+      team: (m.team ?? []).map(normalizeChampionMon),
+      winProbability: m.winProbability,
+      oppWinProbability: m.oppWinProbability
+    })),
+    toPrivilege: a.typeRecommendations?.toPrivilege ?? [],
+    toAvoid: a.typeRecommendations?.toAvoid ?? []
   }
 }
 

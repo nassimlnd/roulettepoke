@@ -8,16 +8,17 @@ import type {
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, WireLeaderboardResponse, WireLeaderboardRow, WireRecentShiny,
   WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult,
-  WireSpinResult, WireRecentWin, UUID
+  WireSpinResult, WireRecentWin, WireMyAnalysis, UUID
 } from '~/types/api'
 import type {
   DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember, LeaderboardData, LeaderboardRow, RecentShiny,
-  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin
+  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, SpinResult, RecentWin,
+  DomainTournament, TournamentAnalysis
 } from '~/types/domain'
 import {
   normalizeCard, normalizeOwnedCard, normalizeTeamMember, normalizeLeaderboardRow, normalizeRecentShiny,
   normalizeGym, normalizeGymDetail, normalizeGymEstimate, normalizeBattleResult, normalizeTrainingOutcome,
-  normalizeSpinResult, normalizeRecentWin
+  normalizeSpinResult, normalizeRecentWin, normalizeTournament, normalizeTournamentAnalysis
 } from './normalize'
 
 type Api = ReturnType<typeof useApi>
@@ -173,7 +174,15 @@ export const leagueRepo = {
 }
 
 export const tournamentRepo = {
-  current: (api: Api) => api<{ tournament: WireTournament | null }>('/tournament/current')
+  current: async (api: Api): Promise<DomainTournament | null> => {
+    const { tournament } = await api<{ tournament: WireTournament | null }>('/tournament/current')
+    return tournament ? normalizeTournament(tournament) : null
+  },
+  analysis: async (api: Api): Promise<TournamentAnalysis> => {
+    const a = await api<WireMyAnalysis>('/tournament/my-analysis')
+    return normalizeTournamentAnalysis(a)
+  },
+  register: (api: Api) => api('/tournament/register', { method: 'POST' })
 }
 
 export const spinRepo = {

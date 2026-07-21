@@ -44,6 +44,63 @@ export interface BiomeInfo {
   ownedCount: number
 }
 
+// ─── Tournoi ─────────────────────────────────────────────────────────────────
+export type TournamentStatus = 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface TournamentParticipant {
+  userId: UUID
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+}
+
+export interface TournamentResult {
+  placement: number
+  username: string
+  prize: number
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+}
+
+export interface DomainTournament {
+  id: UUID
+  date: ISODate
+  status: TournamentStatus
+  prizePool: number
+  participants: TournamentParticipant[]
+  isRegistered: boolean
+  teamsAreLocked: boolean
+  results: TournamentResult[]
+}
+
+export interface TypeRec {
+  type: PokeType
+  covered: number
+  threatened: number
+  netScore: number
+}
+
+export interface TournamentMatchup {
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+  team: ChampionMon[]
+  winProbability: number
+  oppWinProbability: number
+}
+
+export interface TournamentAnalysis {
+  myTeam: ChampionMon[]
+  myTeamLocked: boolean
+  teamsLocked: boolean
+  hasOpponents: boolean
+  strong: ChampionMon[]
+  weak: ChampionMon[]
+  matchups: TournamentMatchup[]
+  toPrivilege: TypeRec[]
+  toAvoid: TypeRec[]
+}
+
 // ─── Jackpot (machine à sous) ────────────────────────────────────────────────
 export type LineReward
   = | { line: SlotLine, type: 'nothing' }
