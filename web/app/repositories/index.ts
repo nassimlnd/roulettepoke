@@ -8,8 +8,8 @@ import type {
   SlotStatus, LeagueStatus, WireTournament, SpinStatus, WireTrade, TradeEligibility,
   NotificationsResponse, UUID
 } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo } from '~/types/domain'
-import { normalizeCard, normalizeOwnedCard } from './normalize'
+import type { DomainCard, DomainOwnedCard, RollOutcome, BiomeInfo, TeamMember } from '~/types/domain'
+import { normalizeCard, normalizeOwnedCard, normalizeTeamMember } from './normalize'
 
 type Api = ReturnType<typeof useApi>
 
@@ -105,8 +105,14 @@ export const inventoryRepo = {
 }
 
 export const teamRepo = {
-  get: (api: Api) => api<WireTeamMember[]>('/team'),
-  roll: (api: Api) => api<WireTeamMember>('/team/roll', { method: 'POST' }),
+  get: async (api: Api): Promise<TeamMember[]> => {
+    const members = await api<WireTeamMember[]>('/team')
+    return members.map(normalizeTeamMember)
+  },
+  roll: async (api: Api): Promise<TeamMember> => {
+    const member = await api<WireTeamMember>('/team/roll', { method: 'POST' })
+    return normalizeTeamMember(member)
+  },
   swap: (api: Api, idA: UUID, idB: UUID) => api('/team/swap', { method: 'POST', body: { idA, idB } }),
   remove: (api: Api, teamEntryId: UUID) => api(`/team/${teamEntryId}`, { method: 'DELETE' }),
   clear: (api: Api) => api('/team', { method: 'DELETE' })

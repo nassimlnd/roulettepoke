@@ -1,8 +1,8 @@
 // Réconciliation des formes « wire » de l'API en types domaine.
 // Notamment : la rareté 'Alt' (shiny dans /collection) → isShiny + rareté réelle.
 
-import type { WireCard, WireOwnedCard, Rarity } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, RealRarity } from '~/types/domain'
+import type { WireCard, WireOwnedCard, WireTeamMember, Rarity } from '~/types/api'
+import type { DomainCard, DomainOwnedCard, TeamMember, RealRarity } from '~/types/domain'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
 // rareté de sa version standard (Commun par défaut si non déductible).
@@ -36,5 +36,20 @@ export function normalizeOwnedCard(c: WireOwnedCard): DomainOwnedCard {
     quantity: c.quantity ?? 0,
     owned: c.owned,
     obtainedAt: c.obtained_at
+  }
+}
+
+export function normalizeTeamMember(m: WireTeamMember): TeamMember {
+  const isShiny = m.rarity === 'Alt'
+  return {
+    teamEntryId: m.team_entry_id,
+    position: m.position,
+    cardId: m.id,
+    name: m.name,
+    type: m.type,
+    rarity: realRarity(m.rarity),
+    isShiny,
+    imageUrl: m.image_url,
+    typeImageUrl: m.type_image_url ?? null
   }
 }
