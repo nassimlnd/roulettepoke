@@ -149,6 +149,43 @@ h1, h2, h3, .font-display {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Animations d'ouverture de booster (direction Mochidex) ── */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-6%) rotate(1deg); }
+}
+@keyframes shineSweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes glowpulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(224, 169, 46, 0); }
+  50% { box-shadow: 0 0 44px rgba(255, 210, 90, .75); }
+}
+@keyframes orbitGlow {
+  0%, 100% { transform: translate(-50%, -50%) scale(.7); opacity: .35; }
+  50% { transform: translate(-50%, -50%) scale(1.25); opacity: .7; }
+}
+@keyframes burst {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: .9; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+@keyframes emerge {
+  0% { transform: scale(.15) rotate(-220deg); opacity: 0; filter: blur(6px); }
+  45% { opacity: 1; filter: blur(0); }
+  70% { transform: scale(1.12) rotate(6deg); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+}
+/* Chaque dos de carte tourne autour du centre (--a angle de départ, --r rayon) */
+@keyframes orbit {
+  0% { transform: rotate(var(--a)) translateY(0) rotate(calc(-1 * var(--a))) scale(.5); opacity: 0; }
+  14% { opacity: 1; }
+  30% { transform: rotate(calc(var(--a) + 160deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 160deg))) scale(1); opacity: 1; }
+  58% { transform: rotate(calc(var(--a) + 380deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 380deg))) scale(1); opacity: 1; }
+  82% { transform: rotate(calc(var(--a) + 560deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 560deg))) scale(.92); opacity: 1; }
+  100% { transform: rotate(calc(var(--a) + 640deg)) translateY(0) rotate(calc(-1 * (var(--a) + 640deg))) scale(.42); opacity: 0; }
+}
+
 /* Interrupteur global de mouvement (préférence système + réglage in-app) */
 :root[data-reduced-motion="true"] * {
   animation-duration: 0.001ms !important;
