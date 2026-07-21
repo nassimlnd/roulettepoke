@@ -224,11 +224,14 @@ onMounted(async () => {
         </div>
 
         <!-- Combat en cours / résultat -->
-        <BattleView
+        <BattleScene
           v-else-if="battleResult && selectedGym"
-          :result="battleResult"
-          :gym-name="selectedGym.name"
-          :badge-image-url="selectedGym.badgeImageUrl"
+          :rounds="battleResult.rounds"
+          :won="battleResult.won"
+          :theme-color="detail?.typeColor"
+          :badge-url="selectedGym.badgeImageUrl"
+          :win-sub="`Badge ${selectedGym.badgeName} obtenu — ${selectedGym.name}.`"
+          lose-sub="Reviens tenter ta chance la semaine prochaine."
         />
 
         <!-- Vue détail -->
