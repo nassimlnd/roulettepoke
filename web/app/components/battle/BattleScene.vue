@@ -40,6 +40,12 @@ function hpColor(hp: number): string {
   if (hp > 20) return 'linear-gradient(90deg,#f6d06b,#e0a92e)'
   return 'linear-gradient(90deg,#f4796b,#e2402f)'
 }
+// Couleur du compteur de PV (chiffres) selon le niveau de vie, façon Mochidex.
+function hpText(hp: number): string {
+  if (hp > 50) return '#3f9e66'
+  if (hp > 20) return '#c98a1a'
+  return '#e2402f'
+}
 
 type Side = { name: string, imageUrl: string | null, hp: number, fainted: boolean, hit: boolean, lunge: boolean }
 const blank = (): Side => ({ name: '', imageUrl: null, hp: 100, fainted: false, hit: false, lunge: false })
@@ -150,9 +156,12 @@ onBeforeUnmount(() => {
       <div class="plate plate--foe">
         <div class="plate__row">
           <span class="plate__name">{{ foe.name || '—' }}</span>
+          <span
+            class="plate__hp"
+            :style="{ color: hpText(foe.hp) }"
+          ><b>{{ foe.hp }}</b><i>PV</i></span>
         </div>
         <div class="hpbar">
-          <span class="hpbar__lbl">PV</span>
           <span class="hpbar__track"><i :style="{ width: foe.hp + '%', background: hpColor(foe.hp) }" /></span>
         </div>
       </div>
@@ -187,9 +196,12 @@ onBeforeUnmount(() => {
       <div class="plate plate--me">
         <div class="plate__row">
           <span class="plate__name">{{ me.name || '—' }}</span>
+          <span
+            class="plate__hp"
+            :style="{ color: hpText(me.hp) }"
+          ><b>{{ me.hp }}</b><i>PV</i></span>
         </div>
         <div class="hpbar">
-          <span class="hpbar__lbl">PV</span>
           <span class="hpbar__track"><i :style="{ width: me.hp + '%', background: hpColor(me.hp) }" /></span>
         </div>
       </div>
@@ -270,27 +282,22 @@ onBeforeUnmount(() => {
   align-self: start;
   background: var(--ui-bg-elevated);
   border: 3px solid color-mix(in oklab, #3a2f2a 70%, var(--tc));
-  border-radius: 14px;
-  padding: 8px 12px;
+  border-radius: 16px;
+  padding: 11px 15px;
   box-shadow: 0 4px 0 rgba(58, 47, 42, .18);
-  min-width: 0;
+  min-width: 168px;
+  max-width: 100%;
 }
 .plate--foe { grid-column: 1; grid-row: 1; justify-self: start; }
 .plate--me { grid-column: 2; grid-row: 3; justify-self: end; align-self: end; }
-.plate__row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
-.plate__name { font-family: var(--font-display); font-weight: 700; font-size: .95rem; color: var(--ui-text-highlighted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hpbar { display: flex; align-items: center; gap: 7px; }
-.hpbar__lbl {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: .6rem;
-  color: #3f9e66;
-  background: color-mix(in oklab, #5bbf82 20%, transparent);
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex: none;
-}
-.hpbar__track { flex: 1; height: 9px; border-radius: 99px; background: #e9e6df; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12); overflow: hidden; }
+.plate__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 7px; }
+.plate__name { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; color: var(--ui-text-highlighted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Compteur de PV en chiffres (façon Mochidex) */
+.plate__hp { flex: none; display: flex; align-items: baseline; gap: 2px; font-family: var(--font-display); line-height: 1; }
+.plate__hp b { font-weight: 800; font-size: 1.25rem; }
+.plate__hp i { font-weight: 800; font-size: .6rem; font-style: normal; text-transform: uppercase; letter-spacing: .02em; opacity: .8; }
+.hpbar { display: flex; align-items: center; }
+.hpbar__track { flex: 1; height: 11px; border-radius: 99px; background: #e9e6df; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12); overflow: hidden; }
 .hpbar__track > i { display: block; height: 100%; border-radius: 99px; transition: width .35s var(--ease-glide); }
 
 .mon { z-index: 1; display: grid; place-items: center; }
@@ -378,6 +385,9 @@ onBeforeUnmount(() => {
   .mon--foe .mon__img { width: 92px; height: 92px; }
   .mon--me .mon__img { width: 118px; height: 118px; }
   .arena { min-height: 220px; }
+  .plate { min-width: 132px; padding: 9px 12px; border-radius: 14px; }
+  .plate__name { font-size: .96rem; }
+  .plate__hp b { font-size: 1.08rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mon__img--lunge, .mon__img--hit { animation: none; }
