@@ -44,6 +44,46 @@ export interface BiomeInfo {
   ownedCount: number
 }
 
+// ─── Échanges ────────────────────────────────────────────────────────────────
+export type TradeStatus = 'pending_target' | 'pending_initiator' | 'completed' | 'declined' | 'cancelled' | 'expired'
+
+export interface TradeCardRef {
+  id: UUID | null
+  name: string
+  imageUrl: string | null
+  rarity: RealRarity
+}
+
+export interface DomainTrade {
+  id: UUID
+  status: TradeStatus
+  initiatorId: UUID
+  initiatorUsername: string
+  targetId: UUID
+  targetUsername: string
+  requested: TradeCardRef
+  offered: TradeCardRef | null
+  createdAt: ISODate
+  completedAt: ISODate | null
+}
+
+export interface TradePlayer {
+  id: UUID
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+  cooldownUntil: ISODate | null
+}
+
+export interface TradeCard {
+  id: UUID
+  name: string
+  imageUrl: string
+  rarity: RealRarity
+  quantity: number
+  viewerOwns: boolean
+}
+
 // ─── Tournoi ─────────────────────────────────────────────────────────────────
 export type TournamentStatus = 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
 
