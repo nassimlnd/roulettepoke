@@ -43,3 +43,18 @@ export interface BiomeInfo {
   cost: number
   ownedCount: number
 }
+
+// Membre d'équipe — forme normalisée de WireTeamMember. Un membre ne porte pas
+// toutes les infos d'une carte (pas de num/biome/niveau) : il s'affiche via
+// TeamCard, pas HoloCard.
+export interface TeamMember {
+  teamEntryId: UUID
+  position: number
+  cardId: UUID
+  name: string
+  type: PokeType
+  rarity: RealRarity
+  isShiny: boolean
+  imageUrl: string
+  typeImageUrl: string | null
+}
