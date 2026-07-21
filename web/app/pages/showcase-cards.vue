@@ -44,9 +44,39 @@ const gridCards = grid.map(toCard)
 <template>
   <div class="stage">
     <header class="head">
-      <h1>HoloCard <span>— direction Mochidex, vraies données</span></h1>
-      <p>Survole une carte (tilt + reflet holographique). Épique / Légendaire / Shiny brillent en continu.</p>
+      <h1>Nouvelle DA <span>— blanc/gris · rouge Poké · cartes pastel</span></h1>
+      <p>Composants au style Mochidex, polices Fredoka + Nunito. Survole une carte (tilt + holo).</p>
     </header>
+
+    <section class="buttons">
+      <PButton
+        size="lg"
+        icon="i-lucide-sparkles"
+      >
+        Ouvrir un booster
+      </PButton>
+      <PButton
+        color="secondary"
+        icon="i-lucide-coins"
+      >
+        240
+      </PButton>
+      <PButton
+        color="neutral"
+        variant="soft"
+      >
+        Collection
+      </PButton>
+      <PButton variant="outline">
+        Annuler
+      </PButton>
+      <PButton loading>
+        Tirage…
+      </PButton>
+      <PButton disabled>
+        Indisponible
+      </PButton>
+    </section>
 
     <section class="heroes">
       <HoloCard
@@ -78,22 +108,31 @@ const gridCards = grid.map(toCard)
 .stage {
   min-height: 100vh;
   background:
-    radial-gradient(120% 80% at 50% -10%, #fff6ea 0%, transparent 55%),
-    linear-gradient(180deg, #faf6ee 0%, #f3ead9 100%);
-  color: #4a3f35;
+    radial-gradient(120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
+    linear-gradient(180deg, #f6f7f9 0%, #eceef2 100%);
+  color: var(--ui-text);
   padding: clamp(24px, 5vw, 64px) clamp(16px, 4vw, 56px) 80px;
   font-family: 'Nunito', system-ui, sans-serif;
 }
-.head { text-align: center; margin-bottom: clamp(24px, 4vw, 48px); }
+.head { text-align: center; margin-bottom: clamp(20px, 3vw, 36px); }
 .head h1 {
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
   font-size: clamp(1.8rem, 5vw, 3rem);
   margin: 0;
-  color: #40352b;
+  color: var(--ui-text-highlighted);
 }
-.head h1 span { color: #b09a80; font-weight: 500; font-size: .5em; }
-.head p { color: #8a7a66; margin: 8px 0 0; font-size: clamp(.9rem, 2vw, 1.05rem); }
+.head h1 span { color: var(--ui-text-muted); font-weight: 500; font-size: .5em; }
+.head p { color: var(--ui-text-muted); margin: 8px 0 0; font-size: clamp(.9rem, 2vw, 1.05rem); }
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: clamp(32px, 5vw, 56px);
+}
 
 .heroes {
   display: flex;

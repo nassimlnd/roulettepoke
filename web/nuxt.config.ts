@@ -9,6 +9,7 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxt/eslint',
+    '@nuxt/fonts',
     '@nuxt/ui',
     '@pinia/nuxt',
     '@vueuse/nuxt'
@@ -31,10 +32,10 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  // Dark-first (le clair reste un P3 activable ; cf. design system).
+  // Clair par défaut (univers Pokémon blanc/gris ; le sombre reste activable).
   colorMode: {
-    preference: 'dark',
-    fallback: 'dark'
+    preference: 'light',
+    fallback: 'light'
   },
 
   compatibilityDate: '2026-06-30',
@@ -64,6 +65,14 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  // Polices auto-hébergées au build (aucun CDN au runtime). Direction Mochidex.
+  fonts: {
+    families: [
+      { name: 'Fredoka', provider: 'google', weights: [400, 500, 600, 700] },
+      { name: 'Nunito', provider: 'google', weights: [400, 600, 700, 800] }
+    ]
   },
 
   // SPA : on bundle les icônes utilisées côté client (scan du code) pour ne

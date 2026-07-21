@@ -1,54 +1,53 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-/* Polices auto-hébergées (aucun CDN au runtime) — Fredoka (display arrondie) +
-   Nunito (texte), variables couvrant leurs graisses. Direction « Mochidex ». */
-@font-face {
-  font-family: 'Fredoka';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/fredoka-latin.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Nunito';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('/fonts/nunito-latin.woff2') format('woff2');
-}
+/* Polices Fredoka (display) + Nunito (texte) : auto-hébergées au build par
+   @nuxt/fonts (cf. nuxt.config.ts › fonts). Aucun CDN au runtime. */
 
 /* ============================================================
-   Direction visuelle : PHOSPHORE (console de poche émancipée)
-   Socle de tokens en 3 couches (sémantique / rareté / types-biomes)
+   Direction visuelle : univers Pokémon doux (inspiration Mochidex)
+   Canevas blanc/gris · action rouge · cartes pastel par type
    ============================================================ */
 
 @theme static {
-  /* Polices — résolues et auto-hébergées par @nuxt/fonts (aucun CDN au runtime) */
-  --font-sans: 'Inter', system-ui, 'Segoe UI', sans-serif;
-  --font-display: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  /* Polices */
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-display: 'Fredoka', 'Nunito', ui-sans-serif, system-ui, sans-serif;
 
-  /* Rampe neutre « night » (gris teintés violet, parenté avec l'app actuelle) */
-  --color-night-50: #f6f6fa;
-  --color-night-100: #ececf4;
-  --color-night-200: #d9d9e7;
-  --color-night-300: #b9b9cf;
-  --color-night-400: #9494b0;
-  --color-night-500: #757591;
-  --color-night-600: #5c5c77;
-  --color-night-700: #46465e;
-  --color-night-800: #232338;
-  --color-night-900: #17172a;
-  --color-night-950: #0e0e1b;
+  /* Primaire — rouge « Poké » (blanc/rouge-500 = 4.65:1, AA OK) */
+  --color-poke-50: #fef2f0;
+  --color-poke-100: #fcdfdb;
+  --color-poke-200: #f9c4bd;
+  --color-poke-300: #f39c90;
+  --color-poke-400: #ea6a58;
+  --color-poke-500: #dd3322;
+  --color-poke-600: #c62617;
+  --color-poke-700: #a41f14;
+  --color-poke-800: #871d16;
+  --color-poke-900: #701d18;
+  --color-poke-950: #3d0c08;
 
-  /* Couche 2 — tokens de rareté (décoratifs) */
-  --color-rarity-common: #757591;
-  --color-rarity-rare: #38bdf8;
-  --color-rarity-epic: #e879f9;
-  --color-rarity-legendary: #fbbf24;
-  --color-rarity-shiny: #e2e8f0;
+  /* Neutre — gris « ash » (canevas blanc/gris) */
+  --color-ash-50: #f6f7f9;
+  --color-ash-100: #eceef2;
+  --color-ash-200: #dfe2e8;
+  --color-ash-300: #c8ccd4;
+  --color-ash-400: #9aa0ab;
+  --color-ash-500: #6e747f;
+  --color-ash-600: #525862;
+  --color-ash-700: #3d424b;
+  --color-ash-800: #262a31;
+  --color-ash-900: #171a1f;
+  --color-ash-950: #0d0f12;
 
-  /* Couche 3 — tokens des 15 types Pokémon */
+  /* Rareté — alignée sur les cartes (cf. utils/cardTheme.ts) */
+  --color-rarity-common: #b0a79a;
+  --color-rarity-rare: #5b9bd5;
+  --color-rarity-epic: #a06cc4;
+  --color-rarity-legendary: #e0a92e;
+  --color-rarity-shiny: #c9b3ff;
+
+  /* Types Pokémon (16) — usages hors carte (la carte utilise cardTheme.ts) */
   --color-type-normal: #a8a77a;
   --color-type-feu: #ee8130;
   --color-type-eau: #6390f0;
@@ -64,8 +63,9 @@
   --color-type-roche: #b6a136;
   --color-type-spectre: #735797;
   --color-type-dragon: #6f35fc;
+  --color-type-fee: #ee99ac;
 
-  /* Biomes (9) — teintes dérivées des badges actuels */
+  /* Biomes (9) */
   --color-biome-foret: #4caf50;
   --color-biome-lac: #26a3c7;
   --color-biome-mer: #3f7fd8;
@@ -76,57 +76,54 @@
   --color-biome-cave: #6a5b8a;
   --color-biome-tundra: #7cc7d6;
 
-  /* Tokens de mouvement (cf. animation-system.md) */
+  /* Mouvement (easings « doux » façon Mochidex) */
   --ease-snap: cubic-bezier(0.2, 0, 0, 1);
-  --ease-spin: cubic-bezier(0.15, 0.85, 0.35, 1);
-  --ease-brake: cubic-bezier(0.6, 0, 0.1, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-drift: cubic-bezier(0.37, 0, 0.63, 1);
-  --ease-recoil: cubic-bezier(0.5, -0.4, 0.2, 1);
-  --dur-instant: 75ms;
-  --dur-fast: 150ms;
-  --dur-base: 300ms;
-  --dur-slow: 600ms;
-  --spin-duration: 4000ms;
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.3, 0.9, 0.3, 1);
+  --dur-instant: 90ms;
+  --dur-fast: 180ms;
+  --dur-base: 280ms;
+  --dur-slow: 480ms;
 }
 
-/* ---- Rôles sémantiques Nuxt UI (dark-first) ---- */
+/* ---- Rôles sémantiques Nuxt UI (clair par défaut) ---- */
 
 :root {
-  --ui-radius: 0.5rem;
+  --ui-radius: 0.625rem; /* coins doux (Mochidex ~10-12px) */
 }
 
-/* Surfaces sombres — thème par défaut (dark-first, parenté #0f0f1a/#1a1a2e) */
+/* Surfaces claires — thème par défaut : page gris très clair, panneaux blancs */
 :root,
+.light {
+  --ui-bg: var(--color-ash-50);
+  --ui-bg-muted: var(--color-ash-100);
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: var(--color-ash-200);
+  --ui-border: color-mix(in oklab, var(--color-ash-950) 9%, transparent);
+  --ui-border-muted: color-mix(in oklab, var(--color-ash-950) 6%, transparent);
+  --ui-border-accented: color-mix(in oklab, var(--color-ash-950) 14%, transparent);
+  --ui-text-highlighted: var(--color-ash-950);
+  --ui-text: var(--color-ash-900);
+  --ui-text-toned: var(--color-ash-700);
+  --ui-text-muted: var(--color-ash-600);
+  --ui-text-dimmed: var(--color-ash-500);
+}
+
+/* Mode sombre (secondaire, activable) */
 .dark {
-  --ui-bg: var(--color-night-950);
-  --ui-bg-muted: var(--color-night-900);
-  --ui-bg-elevated: var(--color-night-800);
-  --ui-bg-accented: var(--color-night-700);
-  --ui-border: color-mix(in oklab, white 8%, transparent);
+  --ui-bg: var(--color-ash-950);
+  --ui-bg-muted: var(--color-ash-900);
+  --ui-bg-elevated: var(--color-ash-800);
+  --ui-bg-accented: var(--color-ash-700);
+  --ui-border: color-mix(in oklab, white 9%, transparent);
   --ui-border-muted: color-mix(in oklab, white 6%, transparent);
   --ui-border-accented: color-mix(in oklab, white 14%, transparent);
-  --ui-text-highlighted: var(--color-night-50);
-  --ui-text: var(--color-night-100);
-  --ui-text-toned: var(--color-night-300);
-  --ui-text-muted: var(--color-night-400);
-  --ui-text-dimmed: var(--color-night-500);
-}
-
-/* Mode clair (non prioritaire, mais tout passe par --ui-* ⇒ activable) */
-.light {
-  --ui-bg: var(--color-night-50);
-  --ui-bg-muted: white;
-  --ui-bg-elevated: white;
-  --ui-bg-accented: var(--color-night-100);
-  --ui-border: color-mix(in oklab, var(--color-night-950) 10%, transparent);
-  --ui-border-muted: color-mix(in oklab, var(--color-night-950) 8%, transparent);
-  --ui-border-accented: color-mix(in oklab, var(--color-night-950) 16%, transparent);
-  --ui-text-highlighted: var(--color-night-950);
-  --ui-text: var(--color-night-900);
-  --ui-text-toned: var(--color-night-700);
-  --ui-text-muted: var(--color-night-600);
-  --ui-text-dimmed: var(--color-night-500);
+  --ui-text-highlighted: var(--color-ash-50);
+  --ui-text: var(--color-ash-100);
+  --ui-text-toned: var(--color-ash-300);
+  --ui-text-muted: var(--color-ash-400);
+  --ui-text-dimmed: var(--color-ash-500);
 }
 
 /* ---- Base ---- */
@@ -144,6 +141,7 @@ body {
 
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
+  font-weight: 600;
   text-wrap: balance;
 }
 
@@ -151,18 +149,9 @@ h1, h2, h3, .font-display {
   font-variant-numeric: tabular-nums;
 }
 
-/* Substrat « écran à points » de PHOSPHORE — très discret, décoratif */
-.phosphor-dots {
-  background-image: radial-gradient(color-mix(in oklab, var(--ui-primary) 34%, transparent) 0.9px, transparent 1.1px);
-  background-size: 7px 7px;
-}
-
 /* Interrupteur global de mouvement (préférence système + réglage in-app) */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --spin-duration: var(--dur-slow);
-  }
-}
-:root[data-reduced-motion="true"] {
-  --spin-duration: var(--dur-slow);
+:root[data-reduced-motion="true"] * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

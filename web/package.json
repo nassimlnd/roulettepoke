@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.16.0",
+    "@nuxt/fonts": "^0.14.0",
     "@nuxt/test-utils": "^4.0.3",
     "@pinia/testing": "^2.0.1",
     "@vue/test-utils": "^2.4.11",
