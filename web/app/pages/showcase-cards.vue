@@ -49,11 +49,14 @@ const gridCards = grid.map(toCard)
     </header>
 
     <section class="buttons">
-      <PButton
-        size="lg"
-        icon="i-lucide-sparkles"
-      >
+      <PButton icon="i-lucide-sparkles">
         Ouvrir un booster
+      </PButton>
+      <PButton
+        color="success"
+        icon="i-lucide-check"
+      >
+        Ranger dans l'album
       </PButton>
       <PButton
         color="secondary"
@@ -61,14 +64,8 @@ const gridCards = grid.map(toCard)
       >
         240
       </PButton>
-      <PButton
-        color="neutral"
-        variant="soft"
-      >
+      <PButton color="neutral">
         Collection
-      </PButton>
-      <PButton variant="outline">
-        Annuler
       </PButton>
       <PButton loading>
         Tirage…
