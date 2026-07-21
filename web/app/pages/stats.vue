@@ -28,7 +28,8 @@ function pct(p: number): string {
 const maxHolders = computed(() => Math.max(1, ...(data.value?.gyms.map(g => g.holders) ?? [1])))
 
 // ─── Stats par joueur ─────────────────────────────────────────────────────────
-const selectedPlayer = ref('')
+const selectedPlayer = ref<string | undefined>(undefined)
+const playerItems = computed(() => data.value?.players.map(p => ({ label: p.username, value: p.username })) ?? [])
 const player = computed<StatPlayer | null>(() => data.value?.players.find(p => p.username === selectedPlayer.value) ?? null)
 const isMe = computed(() => !!auth.user && player.value?.username === auth.user.username)
 const playerShinyRate = computed(() => {
@@ -37,7 +38,8 @@ const playerShinyRate = computed(() => {
 })
 
 // ─── Probabilités : calculateur « carte spécifique » ──────────────────────────
-const selectedRarity = ref<OddsKey | ''>('')
+const selectedRarity = ref<OddsKey | undefined>(undefined)
+const rarityItems = computed(() => data.value?.odds.map(o => ({ label: o.label, value: o.key })) ?? [])
 const calc = computed(() => {
   const o = data.value?.odds.find(x => x.key === selectedRarity.value)
   if (!o || o.count === 0 || o.probability === 0) return null
@@ -210,29 +212,17 @@ onMounted(async () => {
         </h2>
         <PPanel class="pl">
           <div class="pl__pick">
-            <label
-              class="pl__label"
-              for="pl-select"
-            >Dresseur</label>
-            <div class="pl__selwrap">
-              <select
-                id="pl-select"
-                v-model="selectedPlayer"
-                class="pl__select"
-              >
-                <option
-                  v-for="p in data.players"
-                  :key="p.username"
-                  :value="p.username"
-                >
-                  {{ p.username }}
-                </option>
-              </select>
-              <UIcon
-                name="i-lucide-chevron-down"
-                class="pl__chev size-4"
-              />
-            </div>
+            <span class="pl__label">Dresseur</span>
+            <USelectMenu
+              v-model="selectedPlayer"
+              :items="playerItems"
+              value-key="value"
+              icon="i-lucide-user"
+              :search-input="{ placeholder: 'Rechercher un dresseur…', icon: 'i-lucide-search' }"
+              placeholder="Choisir un dresseur"
+              aria-label="Dresseur"
+              class="pl__menu"
+            />
             <span
               v-if="isMe"
               class="pl__me"
@@ -307,28 +297,15 @@ onMounted(async () => {
           <div class="calc">
             <div class="calc__pick">
               <span class="calc__q">Une carte précise ?</span>
-              <div class="pl__selwrap calc__selwrap">
-                <select
-                  v-model="selectedRarity"
-                  class="pl__select"
-                  aria-label="Rareté de la carte recherchée"
-                >
-                  <option value="">
-                    Choisir une rareté…
-                  </option>
-                  <option
-                    v-for="o in data.odds"
-                    :key="o.key"
-                    :value="o.key"
-                  >
-                    {{ o.label }}
-                  </option>
-                </select>
-                <UIcon
-                  name="i-lucide-chevron-down"
-                  class="pl__chev size-4"
-                />
-              </div>
+              <USelectMenu
+                v-model="selectedRarity"
+                :items="rarityItems"
+                value-key="value"
+                :search-input="false"
+                placeholder="Choisir une rareté…"
+                aria-label="Rareté de la carte recherchée"
+                class="calc__menu"
+              />
             </div>
             <div
               v-if="calc"
@@ -416,22 +393,7 @@ onMounted(async () => {
 .pl { display: flex; flex-direction: column; gap: 16px; }
 .pl__pick { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pl__label { font-family: var(--font-display); font-weight: 700; font-size: .86rem; color: var(--ui-text-muted); }
-.pl__selwrap { position: relative; display: inline-flex; align-items: center; }
-.pl__select {
-  appearance: none;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: .9rem;
-  color: var(--ui-text-highlighted);
-  background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
-  border-radius: 11px;
-  padding: 8px 34px 8px 14px;
-  cursor: pointer;
-  min-width: 180px;
-}
-.pl__select:focus-visible { outline: 2px solid var(--color-poke-400); outline-offset: 1px; }
-.pl__chev { position: absolute; right: 11px; color: var(--ui-text-dimmed); pointer-events: none; }
+.pl__menu { min-width: 220px; max-width: 100%; }
 .pl__me { font-size: .72rem; font-weight: 800; color: var(--color-poke-600); background: var(--color-poke-50); padding: 4px 10px; border-radius: 999px; }
 
 .pl__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -460,7 +422,7 @@ onMounted(async () => {
 .calc { margin-top: 6px; padding-top: 16px; border-top: 1px dashed var(--ui-border-accented); display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .calc__pick { display: flex; flex-direction: column; gap: 6px; }
 .calc__q { font-family: var(--font-display); font-weight: 700; font-size: .84rem; color: var(--ui-text-muted); }
-.calc__selwrap { align-self: flex-start; }
+.calc__menu { min-width: 200px; max-width: 100%; align-self: flex-start; }
 .calc__out {
   display: flex;
   flex-direction: column;
