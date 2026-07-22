@@ -15,8 +15,53 @@ const lines = ref<string[]>([])
 const chestOpen = ref(false)
 const throwing = ref(false)
 const portraitBroken = ref(false)
-const vs = ref(false)
-const vsName = ref('')
+
+// Transition « Combat » (écran d'arène façon Mochidex, composant VersusIntro).
+type VersusSide = { name: string, img: string, sprite: boolean, sub: string }
+type VersusData = {
+  me: VersusSide
+  foe: VersusSide
+  heading: string
+  round: string
+  dots: { total: number, current: number }
+}
+const vs = ref<VersusData | null>(null)
+let vsNode: AdvNode | null = null
+let vsBattle: Promise<boolean> | null = null
+
+function versusFrom(n: AdvNode): VersusData {
+  const me = spin.starter
+  const combats = spin.nodes.filter(x => x.kind === 'elite' || x.kind === 'champion')
+  const cur = Math.max(0, combats.indexOf(n))
+  const foe: VersusSide = n.trainer
+    ? { name: n.trainer.name, img: n.trainer.portraitUrl ?? '', sprite: false, sub: n.opponent?.type ?? '' }
+    : { name: n.opponent?.name ?? '', img: n.opponent?.imageUrl ?? '', sprite: true, sub: n.opponent?.type ?? '' }
+  return {
+    me: { name: me?.name ?? 'Toi', img: me?.imageUrl ?? '', sprite: true, sub: me?.type ?? '' },
+    foe,
+    heading: 'AVENTURE',
+    round: `COMBAT ${cur + 1} / ${combats.length}`,
+    dots: { total: combats.length, current: cur }
+  }
+}
+
+// Relais piloté par le composant : `reveal` (début du « out ») monte l'arène
+// derrière l'overlay ; `done` retire l'overlay → l'arène est révélée.
+function onVsReveal() {
+  if (vsNode) vsBattle = spin.fight(vsNode)
+}
+async function onVsDone() {
+  vs.value = null
+  const n = vsNode
+  vsNode = null
+  const won = vsBattle ? await vsBattle : false
+  vsBattle = null
+  if (won && n?.trainer) {
+    speaker.value = n.trainer.name
+    lines.value = [n.trainer.concede]
+    step.value = 'reaction'
+  }
+}
 
 const node = computed(() => spin.current)
 const tc = computed(() => node.value?.themeColor || '#8b5cc4')
@@ -49,7 +94,7 @@ function present() {
   chestOpen.value = false
   throwing.value = false
   portraitBroken.value = false
-  vs.value = false
+  vs.value = null
   if (!n) return
   speaker.value = n.trainer?.name ?? ''
   lines.value = n.trainer?.intro ?? n.narration ?? ['…']
@@ -72,18 +117,10 @@ async function onCta() {
     return
   }
   if (n.kind === 'elite' || n.kind === 'champion') {
-    // Transition « Combat contre X ! » (tremblement + flash) puis le combat.
-    vsName.value = n.trainer?.name ?? n.opponent?.name ?? ''
-    vs.value = true
-    await wait(1050)
-    vs.value = false
-    const trainer = n.trainer
-    const won = await spin.fight(n)
-    if (won && trainer) {
-      speaker.value = trainer.name
-      lines.value = [trainer.concede]
-      step.value = 'reaction'
-    }
+    // Écran d'arène « Combat » ; le relais vers le BattleStage est piloté par
+    // les évènements du composant (onVsReveal / onVsDone).
+    vsNode = n
+    vs.value = versusFrom(n)
     return
   }
   if (n.kind === 'treasure') {
@@ -366,17 +403,17 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- ═══ Transition « Combat ! » ═══ -->
-        <Transition name="vsfade">
-          <div
-            v-if="vs"
-            class="vs"
-          >
-            <span class="vs__streak" />
-            <span class="vs__lead font-display">Combat contre</span>
-            <span class="vs__name font-display">{{ vsName }} !</span>
-          </div>
-        </Transition>
+        <!-- ═══ Transition « Combat » (écran d'arène façon Mochidex) ═══ -->
+        <VersusIntro
+          v-if="vs"
+          :me="vs.me"
+          :foe="vs.foe"
+          :heading="vs.heading"
+          :round="vs.round"
+          :dots="vs.dots"
+          @reveal="onVsReveal"
+          @done="onVsDone"
+        />
       </div>
     </Transition>
   </Teleport>
@@ -549,38 +586,6 @@ onMounted(() => {
 .leg--win .leg__t { color: #7c4fb0; }
 .leg__s { font-size: .8rem; color: var(--ui-text-muted); }
 
-/* Transition « Combat ! » */
-.vs {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--tc) 55%, #120d12), #0c0810);
-  overflow: hidden;
-  animation: shake .5s ease-in-out 2;
-}
-.vs__streak {
-  position: absolute;
-  inset: -30% -10%;
-  background: repeating-linear-gradient(115deg, transparent 0 34px, color-mix(in oklab, var(--tc) 40%, transparent) 34px 40px);
-  opacity: .5;
-  animation: slideStreak .6s linear infinite;
-}
-.vs__lead { color: rgba(255, 255, 255, .9); font-weight: 700; font-size: 1.1rem; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); z-index: 1; }
-.vs__name {
-  color: #fff;
-  font-weight: 800;
-  font-size: 2.6rem;
-  line-height: 1;
-  text-shadow: 0 3px 0 color-mix(in oklab, var(--tc) 60%, #000), 0 6px 16px rgba(0, 0, 0, .6);
-  z-index: 1;
-  animation: slam .5s var(--ease-pop) both;
-}
-
 /* Transitions */
 .astage-enter-active, .astage-leave-active { transition: opacity .3s ease; }
 .astage-enter-from, .astage-leave-to { opacity: 0; }
@@ -588,9 +593,6 @@ onMounted(() => {
 .swap-leave-active { transition: opacity .2s ease, transform .2s ease; }
 .swap-enter-from { opacity: 0; transform: translateY(18px) scale(.96); }
 .swap-leave-to { opacity: 0; transform: translateY(-12px) scale(.98); }
-.vsfade-enter-active { transition: opacity .18s ease; }
-.vsfade-leave-active { transition: opacity .3s ease; }
-.vsfade-enter-from, .vsfade-leave-to { opacity: 0; }
 
 @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 @keyframes pulse { 0%, 100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.1); opacity: .9; } }
@@ -598,15 +600,9 @@ onMounted(() => {
 @keyframes burst { to { opacity: 0; transform: translate(calc(cos(var(--a)) * 48px), calc(sin(var(--a)) * 48px)) scale(.3); } }
 @keyframes shrink { to { transform: scale(.15); opacity: .2; } }
 @keyframes toss { 0% { transform: translate(-70px, -50px) scale(.6); } 55% { transform: translate(0, 0) scale(1); } 70%, 100% { transform: translate(0, 6px) rotate(12deg); } }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-@keyframes slam { 0% { opacity: 0; transform: scale(2.4); } 60% { opacity: 1; transform: scale(.92); } 100% { transform: scale(1); } }
-@keyframes slideStreak { to { transform: translateX(40px); } }
 
 @media (prefers-reduced-motion: reduce) {
   .trainer__ace, .legend__mon, .legend__aura, .campfire { animation: none; }
   .swap-enter-active, .swap-leave-active, .astage-enter-active, .astage-leave-active { transition: none; }
-  .vs { animation: none; }
-  .vs__name { animation: none; }
-  .vs__streak { animation: none; }
 }
 </style>
