@@ -21,15 +21,36 @@ const spin = useSpinStore()
       <div class="shud__row">
         <b class="shud__name font-display">{{ spin.starter.name }}</b>
         <span class="shud__lvl">Nv {{ spin.level }}</span>
-        <span
-          v-if="spin.heldItem"
-          class="shud__item"
-          :title="spin.heldItem.name"
-        >
-          <UIcon
-            name="i-lucide-shield-plus"
-            class="size-3"
-          /> +{{ spin.heldItem.bonus }} %
+        <span class="shud__stats">
+          <span
+            class="shud__chip shud__chip--coins"
+            title="Pièces du run"
+          >
+            <UIcon
+              name="i-lucide-coins"
+              class="size-3"
+            /> {{ spin.runCoins }}
+          </span>
+          <span
+            v-if="spin.lives"
+            class="shud__chip shud__chip--life"
+            title="Rappels (survivre à une défaite)"
+          >
+            <UIcon
+              name="i-lucide-heart"
+              class="size-3"
+            /> {{ spin.lives }}
+          </span>
+          <span
+            v-if="spin.heldItem"
+            class="shud__chip shud__chip--item"
+            :title="spin.heldItem.name"
+          >
+            <UIcon
+              name="i-lucide-shield-plus"
+              class="size-3"
+            /> +{{ spin.heldItem.bonus }} %
+          </span>
         </span>
       </div>
       <div class="shud__xp">
@@ -77,7 +98,11 @@ const spin = useSpinStore()
 .shud__row { display: flex; align-items: center; gap: 8px; }
 .shud__name { font-weight: 700; font-size: .95rem; color: #fff; }
 .shud__lvl { font-weight: 800; font-size: .74rem; color: #fff; background: rgba(255, 255, 255, .2); padding: 1px 8px; border-radius: 999px; }
-.shud__item { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: .72rem; color: #e8d7ff; }
+.shud__stats { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.shud__chip { display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .14); }
+.shud__chip--coins { color: #ffe08a; }
+.shud__chip--life { color: #ff9db0; }
+.shud__chip--item { color: #e8d7ff; }
 .shud__xp { height: 7px; border-radius: 999px; background: rgba(0, 0, 0, .28); overflow: hidden; }
 .shud__xp-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8fd6a8, #5bbf82); transition: width .5s var(--ease-glide); }
 .shud__stages { flex: none; display: flex; gap: 4px; }

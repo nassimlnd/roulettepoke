@@ -18,14 +18,18 @@ export const SPIN_REWARD_COINS = 250
 const XP_PER_LEVEL = 100
 const START_LEVEL = 5
 
-// Récompense révélée « en grand » avant de continuer (coffre, repos, XP, objet).
+// Récompense révélée « en grand » avant de continuer.
 export interface AdvReward {
-  kind: 'treasure' | 'rest' | 'xp' | 'item'
+  kind: 'treasure' | 'rest' | 'xp' | 'item' | 'life' | 'ally' | 'coins'
   title: string
   amount: string
   sub: string
 }
 export interface HeldItem { name: string, bonus: number }
+
+// Coûts de l'économie de run (pièces internes, distinctes du gain hebdo).
+const COST = { heal: 30, train: 40, item: 45, potion: 25, bag: 35, catch: 15 }
+const COVERAGE_BONUS = 8 // % si un allié couvre le type adverse
 
 const TYPE_HEX: Partial<Record<PokeType, string>> = {
   Glace: '#7fd0e0', Électrik: '#f2c94c', Feu: '#f0895e', Psy: '#e88bb6',
@@ -45,6 +49,11 @@ function typeMod(atk?: PokeType, def?: PokeType): number {
   if (SUPER[atk]?.includes(def)) return 12
   if (SUPER[def]?.includes(atk)) return -12
   return 0
+}
+// Un allié (Hautes Herbes) super efficace contre l'adversaire → bonus de couverture.
+function coverageMod(allies: PokeType[], def?: PokeType): number {
+  if (!def) return 0
+  return allies.some(a => SUPER[a]?.includes(def)) ? COVERAGE_BONUS : 0
 }
 const clampChance = (v: number) => Math.min(95, Math.max(20, Math.round(v)))
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)] as T
@@ -143,6 +152,49 @@ function fork(narration: string, a: AdvNode, aLabel: string, aIcon: string, aDes
     ]
   }
 }
+function centerNode(): AdvNode {
+  return { kind: 'center', title: 'Centre Pokémon', themeColor: '#ef6a7e', narration: ['Le Centre Pokémon t\'accueille, lumières chaudes et musique douce.', 'L\'Infirmière Joëlle te sourit. « Que puis-je faire pour toi ? »'] }
+}
+function merchantNode(): AdvNode {
+  return { kind: 'merchant', title: 'Marchand ambulant', themeColor: '#3f9bd6', narration: ['Un marchand déballe un étal couvert de babioles.', '« Approche, approche ! J\'ai ce qu\'il te faut. »'] }
+}
+function grassNode(): AdvNode {
+  const mon = pick(WILDMON)
+  return { kind: 'grass', title: 'Hautes herbes', opponent: mon, baseWinChance: 82, themeColor: themeFor(mon), narration: ['Les hautes herbes s\'agitent devant toi…', `Un ${mon.name} sauvage en surgit !`] }
+}
+
+// Rencontres (dilemmes narratifs, ton Pokémon). Les options `evt:*` sont
+// résolues par le store (certaines sont un pari à l'issue aléatoire).
+const EVENTS: { narration: string[], options: { key: string, label: string, icon: string, desc: string }[] }[] = [
+  {
+    narration: ['Une source chaude fume au bord du chemin.', 'Un vieux dresseur t\'invite d\'un signe de tête.'],
+    options: [
+      { key: 'evt:bathe', label: 'Se baigner', icon: 'i-lucide-droplets', desc: '+1 niveau — récupère tes forces' },
+      { key: 'evt:search', label: 'Fouiller les rochers', icon: 'i-lucide-search', desc: '50 % : un objet · 50 % : une embuscade (−10 %)' },
+      { key: 'evt:pass', label: 'Passer ton chemin', icon: 'i-lucide-footprints', desc: 'Ne rien risquer' }
+    ]
+  },
+  {
+    narration: ['Un marchand louche surgit de l\'ombre.', '« Ton flair contre une surprise… on parie ? »'],
+    options: [
+      { key: 'evt:gamble', label: 'Tenter le pari', icon: 'i-lucide-dices', desc: '50 % : gros objet · 50 % : rien' },
+      { key: 'evt:coins', label: 'Vendre un secret', icon: 'i-lucide-coins', desc: '+40 🪙, sans risque' },
+      { key: 'evt:pass', label: 'Refuser', icon: 'i-lucide-x', desc: 'Poursuivre ta route' }
+    ]
+  },
+  {
+    narration: ['Un Pokémon sauvage blessé gît sur le sentier, tremblant.'],
+    options: [
+      { key: 'evt:help', label: 'Le soigner', icon: 'i-lucide-heart-pulse', desc: 'Il te suivra — allié de couverture' },
+      { key: 'evt:rest', label: 'Camper à ses côtés', icon: 'i-lucide-tent', desc: '+10 % au prochain combat' },
+      { key: 'evt:pass', label: 'Continuer', icon: 'i-lucide-footprints', desc: 'Ne rien faire' }
+    ]
+  }
+]
+function eventNode(): AdvNode {
+  const e = pick(EVENTS)
+  return { kind: 'event', title: 'Rencontre', themeColor: '#c79a5a', narration: e.narration, choices: e.options }
+}
 
 // Construit le périple : spine fixe (Conseil des 4 + Champion + Légendaire),
 // ponctué de dresseurs de route, carrefours, feu de camp et autel d'évolution.
@@ -156,17 +208,17 @@ function buildNodes(): AdvNode[] {
   return [
     { kind: 'start', title: 'Le seuil du Conseil', themeColor: '#8b5cc4', narration: ['Les portes du Conseil des 4 s\'ouvrent devant toi…', 'Quatre Maîtres t\'attendent. Au bout : le Champion.'] },
     elite(0),
-    wildNode(),
-    fork('La route se sépare. Quel chemin prends-tu ?',
-      wildNode(), 'Sentier périlleux', 'i-lucide-swords', 'Un dresseur t\'y attend — de l\'XP, mais un combat.',
-      campNode(), 'Route tranquille', 'i-lucide-tent', 'Un campement paisible — récupère sans risque.'),
+    treasureNode(),
+    grassNode(),
     elite(1),
+    fork('La route se sépare. Quel chemin prends-tu ?',
+      wildNode(), 'Sentier périlleux', 'i-lucide-swords', 'Un dresseur t\'y attend — de l\'XP et des pièces, mais un combat.',
+      centerNode(), 'Vers le Centre Pokémon', 'i-lucide-plus', 'Souffler, soigner, s\'équiper — sans risque.'),
     campNode(),
     evolveNode(),
     elite(2),
-    fork('Deux voies s\'offrent à toi.',
-      wildNode(), 'Piste du bandit', 'i-lucide-swords', 'Un dresseur costaud — risqué mais payant.',
-      treasureNode(), 'Grotte au trésor', 'i-lucide-gem', 'Un coffre scellé t\'attend, sans combat.'),
+    eventNode(),
+    merchantNode(),
     elite(3),
     { kind: 'champion', title: 'Le Champion', trainer: CHAMPION, opponent: CHAMPION.ace, baseWinChance: 54, themeColor: themeFor(CHAMPION.ace) },
     { kind: 'legendary', title: 'Présence légendaire', opponent: LEGENDARY, themeColor: '#8b5cc4', narration: ['Une aura ancienne emplit les lieux…', `Un ${LEGENDARY.name} légendaire apparaît devant toi !`] }
@@ -183,6 +235,9 @@ export const useSpinStore = defineStore('spin', {
     evolvesAt: [] as number[],
     evoChain: [] as AdventureMon[],
     heldItem: null as HeldItem | null,
+    runCoins: 0, // pièces internes au run (Centre / Marchand)
+    lives: 0, // Rappels : survit à une défaite tant que > 0
+    allies: [] as PokeType[], // couverture de type (Hautes Herbes)
     nodes: [] as AdvNode[],
     index: 0, // nœud courant
     edge: 0, // élan : bonus one-shot, consommé au prochain combat
@@ -211,7 +266,8 @@ export const useSpinStore = defineStore('spin', {
         const stg = this.stage * 6
         const item = this.heldItem?.bonus ?? 0
         const t = typeMod(this.starter?.type, node.opponent?.type)
-        return clampChance(node.baseWinChance + lvl + stg + item + t + this.edge)
+        const cov = coverageMod(this.allies, node.opponent?.type)
+        return clampChance(node.baseWinChance + lvl + stg + item + t + cov + this.edge)
       }
     },
     currentChance(): number {
@@ -229,6 +285,9 @@ export const useSpinStore = defineStore('spin', {
       this.evolvesAt = [7, 10]
       this.evoChain = [...CHARM]
       this.heldItem = null
+      this.runCoins = 0
+      this.lives = 0
+      this.allies = []
       this.nodes = buildNodes()
       this.index = 0
       this.edge = 0
@@ -249,14 +308,18 @@ export const useSpinStore = defineStore('spin', {
       }
     },
 
-    // Combat plein écran (BattleScene). Met à jour la progression selon l'issue.
-    async fight(node: AdvNode): Promise<boolean> {
+    // Combat plein écran (BattleScene). Renvoie l'issue : victoire, Rappel
+    // (survit à la défaite), ou défaite (game over).
+    async fight(node: AdvNode): Promise<'win' | 'revive' | 'loss'> {
       const battle = useBattleStore()
       const op = node.opponent
       const me = this.starter
-      if (!op || !me) return false
+      if (!op || !me) return 'loss'
       const chance = this.chanceFor(node)
       const won = Math.random() * 100 < chance
+      const willRevive = !won && this.lives > 0
+      const champ = node.kind === 'champion'
+      const minor = node.kind === 'wild' || node.kind === 'grass'
       const rounds: BattleRound[] = [{
         round: 1,
         player: { name: me.name, imageUrl: me.imageUrl },
@@ -264,28 +327,33 @@ export const useSpinStore = defineStore('spin', {
         winProbability: chance,
         playerWon: won
       }]
-      const champ = node.kind === 'champion'
-      const wild = node.kind === 'wild'
       await battle.present({
         rounds,
         won,
         themeColor: node.themeColor,
-        title: champ ? `Champion — ${op.name}` : wild ? `Dresseur — ${op.name}` : `Conseil des 4 — ${op.name}`,
+        title: champ ? `Champion — ${op.name}` : minor ? `Dresseur — ${op.name}` : `Conseil des 4 — ${op.name}`,
         winTitle: champ ? 'Champion vaincu ! 👑' : 'Victoire !',
         winSub: champ ? `+${SPIN_REWARD_COINS} 🪙 — un légendaire t'attend encore.` : `${op.name} est battu — en avant !`,
-        loseSub: 'Ton aventure s\'arrête ici… mais tu peux retenter.'
+        loseSub: willRevive ? 'Ton Pokémon tombe… mais un Rappel le relève !' : 'Ton aventure s\'arrête ici… mais tu peux retenter.'
       })
       if (won) {
         this.index++
-        this.gainXp(champ ? 90 : wild ? 45 : 60)
+        this.gainXp(champ ? 90 : minor ? 45 : 60)
+        this.runCoins += champ ? 60 : minor ? 25 : 40
         this.edge = 0 // l'élan est consommé
         if (champ) this.rewardCoins = SPIN_REWARD_COINS
-      } else {
-        this.consecutiveLosses++
-        this.lostTo = node.trainer ?? null
-        this.phase = 'gameover'
+        return 'win'
       }
-      return won
+      if (willRevive) {
+        this.lives--
+        this.index++ // survit et avance
+        this.edge = 0
+        return 'revive'
+      }
+      this.consecutiveLosses++
+      this.lostTo = node.trainer ?? null
+      this.phase = 'gameover'
+      return 'loss'
     },
 
     // Avance d'un nœud (scènes narratives, choix résolus, récompenses fermées).
@@ -331,6 +399,95 @@ export const useSpinStore = defineStore('spin', {
       this.lastReward = { kind: 'rest', title: 'Énergie canalisée', amount: '+12 %', sub: 'de chances au prochain combat' }
     },
 
+    // ─── Centre Pokémon ───
+    centerHeal() {
+      if (this.runCoins < COST.heal) return
+      this.runCoins -= COST.heal
+      this.lives++
+      this.lastReward = { kind: 'life', title: 'Rappel obtenu', amount: '+1 vie', sub: 'tu survivras à une défaite' }
+    },
+    centerTrain() {
+      if (this.runCoins < COST.train) return
+      this.runCoins -= COST.train
+      this.level++
+      this.lastReward = { kind: 'xp', title: 'Entraînement intensif', amount: `Niveau ${this.level}`, sub: '+2 % de cote (permanent)' }
+    },
+
+    // ─── Marchand ambulant ───
+    merchantItem() {
+      if (this.runCoins < COST.item) return
+      this.runCoins -= COST.item
+      this.heldItem = this.heldItem ? { name: this.heldItem.name, bonus: this.heldItem.bonus + 3 } : { name: 'Bandeau du Combat', bonus: 4 }
+      this.lastReward = { kind: 'item', title: this.heldItem.name, amount: `+${this.heldItem.bonus} %`, sub: 'objet tenu (permanent)' }
+    },
+    merchantPotion() {
+      if (this.runCoins < COST.potion) return
+      this.runCoins -= COST.potion
+      this.edge += 12
+      this.lastReward = { kind: 'rest', title: 'Potion d\'élan', amount: '+12 %', sub: 'de chances au prochain combat' }
+    },
+    merchantBag() {
+      if (this.runCoins < COST.bag) return
+      this.runCoins -= COST.bag
+      const roll = Math.random()
+      if (roll < 0.35) {
+        this.heldItem = this.heldItem ? { name: this.heldItem.name, bonus: this.heldItem.bonus + 4 } : { name: 'Amulette rare', bonus: 6 }
+        this.lastReward = { kind: 'item', title: `Sac mystère — ${this.heldItem.name}`, amount: `+${this.heldItem.bonus} %`, sub: 'quelle chance !' }
+      } else if (roll < 0.6) {
+        this.lives++
+        this.lastReward = { kind: 'life', title: 'Sac mystère — Rappel', amount: '+1 vie', sub: 'un filet de sécurité' }
+      } else if (roll < 0.85) {
+        this.runCoins += 50
+        this.lastReward = { kind: 'coins', title: 'Sac mystère — Magot', amount: '+50 🪙', sub: 'tu te refais !' }
+      } else {
+        this.edge += 15
+        this.lastReward = { kind: 'rest', title: 'Sac mystère — Dynamo', amount: '+15 %', sub: 'au prochain combat' }
+      }
+    },
+
+    // ─── Hautes herbes ───
+    grassCatch() {
+      if (this.runCoins < COST.catch) return
+      this.runCoins -= COST.catch
+      const mon = this.current?.opponent
+      if (mon) this.allies.push(mon.type)
+      this.lastReward = { kind: 'ally', title: `${mon?.name ?? 'Allié'} capturé !`, amount: `Couverture ${mon?.type ?? ''}`, sub: `+${COVERAGE_BONUS} % contre les types qu'il domine` }
+    },
+
+    // ─── Rencontre ───
+    applyEvent(key: string) {
+      const k = key.slice(4) // 'evt:xxx' → 'xxx'
+      if (k === 'bathe') {
+        this.level++
+        this.lastReward = { kind: 'xp', title: 'Bain revigorant', amount: `Niveau ${this.level}`, sub: 'tes forces reviennent' }
+      } else if (k === 'search') {
+        if (Math.random() < 0.5) {
+          this.heldItem = this.heldItem ? { name: this.heldItem.name, bonus: this.heldItem.bonus + 3 } : { name: 'Relique', bonus: 5 }
+          this.lastReward = { kind: 'item', title: `Trouvaille — ${this.heldItem.name}`, amount: `+${this.heldItem.bonus} %`, sub: 'cachée sous les rochers' }
+        } else {
+          this.edge = Math.max(0, this.edge - 10)
+          this.lastReward = { kind: 'rest', title: 'Embuscade !', amount: '−10 %', sub: 'tu perds l\'avantage… aïe' }
+        }
+      } else if (k === 'gamble') {
+        if (Math.random() < 0.5) {
+          this.heldItem = this.heldItem ? { name: this.heldItem.name, bonus: this.heldItem.bonus + 5 } : { name: 'Talisman', bonus: 7 }
+          this.lastReward = { kind: 'item', title: `Le pari paie — ${this.heldItem.name}`, amount: `+${this.heldItem.bonus} %`, sub: 'bien joué !' }
+        } else {
+          this.lastReward = { kind: 'coins', title: 'Marché de dupe', amount: '—', sub: 'il file avec… rien pour toi' }
+        }
+      } else if (k === 'coins') {
+        this.runCoins += 40
+        this.lastReward = { kind: 'coins', title: 'Secret vendu', amount: '+40 🪙', sub: 'de quoi faire des emplettes' }
+      } else if (k === 'help') {
+        const t = pick(WILDMON).type
+        this.allies.push(t)
+        this.lastReward = { kind: 'ally', title: 'Un allié reconnaissant', amount: `Couverture ${t}`, sub: `+${COVERAGE_BONUS} % contre les types qu'il domine` }
+      } else if (k === 'rest') {
+        this.edge += 10
+        this.lastReward = { kind: 'rest', title: 'Campement', amount: '+10 %', sub: 'au prochain combat' }
+      }
+    },
+
     // Coffre : prépare la récompense (l'avancée se fait après la révélation).
     openTreasure() {
       const boost = [10, 12, 15][Math.floor(Math.random() * 3)] ?? 12
@@ -360,6 +517,9 @@ export const useSpinStore = defineStore('spin', {
       this.lostTo = null
       this.lastReward = null
       this.evolution = null
+      this.runCoins = 0
+      this.lives = 0
+      this.allies = []
     }
   }
 })

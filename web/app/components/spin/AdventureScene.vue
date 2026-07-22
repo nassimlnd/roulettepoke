@@ -30,7 +30,7 @@ type VersusData = {
 }
 const vs = ref<VersusData | null>(null)
 let vsNode: AdvNode | null = null
-let vsBattle: Promise<boolean> | null = null
+let vsBattle: Promise<'win' | 'revive' | 'loss'> | null = null
 
 function versusFrom(n: AdvNode): VersusData {
   const me = spin.starter
@@ -57,15 +57,19 @@ async function onVsDone() {
   vs.value = null
   const n = vsNode
   vsNode = null
-  const won = vsBattle ? await vsBattle : false
+  const res = vsBattle ? await vsBattle : 'loss'
   vsBattle = null
-  if (!won) return // défaite : le store bascule en game over
+  if (res === 'loss') return // le store bascule en game over
+  if (res === 'revive') {
+    present() // Rappel : survit et avance
+    return
+  }
   if (n?.trainer) {
     speaker.value = n.trainer.name
     lines.value = [n.trainer.concede]
     step.value = 'reaction'
   } else {
-    present() // dresseur de route (sans dialogue) : on avance
+    present() // dresseur de route / sauvage (sans dialogue) : on avance
   }
 }
 
@@ -76,8 +80,12 @@ const isTrainer = computed(() => node.value?.kind === 'elite' || node.value?.kin
 const ICON: Record<AdvNode['kind'], string> = {
   start: 'i-lucide-flag', elite: 'i-lucide-swords', champion: 'i-lucide-crown',
   treasure: 'i-lucide-gift', legendary: 'i-lucide-sparkles',
-  wild: 'i-lucide-user-round', camp: 'i-lucide-tent', evolve: 'i-lucide-sparkles', fork: 'i-lucide-signpost'
+  wild: 'i-lucide-user-round', camp: 'i-lucide-tent', evolve: 'i-lucide-sparkles', fork: 'i-lucide-signpost',
+  center: 'i-lucide-plus', merchant: 'i-lucide-store', grass: 'i-lucide-sprout', event: 'i-lucide-message-circle'
 }
+// Scène « icône » (Centre / Marchand / Rencontre) : un adversaire n'est pas montré.
+const isMon = computed(() => node.value?.kind === 'wild' || node.value?.kind === 'grass')
+const isIconScene = computed(() => ['center', 'merchant', 'event'].includes(node.value?.kind ?? ''))
 function pip(i: number): string {
   if (i < spin.index) return 'done'
   if (i === spin.index) return 'current'
@@ -114,6 +122,23 @@ const choices = computed<AdvChoice[] | null>(() => {
         { key: 'delay', label: 'Retarder', icon: 'i-lucide-hand', desc: '+12 % au prochain combat' }
       ]
     : [{ key: 'delay', label: 'Puiser l\'énergie', icon: 'i-lucide-sparkles', desc: `+12 % — évolution au niveau ${spin.evolvesAt[spin.stage] ?? '?'}` }]
+  if (n.kind === 'center') return [
+    { key: 'heal', label: 'Rappel', icon: 'i-lucide-heart', desc: '30 🪙 · +1 vie (survivre à une défaite)', disabled: spin.runCoins < 30 },
+    { key: 'train', label: 'Entraînement', icon: 'i-lucide-dumbbell', desc: '40 🪙 · +1 niveau', disabled: spin.runCoins < 40 },
+    { key: 'leave', label: 'Repartir', icon: 'i-lucide-door-open', desc: 'Garder tes pièces et continuer' }
+  ]
+  if (n.kind === 'merchant') return [
+    { key: 'item', label: 'Objet tenu', icon: 'i-lucide-shield-plus', desc: '45 🪙 · bonus permanent', disabled: spin.runCoins < 45 },
+    { key: 'potion', label: 'Potion d\'élan', icon: 'i-lucide-flask-round', desc: '25 🪙 · +12 % au prochain combat', disabled: spin.runCoins < 25 },
+    { key: 'bag', label: 'Sac mystère', icon: 'i-lucide-package', desc: '35 🪙 · récompense aléatoire', disabled: spin.runCoins < 35 },
+    { key: 'leave', label: 'Passer', icon: 'i-lucide-door-open', desc: 'Poursuivre ta route' }
+  ]
+  if (n.kind === 'grass') return [
+    { key: 'catch', label: 'Capturer', icon: 'i-lucide-circle-dot', desc: '15 🪙 · allié de couverture', disabled: spin.runCoins < 15 },
+    { key: 'fight', label: 'Combattre', icon: 'i-lucide-swords', desc: `${spin.currentChance} % · +45 XP, +25 🪙` },
+    { key: 'flee', label: 'Fuir', icon: 'i-lucide-footprints', desc: 'Passer sans risque' }
+  ]
+  if (n.kind === 'event') return n.choices ?? null
   return null
 })
 
@@ -136,8 +161,14 @@ function onDialogueDone() {
   else if (step.value === 'reaction') present()
 }
 
-// Après la révélation de la récompense : on avance enfin au nœud suivant.
+// Après la révélation d'une récompense : on avance — sauf dans une boutique
+// (Centre / Marchand) où l'on peut enchaîner les achats jusqu'à « Repartir ».
 function onRewardDone() {
+  const k = node.value?.kind
+  if (k === 'center' || k === 'merchant') {
+    step.value = 'action'
+    return
+  }
   spin.advancePast()
   present()
 }
@@ -184,6 +215,59 @@ async function onChoice(key: string) {
       return
     }
     spin.autelChannel()
+    step.value = 'reward'
+    return
+  }
+  if (n.kind === 'center') {
+    if (key === 'leave') {
+      step.value = 'resolving'
+      spin.advancePast()
+      present()
+      return
+    }
+    if (key === 'heal') spin.centerHeal()
+    else spin.centerTrain()
+    step.value = 'reward'
+    return
+  }
+  if (n.kind === 'merchant') {
+    if (key === 'leave') {
+      step.value = 'resolving'
+      spin.advancePast()
+      present()
+      return
+    }
+    if (key === 'item') spin.merchantItem()
+    else if (key === 'potion') spin.merchantPotion()
+    else spin.merchantBag()
+    step.value = 'reward'
+    return
+  }
+  if (n.kind === 'grass') {
+    if (key === 'flee') {
+      step.value = 'resolving'
+      spin.advancePast()
+      present()
+      return
+    }
+    if (key === 'catch') {
+      spin.grassCatch()
+      step.value = 'reward'
+      return
+    }
+    step.value = 'resolving' // combattre
+    vsNode = n
+    vs.value = versusFrom(n)
+    return
+  }
+  if (n.kind === 'event') {
+    if (key === 'evt:pass') {
+      step.value = 'resolving'
+      spin.advancePast()
+      present()
+      return
+    }
+    spin.applyEvent(key)
     step.value = 'reward'
   }
 }
@@ -312,7 +396,7 @@ onMounted(() => {
               </div>
 
               <div
-                v-else-if="node.kind === 'wild' && node.opponent"
+                v-else-if="isMon && node.opponent"
                 class="wild"
               >
                 <span class="wild__aura" />
@@ -323,8 +407,19 @@ onMounted(() => {
                 >
                 <span class="wild__plate">
                   <b class="font-display">{{ node.opponent.name }}</b>
-                  <i>Pokémon du dresseur</i>
+                  <i>{{ node.kind === 'grass' ? 'Sauvage' : 'Pokémon du dresseur' }}</i>
                 </span>
+              </div>
+
+              <div
+                v-else-if="isIconScene"
+                class="iconscene"
+              >
+                <span class="iconscene__aura" />
+                <UIcon
+                  :name="ICON[node.kind]"
+                  class="iconscene__ico"
+                />
               </div>
 
               <div
@@ -718,6 +813,11 @@ onMounted(() => {
 /* Carrefour */
 .forkscene { display: grid; place-items: center; }
 .forkscene__ico { width: 96px; height: 96px; color: color-mix(in oklab, var(--tc) 60%, #4a3f4a); }
+
+/* Scène « icône » : Centre Pokémon / Marchand / Rencontre */
+.iconscene { position: relative; display: grid; place-items: center; }
+.iconscene__aura { position: absolute; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 46%, transparent), transparent 68%); animation: pulse 1.8s ease-in-out infinite; }
+.iconscene__ico { position: relative; width: 88px; height: 88px; color: color-mix(in oklab, var(--tc) 62%, #4a3f4a); animation: floatY 3s ease-in-out infinite; }
 
 .acta { display: flex; justify-content: center; }
 
