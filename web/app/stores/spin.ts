@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import type { PokeType } from '~/types/api'
 import type { AdventureMon, AdvNode, AdvTrainer, BattleRound, GymGimmick } from '~/types/domain'
 import { useBattleStore } from '~/stores/battle'
+import { useWalletStore } from '~/stores/wallet'
+import { spinRepo } from '~/repositories'
 
 // ─── Spin / Aventure (rogue-lite « Choix & Croissance ») ─────────────────────
 // Un run = un périple en 3 actes :
@@ -15,8 +17,11 @@ import { useBattleStore } from '~/stores/battle'
 // (+ le gimmick de l'arène du moment). L'élan est un bonus one-shot plafonné,
 // consommé au prochain combat. Les badges d'arène débloquent des jalons.
 //
-// PHASE 1.5 : moteur + données MOCKÉES (starter = Salamèche, sprites animés PokeAPI).
-// PHASE 2 : vrai starter (collection), endpoints /spin/*, vraies arènes/récompenses.
+// STARTERS : 4 Kanto curatés (esprit Pokémon) avec évolution animée — choix de
+// design, décorrélé du backend. ENDPOINTS /spin/* CÂBLÉS : start/renew (run
+// serveur, sa liste de starters est ignorée), status (statut hebdo), claim
+// (récompense), legendary-attempt (le serveur choisit ET capture le légendaire),
+// defeat. Repli mock si hors-ligne. Arènes / Conseil restent des données locales.
 
 export type SpinPhase = 'idle' | 'select' | 'map' | 'gameover' | 'victory'
 export const SPIN_REWARD_COINS = 250
@@ -111,8 +116,9 @@ const WILDMON = [
   { num: 93, name: 'Spectrum', imageUrl: '/mons/haunter.gif', type: 'Spectre' }
 ] satisfies AdventureMon[]
 
-// Légendaires (rotation) — un est tiré par run. PHASE 2 : liste fournie par
-// l'endpoint (et la tentative de capture est gérée côté serveur).
+// Légendaires — utilisés pour la SILHOUETTE mystère du nœud « Présence légendaire »
+// (forme variée par run). Le vrai légendaire révélé à la capture est choisi par
+// le serveur (/spin/legendary-attempt) ; on ne connaît son identité qu'au verdict.
 const LEGENDARIES = [
   { num: 144, name: 'Artikodin', imageUrl: '/mons/articuno.gif', type: 'Glace' },
   { num: 145, name: 'Électhor', imageUrl: '/mons/zapdos.gif', type: 'Électrik' },
@@ -362,7 +368,7 @@ function buildNodes(leg: AdventureMon): AdvNode[] {
     elite(2),
     elite(3),
     { kind: 'champion', title: 'Le Champion', trainer: CHAMPION, opponent: CHAMPION.ace, baseWinChance: 25, themeColor: themeFor(CHAMPION.ace), lethal: true },
-    { kind: 'legendary', title: 'Présence légendaire', opponent: leg, themeColor: themeFor(leg), narration: ['Une aura ancienne emplit les lieux…', `Un ${leg.name} légendaire apparaît devant toi !`] }
+    { kind: 'legendary', title: 'Présence légendaire', opponent: leg, themeColor: themeFor(leg), narration: ['Une aura ancienne emplit les lieux…', 'Une silhouette légendaire surgit de la lumière !'] }
   ]
 }
 
@@ -444,10 +450,23 @@ export const useSpinStore = defineStore('spin', {
       this.phase = 'select'
     },
 
-    // Statut hebdomadaire (mock ; PHASE 2 : appliqué depuis /spin/status au boot).
-    setWeekStatus(s: { rewardedThisWeek?: boolean, legendaryLockedThisWeek?: boolean }) {
-      if (s.rewardedThisWeek !== undefined) this.rewardedThisWeek = s.rewardedThisWeek
-      if (s.legendaryLockedThisWeek !== undefined) this.legendaryLockedThisWeek = s.legendaryLockedThisWeek
+    // Synchronise la run avec le backend en arrière-plan : démarre la run
+    // (start, avec repli renew si une run traîne) et applique le statut hebdo
+    // (récompense déjà prise, légendaire déjà accordé). Jouable hors-ligne :
+    // en cas d'échec (non connecté / API indispo) on garde les valeurs mock.
+    async syncRun() {
+      try {
+        const api = useApi()
+        const [status, started] = await Promise.all([
+          spinRepo.status(api).catch(() => null),
+          spinRepo.start(api)
+        ])
+        let run = started
+        if (run.runAlreadyActive) run = await spinRepo.renew(api)
+        if (status) this.rewardedThisWeek = status.rewardedThisWeek
+        const locked = run.legendaryGrantedThisWeek ?? status?.legendaryGrantedThisWeek
+        if (locked !== undefined) this.legendaryLockedThisWeek = locked
+      } catch { /* run jouable hors-ligne */ }
     },
 
     // Démarre un run avec le starter choisi (défaut : Salamèche).
@@ -478,6 +497,9 @@ export const useSpinStore = defineStore('spin', {
       this.legendaryResult = null
       this.lostTo = null
       this.phase = 'map'
+      // Démarre la run côté serveur + statut hebdo, sans bloquer l'entrée en jeu
+      // (les endpoints de fin de run — claim / légendaire — arrivent bien après).
+      void this.syncRun()
     },
 
     // Élan plafonné (empêche d'empiler un boss trivial).
@@ -537,7 +559,7 @@ export const useSpinStore = defineStore('spin', {
         if (g !== 'psy') this.edge = 0 // l'élan est consommé (sauf Prescience)
         this.runCoins += coins
         this.gainXp(xp) // peut armer pendingEvolve
-        if (champ && !this.rewardedThisWeek) this.rewardCoins = SPIN_REWARD_COINS // sinon : déjà pris cette semaine
+        if (champ) void this.claimReward() // récompense hebdo réclamée côté serveur
         if (isGym) {
           this.badges++
           this.applyBadgeMilestone(this.badges)
@@ -559,6 +581,7 @@ export const useSpinStore = defineStore('spin', {
       }
       this.consecutiveLosses++
       this.lostTo = node.trainer ?? null
+      void this.recordDefeat() // notifie le backend (best-effort)
       this.phase = 'gameover'
       return 'loss'
     },
@@ -735,15 +758,54 @@ export const useSpinStore = defineStore('spin', {
       this.lastReward = { kind: 'treasure', title: 'Trésor', amount: `+${boost} %`, sub: 'de chances au prochain combat' }
     },
 
-    // Capture du légendaire (mock) : taux de base + pity (+5 %/défaite), puis
-    // roulette de transfert (10 %). Aucune pièce ici — c'est une règle backend.
+    // Rencontre légendaire : le SERVEUR choisit le légendaire (rotation) puis
+    // gère la capture et la roulette de transfert vers la collection. On affiche
+    // son verdict. Une capture verrouille la tentative pour le reste de la semaine.
+    // Repli mock hors-ligne (taux de base + pity, transfert 10 %).
     async attemptLegendary(node: AdvNode) {
-      const mon = node.opponent ?? this.legendaryMon ?? (LEGENDARIES[0] as AdventureMon)
-      const rate = Math.min(80, 25 + this.consecutiveLosses * 5)
-      const captured = Math.random() * 100 < rate
-      const transferred = captured && Math.random() * 100 < 10
-      this.legendaryResult = { captured, transferred, mon }
+      try {
+        const r = await spinRepo.legendaryAttempt(useApi())
+        const p = r.pokemon
+        const mon: AdventureMon = {
+          num: p.num,
+          name: p.name,
+          imageUrl: p.image_url,
+          type: LEGENDARIES.find(l => l.num === p.num)?.type ?? 'Psy'
+        }
+        this.legendaryResult = { captured: r.captured, transferred: r.transferred, mon }
+        if (r.captured) this.legendaryLockedThisWeek = true
+      } catch {
+        const mon = node.opponent ?? this.legendaryMon ?? (LEGENDARIES[0] as AdventureMon)
+        const rate = Math.min(80, 25 + this.consecutiveLosses * 5)
+        const captured = Math.random() * 100 < rate
+        const transferred = captured && Math.random() * 100 < 10
+        this.legendaryResult = { captured, transferred, mon }
+      }
       this.phase = 'victory'
+    },
+
+    // Récompense hebdo de fin de circuit (Champion vaincu) : le serveur décide de
+    // l'octroi (1×/semaine) et renvoie le montant, crédité localement. Repli mock.
+    async claimReward() {
+      try {
+        const r = await spinRepo.claim(useApi())
+        this.rewardedThisWeek = true
+        if (r.rewardGranted) {
+          this.rewardCoins = r.coins || SPIN_REWARD_COINS
+          useWalletStore().credit(this.rewardCoins, 'spin/claim')
+        } else {
+          this.rewardCoins = 0
+        }
+      } catch {
+        if (!this.rewardedThisWeek) this.rewardCoins = SPIN_REWARD_COINS
+      }
+    },
+
+    // Défaite létale : notifie le backend (best-effort, n'impacte pas l'écran).
+    async recordDefeat() {
+      try {
+        await spinRepo.defeat(useApi())
+      } catch { /* silencieux */ }
     },
 
     // Légendaire déjà capturé cette semaine : pas de tentative, on clôt le run.

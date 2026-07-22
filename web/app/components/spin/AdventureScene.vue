@@ -932,7 +932,9 @@ onMounted(() => {
 
 .legend { position: relative; display: grid; place-items: center; }
 .legend__aura { position: absolute; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 55%, transparent), transparent 70%); animation: pulse 1.8s ease-in-out infinite; }
-.legend__mon { position: relative; width: 150px; height: 150px; object-fit: contain; filter: drop-shadow(0 0 14px color-mix(in oklab, var(--tc) 60%, transparent)); animation: floatY 3s ease-in-out infinite; }
+/* Silhouette « mystère » : le vrai légendaire (choisi par le serveur) n'est
+   révélé qu'au verdict de capture — ici on ne montre qu'une ombre. */
+.legend__mon { position: relative; width: 150px; height: 150px; object-fit: contain; filter: brightness(0) drop-shadow(0 0 16px color-mix(in oklab, var(--tc) 72%, transparent)); animation: floatY 3s ease-in-out infinite; }
 .legend--throw .legend__mon { animation: shrink .5s ease-in .5s forwards; }
 .legend__ball { position: absolute; font-size: 1.9rem; animation: toss 1.1s ease-in forwards; }
 

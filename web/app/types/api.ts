@@ -323,6 +323,38 @@ export interface SpinStatus {
   legendaryTransferRate?: number
 }
 
+// POST /spin/start (et /renew) : démarre une run côté serveur. Renvoie la
+// liste historique de starters (IGNORÉE côté front : on garde nos 4 Kanto) et
+// l'état de run utile (pity, légendaire déjà accordé cette semaine).
+export interface WireSpinStarter {
+  num: number
+  name: string
+  image_url: string
+  type: PokeType
+}
+export interface WireSpinStart {
+  starters: WireSpinStarter[]
+  consecutiveLosses: number
+  legendaryGrantedThisWeek?: boolean
+  legendaryTransfersThisWeek?: number
+  runAlreadyActive?: boolean
+}
+// POST /spin/claim : récompense hebdo (1×/semaine). `coins` = montant accordé.
+export interface WireSpinClaim {
+  rewardGranted: boolean
+  coins: number
+}
+// POST /spin/legendary-attempt : le serveur choisit le légendaire (rotation) et
+// gère capture + roulette de transfert vers la collection.
+export interface WireSpinLegendary {
+  pokemon: { num: number, name: string, image_url: string }
+  captured: boolean
+  transferred: boolean
+  card?: unknown
+  transferRateUsed?: number
+  captureRateUsed?: number
+}
+
 export interface WireTrade {
   id: UUID
   status: 'pending_target' | 'pending_initiator' | 'completed' | 'declined' | 'cancelled' | 'expired'
