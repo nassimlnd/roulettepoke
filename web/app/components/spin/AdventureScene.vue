@@ -8,6 +8,9 @@ import type { AdvNode } from '~/types/domain'
 const spin = useSpinStore()
 const reduced = usePreferredReducedMotion()
 
+// Masque la gouttière de scrollbar réservée tant que l'aventure est à l'écran.
+useViewportLock(() => spin.phase !== 'idle')
+
 type Step = 'intro' | 'action' | 'resolving' | 'reaction'
 const step = ref<Step>('intro')
 const speaker = ref('')

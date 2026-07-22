@@ -6,6 +6,9 @@ import { useBattleStore } from '~/stores/battle'
 const battle = useBattleStore()
 const finished = ref(false)
 
+// Masque la gouttière de scrollbar réservée tant que le combat couvre l'écran.
+useViewportLock(() => battle.active)
+
 watch(() => battle.active, (a) => {
   if (a) finished.value = false
 })

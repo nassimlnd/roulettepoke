@@ -135,6 +135,14 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Overlays plein écran (combat, aventure, arène) : on neutralise la gouttière
+   de scrollbar réservée le temps de l'overlay — sinon elle apparaît comme une
+   bande claire à droite (cf. useViewportLock). */
+html.viewport-locked {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
 body {
   min-height: 100dvh;
 }
