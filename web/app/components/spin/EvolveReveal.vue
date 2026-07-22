@@ -123,8 +123,9 @@ const title = computed(() =>
 }
 .evo.done .evo__flash { animation: evoFlash .5s ease-out both; }
 
-.evo__title { font-weight: 800; font-size: 1.24rem; line-height: 1.3; color: var(--ui-text-highlighted); min-height: 2.4em; }
-.evo.done .evo__title { color: #7c4fb0; }
+/* Toujours affiché sur l'overlay sombre de l'aventure → texte clair. */
+.evo__title { font-weight: 800; font-size: 1.24rem; line-height: 1.3; color: #f4eeff; text-shadow: 0 2px 10px rgba(0, 0, 0, .45); min-height: 2.4em; }
+.evo.done .evo__title { color: #d7bdf5; }
 .evo__cta { margin-top: 4px; }
 
 @keyframes flashFrom {
