@@ -7,6 +7,7 @@ import type { AdvChoice, AdvNode } from '~/types/domain'
 // transition ; les combats passent par un écran d'arène « VS » puis BattleStage.
 const spin = useSpinStore()
 const reduced = usePreferredReducedMotion()
+const audio = useSpinAudio()
 
 // Masque la gouttière de scrollbar réservée tant que l'aventure est à l'écran.
 useViewportLock(() => spin.phase !== 'idle')
@@ -238,6 +239,7 @@ function onEvolveDone() {
 async function onChoice(key: string) {
   const n = node.value
   if (!n || step.value !== 'action') return
+  audio.sfx('select')
   if (key.startsWith('path:')) {
     step.value = 'resolving'
     spin.chooseFork(Number(key.slice(5)))
@@ -320,6 +322,8 @@ async function onChoice(key: string) {
 async function onCta() {
   const n = node.value
   if (!n || step.value !== 'action') return
+  audio.resume()
+  audio.sfx('select')
   step.value = 'resolving'
 
   if (n.kind === 'start' || n.kind === 'threshold') {
@@ -347,17 +351,44 @@ async function onCta() {
       return
     }
     throwing.value = true
+    audio.sfx('capture')
     await wait(1100)
     await spin.attemptLegendary(n)
   }
 }
 
 function onSelectStarter(id: string) {
+  audio.resume() // premier geste : démarre le contexte audio
+  audio.sfx('confirm')
+  audio.playMusic('adventure')
   spin.start(id)
 }
 
 watch(() => spin.phase, (p) => {
   if (p === 'map') present()
+  // Musique selon la phase (combat géré par le watch de `vs`).
+  if (p === 'select' || p === 'map') {
+    audio.resume()
+    if (!vs.value) audio.playMusic('adventure')
+  } else if (p === 'gameover') {
+    audio.stopMusic()
+    audio.sfx('faint')
+  } else if (p === 'victory') {
+    audio.stopMusic()
+    audio.sfx('victory')
+  } else if (p === 'idle') {
+    audio.stopMusic()
+  }
+})
+// Bascule musique aventure ↔ combat.
+watch(vs, (v) => {
+  if (v) audio.playMusic('battle')
+  else if (spin.phase === 'map') audio.playMusic('adventure')
+})
+// SFX des révélations (récompense / évolution).
+watch(step, (s) => {
+  if (s === 'reward') audio.sfx(spin.lastReward?.kind === 'coins' ? 'coin' : spin.lastReward?.kind === 'badge' ? 'badge' : 'reward')
+  else if (s === 'evolving') audio.sfx('evolve')
 })
 onMounted(() => {
   if (spin.phase === 'map') present()
@@ -372,6 +403,19 @@ onMounted(() => {
         class="astage"
         :style="{ '--tc': tc }"
       >
+        <!-- Son on/off -->
+        <button
+          class="aclose amute"
+          :aria-label="audio.muted.value ? 'Activer le son' : 'Couper le son'"
+          :title="audio.muted.value ? 'Activer le son' : 'Couper le son'"
+          @click="audio.toggleMute()"
+        >
+          <UIcon
+            :name="audio.muted.value ? 'i-lucide-volume-off' : 'i-lucide-volume-2'"
+            class="size-5"
+          />
+        </button>
+
         <!-- Quitter l'aventure à tout moment -->
         <button
           class="aclose"
@@ -982,6 +1026,7 @@ onMounted(() => {
   transition: background .15s, color .15s, transform .15s;
 }
 .aclose:hover { background: rgba(255, 255, 255, .22); color: #fff; transform: scale(1.08); }
+.amute { right: auto; left: max(14px, env(safe-area-inset-left)); }
 
 /* Verdict (victoire / défaite) plein écran */
 .verdict {
