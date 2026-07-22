@@ -6,7 +6,10 @@ import type { AdvReward } from '~/stores/spin'
 // ce qu'il a gagné et avance à son rythme.
 const props = defineProps<{ reward: AdvReward }>()
 const emit = defineEmits<{ continue: [] }>()
-const ICONS = { rest: 'i-lucide-flame', xp: 'i-lucide-trending-up', item: 'i-lucide-shield-plus', treasure: 'i-lucide-gem' }
+const ICONS: Record<string, string> = {
+  rest: 'i-lucide-flame', xp: 'i-lucide-trending-up', item: 'i-lucide-shield-plus', treasure: 'i-lucide-gem',
+  life: 'i-lucide-heart', ally: 'i-lucide-shield', coins: 'i-lucide-coins'
+}
 const icon = computed(() => ICONS[props.reward.kind] ?? 'i-lucide-gem')
 </script>
 
@@ -93,6 +96,9 @@ const icon = computed(() => ICONS[props.reward.kind] ?? 'i-lucide-gem')
 .reveal__disc--rest { background: linear-gradient(150deg, #ff9d5c, #ef5a48); box-shadow: 0 12px 30px -8px rgba(239, 90, 72, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
 .reveal__disc--xp { background: linear-gradient(150deg, #8fd6a8, #4faa78); box-shadow: 0 12px 30px -8px rgba(79, 170, 120, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
 .reveal__disc--item { background: linear-gradient(150deg, #b79cf0, #8b5cc4); box-shadow: 0 12px 30px -8px rgba(139, 92, 196, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
+.reveal__disc--life { background: linear-gradient(150deg, #ff9db0, #ef5a6e); box-shadow: 0 12px 30px -8px rgba(239, 90, 110, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
+.reveal__disc--ally { background: linear-gradient(150deg, #7fd6c4, #3fae9b); box-shadow: 0 12px 30px -8px rgba(63, 174, 155, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
+.reveal__disc--coins { background: linear-gradient(150deg, #ffd76b, #f0a52e); box-shadow: 0 12px 30px -8px rgba(240, 165, 46, .7), inset 0 -6px 14px rgba(0, 0, 0, .12); }
 .reveal__ico { width: 64px; height: 64px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); animation: icoWiggle 2.4s ease-in-out 1s infinite; }
 .reveal__spark {
   position: absolute;

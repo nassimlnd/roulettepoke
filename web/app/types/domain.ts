@@ -409,9 +409,10 @@ export interface AdvTrainer {
 
 // Étapes du parcours (façon rogue-lite). Combats plein écran : `elite`,
 // `champion`, `legendary`, `wild` (dresseur de route, optionnel). `treasure`
-// accorde un bonus. Nœuds à choix : `fork` (carrefour), `camp` (feu de camp :
-// Repos / Entraînement / Forge), `evolve` (autel : Évoluer / Retarder).
-export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'evolve'
+// accorde un bonus. Nœuds à choix : `fork` (carrefour), `camp` (feu de camp),
+// `evolve` (autel), `center` (Centre Pokémon), `merchant` (marchand), `grass`
+// (hautes herbes : capturer/combattre/fuir), `event` (rencontre narrative).
+export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'evolve' | 'center' | 'merchant' | 'grass' | 'event'
 
 // Une option présentée au joueur (feu de camp, autel, combat optionnel).
 export interface AdvChoice {
