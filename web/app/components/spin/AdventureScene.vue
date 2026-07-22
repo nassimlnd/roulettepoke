@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSpinStore } from '~/stores/spin'
-import type { AdvNode } from '~/types/domain'
+import type { AdvChoice, AdvNode } from '~/types/domain'
 
 // Aventure plein écran (overlay immersif, façon combat). Présente chaque étape
 // (dresseur + dialogue, coffre, repos, légendaire) avec des transitions ; les
@@ -11,7 +11,7 @@ const reduced = usePreferredReducedMotion()
 // Masque la gouttière de scrollbar réservée tant que l'aventure est à l'écran.
 useViewportLock(() => spin.phase !== 'idle')
 
-type Step = 'intro' | 'action' | 'resolving' | 'reaction' | 'reward'
+type Step = 'intro' | 'action' | 'resolving' | 'reaction' | 'reward' | 'evolving'
 const step = ref<Step>('intro')
 const speaker = ref('')
 const lines = ref<string[]>([])
@@ -34,7 +34,7 @@ let vsBattle: Promise<boolean> | null = null
 
 function versusFrom(n: AdvNode): VersusData {
   const me = spin.starter
-  const combats = spin.nodes.filter(x => x.kind === 'elite' || x.kind === 'champion')
+  const combats = spin.nodes.filter(x => x.kind === 'elite' || x.kind === 'champion' || x.kind === 'wild')
   const cur = Math.max(0, combats.indexOf(n))
   const foe: VersusSide = n.trainer
     ? { name: n.trainer.name, img: n.trainer.portraitUrl ?? '', sprite: false, sub: n.opponent?.type ?? '' }
@@ -59,21 +59,24 @@ async function onVsDone() {
   vsNode = null
   const won = vsBattle ? await vsBattle : false
   vsBattle = null
-  if (won && n?.trainer) {
+  if (!won) return // défaite : le store bascule en game over
+  if (n?.trainer) {
     speaker.value = n.trainer.name
     lines.value = [n.trainer.concede]
     step.value = 'reaction'
+  } else {
+    present() // dresseur de route (sans dialogue) : on avance
   }
 }
 
 const node = computed(() => spin.current)
 const tc = computed(() => node.value?.themeColor || '#8b5cc4')
 const isTrainer = computed(() => node.value?.kind === 'elite' || node.value?.kind === 'champion')
-const isCamp = computed(() => node.value?.kind === 'treasure' && !!node.value.title.includes('camp'))
 
 const ICON: Record<AdvNode['kind'], string> = {
   start: 'i-lucide-flag', elite: 'i-lucide-swords', champion: 'i-lucide-crown',
-  treasure: 'i-lucide-gift', legendary: 'i-lucide-sparkles'
+  treasure: 'i-lucide-gift', legendary: 'i-lucide-sparkles',
+  wild: 'i-lucide-user-round', camp: 'i-lucide-tent', evolve: 'i-lucide-sparkles', fork: 'i-lucide-signpost'
 }
 function pip(i: number): string {
   if (i < spin.index) return 'done'
@@ -81,13 +84,37 @@ function pip(i: number): string {
   return ''
 }
 
+// Nœuds à CTA unique (les nœuds à choix passent par `choices` + onChoice).
 const cta = computed(() => {
   const k = node.value?.kind
   if (k === 'start') return { label: 'Avancer', icon: 'i-lucide-chevron-right' }
   if (k === 'elite') return { label: 'Combattre', icon: 'i-lucide-swords' }
   if (k === 'champion') return { label: 'Défier le Champion', icon: 'i-lucide-crown' }
   if (k === 'legendary') return { label: 'Tenter la capture', icon: 'i-lucide-sparkles' }
-  return isCamp.value ? { label: 'Se reposer', icon: 'i-lucide-flame' } : { label: 'Ouvrir le coffre', icon: 'i-lucide-gift' }
+  return { label: 'Ouvrir le coffre', icon: 'i-lucide-gift' }
+})
+
+// Options d'un nœud à choix (carrefour, dresseur de route, camp, autel).
+const choices = computed<AdvChoice[] | null>(() => {
+  const n = node.value
+  if (!n) return null
+  if (n.kind === 'fork') return (n.paths ?? []).map((p, i) => ({ key: `path:${i}`, label: p.label, icon: p.icon, desc: p.desc }))
+  if (n.kind === 'wild') return [
+    { key: 'fight', label: 'Combattre', icon: 'i-lucide-swords', desc: `${spin.currentChance} % de victoire · +45 XP` },
+    { key: 'skip', label: 'Éviter', icon: 'i-lucide-footprints', desc: 'Passer sans risque' }
+  ]
+  if (n.kind === 'camp') return [
+    { key: 'rest', label: 'Repos', icon: 'i-lucide-tent', desc: '+8 % au prochain combat' },
+    { key: 'train', label: 'Entraînement', icon: 'i-lucide-dumbbell', desc: '+50 XP — vers l\'évolution' },
+    { key: 'forge', label: 'Forge', icon: 'i-lucide-hammer', desc: spin.heldItem ? 'Renforce ton objet (+2 %)' : 'Fabrique un objet tenu' }
+  ]
+  if (n.kind === 'evolve') return spin.canEvolve
+    ? [
+        { key: 'evolve', label: `Évoluer en ${spin.nextForm?.name}`, icon: 'i-lucide-sparkles', desc: `${spin.starter?.name} est prêt à évoluer !` },
+        { key: 'delay', label: 'Retarder', icon: 'i-lucide-hand', desc: '+12 % au prochain combat' }
+      ]
+    : [{ key: 'delay', label: 'Puiser l\'énergie', icon: 'i-lucide-sparkles', desc: `+12 % — évolution au niveau ${spin.evolvesAt[spin.stage] ?? '?'}` }]
+  return null
 })
 
 const wait = (ms: number) => new Promise<void>(r => setTimeout(r, reduced.value === 'reduce' ? Math.min(ms, 40) : ms))
@@ -113,6 +140,52 @@ function onDialogueDone() {
 function onRewardDone() {
   spin.advancePast()
   present()
+}
+
+// Après la révélation d'évolution.
+function onEvolveDone() {
+  spin.advancePast()
+  present()
+}
+
+// Choix d'un nœud (carrefour, dresseur de route, camp, autel).
+async function onChoice(key: string) {
+  const n = node.value
+  if (!n || step.value !== 'action') return
+  if (key.startsWith('path:')) {
+    step.value = 'resolving'
+    spin.chooseFork(Number(key.slice(5)))
+    present()
+    return
+  }
+  if (n.kind === 'wild') {
+    if (key === 'skip') {
+      step.value = 'resolving'
+      spin.advancePast()
+      present()
+      return
+    }
+    step.value = 'resolving'
+    vsNode = n
+    vs.value = versusFrom(n)
+    return
+  }
+  if (n.kind === 'camp') {
+    if (key === 'rest') spin.campRest()
+    else if (key === 'train') spin.campTrain()
+    else spin.campForge()
+    step.value = 'reward'
+    return
+  }
+  if (n.kind === 'evolve') {
+    if (key === 'evolve') {
+      spin.doEvolve()
+      step.value = 'evolving'
+      return
+    }
+    spin.autelChannel()
+    step.value = 'reward'
+  }
 }
 
 async function onCta() {
@@ -177,6 +250,9 @@ onMounted(() => {
           </li>
         </ol>
 
+        <!-- Bandeau du starter (croissance visible) -->
+        <StarterHud v-if="spin.phase === 'map'" />
+
         <!-- ═══ Parcours ═══ -->
         <div
           v-if="spin.phase === 'map' && node"
@@ -187,7 +263,7 @@ onMounted(() => {
             mode="out-in"
           >
             <div
-              v-if="step !== 'reward'"
+              v-if="step !== 'reward' && step !== 'evolving'"
               :key="spin.index"
               class="scene"
             >
@@ -223,15 +299,54 @@ onMounted(() => {
               </div>
 
               <div
+                v-else-if="node.kind === 'wild' && node.opponent"
+                class="wild"
+              >
+                <span class="wild__aura" />
+                <img
+                  :src="node.opponent.imageUrl"
+                  :alt="node.opponent.name"
+                  class="wild__mon"
+                >
+                <span class="wild__plate">
+                  <b class="font-display">{{ node.opponent.name }}</b>
+                  <i>Pokémon du dresseur</i>
+                </span>
+              </div>
+
+              <div
+                v-else-if="node.kind === 'camp'"
+                class="event"
+              >
+                <span class="campfire">🔥</span>
+              </div>
+
+              <div
+                v-else-if="node.kind === 'evolve'"
+                class="altar"
+              >
+                <span class="altar__aura" />
+                <UIcon
+                  name="i-lucide-sparkles"
+                  class="altar__ico"
+                />
+              </div>
+
+              <div
+                v-else-if="node.kind === 'fork'"
+                class="forkscene"
+              >
+                <UIcon
+                  name="i-lucide-signpost"
+                  class="forkscene__ico"
+                />
+              </div>
+
+              <div
                 v-else-if="node.kind === 'treasure'"
                 class="event"
               >
                 <span
-                  v-if="isCamp"
-                  class="campfire"
-                >🔥</span>
-                <span
-                  v-else
                   class="chest"
                   :class="{ 'chest--open': chestOpen }"
                 >
@@ -287,7 +402,30 @@ onMounted(() => {
             v-else-if="step === 'action'"
             class="acta"
           >
+            <div
+              v-if="choices"
+              class="choices"
+            >
+              <button
+                v-for="c in choices"
+                :key="c.key"
+                class="choice"
+                :disabled="c.disabled"
+                @click="onChoice(c.key)"
+              >
+                <UIcon
+                  :name="c.icon"
+                  class="choice__ico"
+                />
+                <span class="choice__label font-display">{{ c.label }}</span>
+                <span
+                  v-if="c.desc"
+                  class="choice__desc"
+                >{{ c.desc }}</span>
+              </button>
+            </div>
             <PButton
+              v-else
               color="primary"
               size="lg"
               @click="onCta"
@@ -306,6 +444,12 @@ onMounted(() => {
             v-else-if="step === 'reward' && spin.lastReward"
             :reward="spin.lastReward"
             @continue="onRewardDone"
+          />
+          <EvolveReveal
+            v-else-if="step === 'evolving' && spin.evolution"
+            :from="spin.evolution.from"
+            :to="spin.evolution.to"
+            @done="onEvolveDone"
           />
           <div
             v-else
@@ -536,9 +680,62 @@ onMounted(() => {
 .legend__ball { position: absolute; font-size: 1.9rem; animation: toss 1.1s ease-in forwards; }
 
 .gate { display: grid; place-items: center; }
-.gate__ico { width: 88px; height: 88px; color: color-mix(in oklab, var(--tc) 26%, #fff); }
+.gate__ico { width: 88px; height: 88px; color: color-mix(in oklab, var(--tc) 62%, #4a3f4a); }
+
+/* Dresseur de route : le Pokémon adverse */
+.wild { position: relative; display: grid; place-items: center; }
+.wild__aura { position: absolute; width: 168px; height: 168px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 45%, transparent), transparent 70%); animation: pulse 1.8s ease-in-out infinite; }
+.wild__mon { position: relative; width: 148px; height: 148px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 8px 10px rgba(40, 30, 30, .35)); animation: floatY 3s ease-in-out infinite; }
+.wild__plate {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  white-space: nowrap;
+  background: var(--ui-bg-elevated);
+  border: 2px solid color-mix(in oklab, var(--tc) 50%, #3a2f2a);
+  padding: 4px 16px;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 rgba(58, 47, 42, .16);
+}
+.wild__plate b { font-weight: 700; font-size: .95rem; color: var(--ui-text-highlighted); }
+.wild__plate i { font-style: normal; font-size: .68rem; font-weight: 700; color: var(--tc); filter: brightness(.8); }
+
+/* Autel d'évolution */
+.altar { position: relative; display: grid; place-items: center; }
+.altar__aura { position: absolute; width: 156px; height: 156px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 52%, transparent), transparent 66%); animation: pulse 1.8s ease-in-out infinite; }
+.altar__ico { position: relative; width: 90px; height: 90px; color: color-mix(in oklab, var(--tc) 64%, #3a2f4a); animation: floatY 3s ease-in-out infinite; }
+
+/* Carrefour */
+.forkscene { display: grid; place-items: center; }
+.forkscene__ico { width: 96px; height: 96px; color: color-mix(in oklab, var(--tc) 60%, #4a3f4a); }
 
 .acta { display: flex; justify-content: center; }
+
+/* Grille de choix (carrefour, dresseur de route, camp, autel) */
+.choices { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; margin: 0 auto; }
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 13px;
+  align-items: center;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--ui-bg-elevated);
+  border: 2px solid color-mix(in oklab, var(--tc) 42%, #3a2f2a);
+  box-shadow: 0 4px 0 rgba(58, 47, 42, .16);
+  transition: transform .14s var(--ease-pop), box-shadow .14s;
+  cursor: pointer;
+}
+.choice:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(58, 47, 42, .16); }
+.choice:disabled { opacity: .5; cursor: not-allowed; }
+.choice__ico { grid-row: 1 / 3; width: 32px; height: 32px; color: var(--tc); filter: brightness(.82); }
+.choice__label { font-weight: 700; font-size: 1rem; color: var(--ui-text-highlighted); }
+.choice__desc { font-size: .8rem; color: var(--ui-text-muted); }
 .acta__odds { margin-left: 8px; font-weight: 800; font-size: .82rem; color: #fff; background: rgba(255, 255, 255, .22); padding: 2px 9px; border-radius: 999px; }
 .acta__wait { display: grid; place-items: center; padding: 10px; color: #fff; }
 
