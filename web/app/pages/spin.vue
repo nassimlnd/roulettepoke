@@ -35,7 +35,7 @@ const spin = useSpinStore()
       <PButton
         color="primary"
         size="lg"
-        @click="spin.start()"
+        @click="spin.begin()"
       >
         <UIcon
           name="i-lucide-play"
