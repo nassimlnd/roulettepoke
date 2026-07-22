@@ -1,26 +1,34 @@
 import { defineStore } from 'pinia'
 import type { PokeType } from '~/types/api'
-import type { AdventureMon, AdvNode, AdvTrainer, BattleRound } from '~/types/domain'
+import type { AdventureMon, AdvNode, AdvTrainer, BattleRound, GymGimmick } from '~/types/domain'
 import { useBattleStore } from '~/stores/battle'
 
 // ─── Spin / Aventure (rogue-lite « Choix & Croissance ») ─────────────────────
-// Un run = un périple à nœuds : combats (Conseil des 4, dresseurs, Champion),
-// carrefours, feux de camp, autel d'évolution… Le starter GRANDIT au fil du run
-// (XP → niveau → évolution) et chaque nœud pose un vrai choix. Une seule équation
-// de cote, nourrie de plusieurs leviers lisibles :
-//   cote = base + niveau + évolution + objet + avantage de type + élan
+// Un run = un périple en 3 actes :
+//   ACTE 1 — Circuit des Arènes (6 des 8 Champions, en rotation) : NON LÉTAL,
+//            c'est la piste de croissance qui fait atterrir les évolutions.
+//   ACTE 2 — Conseil des 4 : LÉTAL (les Rappels s'appliquent).
+//   ACTE 3 — Champion + rencontre légendaire.
+// Le starter GRANDIT (XP → niveau → évolution auto) et une seule équation de cote
+// lisible relie tous les leviers :
+//   cote = base + niveau + stade d'évolution + objet + avantage de type + couverture + élan
+// (+ le gimmick de l'arène du moment). L'élan est un bonus one-shot plafonné,
+// consommé au prochain combat. Les badges d'arène débloquent des jalons.
 //
-// PHASE 1.5 : moteur + données MOCKÉES (starter = Salamèche, sprites auto-hébergés).
-// PHASE 2 : vrai starter (collection), endpoints /spin/*, vraies récompenses.
+// PHASE 1.5 : moteur + données MOCKÉES (starter = Salamèche, sprites animés PokeAPI).
+// PHASE 2 : vrai starter (collection), endpoints /spin/*, vraies arènes/récompenses.
 
 export type SpinPhase = 'idle' | 'map' | 'gameover' | 'victory'
 export const SPIN_REWARD_COINS = 250
 const XP_PER_LEVEL = 100
 const START_LEVEL = 5
+const EDGE_CAP = 20 // plafond de l'élan (empêche d'empiler un boss trivial)
+const GYM_COUNT = 6 // arènes par run (tirées parmi les 8, en rotation)
+export const BADGE_GOAL = GYM_COUNT
 
 // Récompense révélée « en grand » avant de continuer.
 export interface AdvReward {
-  kind: 'treasure' | 'rest' | 'xp' | 'item' | 'life' | 'ally' | 'coins'
+  kind: 'treasure' | 'rest' | 'xp' | 'item' | 'life' | 'ally' | 'coins' | 'badge'
   title: string
   amount: string
   sub: string
@@ -33,7 +41,8 @@ const COVERAGE_BONUS = 8 // % si un allié couvre le type adverse
 
 const TYPE_HEX: Partial<Record<PokeType, string>> = {
   Glace: '#7fd0e0', Électrik: '#f2c94c', Feu: '#f0895e', Psy: '#e88bb6',
-  Plante: '#7fc98a', Eau: '#6db6e6', Roche: '#cbb083', Dragon: '#8b7fd6'
+  Plante: '#7fc98a', Eau: '#6db6e6', Roche: '#cbb083', Dragon: '#8b7fd6',
+  Poison: '#b57ed6', Sol: '#d8b46a'
 }
 function themeFor(m: AdventureMon | undefined): string {
   return (m && TYPE_HEX[m.type]) || '#8b5cc4'
@@ -41,8 +50,11 @@ function themeFor(m: AdventureMon | undefined): string {
 
 // Avantage de type (mini-table) : +12 si super efficace, −12 si vulnérable.
 const SUPER: Partial<Record<PokeType, PokeType[]>> = {
-  Feu: ['Plante', 'Glace'], Eau: ['Feu', 'Roche'], Plante: ['Eau', 'Roche'],
-  Électrik: ['Eau'], Glace: ['Plante', 'Dragon'], Roche: ['Feu', 'Glace'], Dragon: ['Dragon']
+  Feu: ['Plante', 'Glace', 'Insecte'], Eau: ['Feu', 'Roche', 'Sol'],
+  Plante: ['Eau', 'Roche', 'Sol'], Électrik: ['Eau', 'Vol'],
+  Glace: ['Plante', 'Dragon', 'Sol', 'Vol'], Roche: ['Feu', 'Glace', 'Vol', 'Insecte'],
+  Sol: ['Feu', 'Électrik', 'Roche', 'Poison'], Psy: ['Combat', 'Poison'],
+  Poison: ['Plante', 'Fée'], Dragon: ['Dragon']
 }
 function typeMod(atk?: PokeType, def?: PokeType): number {
   if (!atk || !def) return 0
@@ -51,9 +63,11 @@ function typeMod(atk?: PokeType, def?: PokeType): number {
   return 0
 }
 // Un allié (Hautes Herbes) super efficace contre l'adversaire → bonus de couverture.
+function covers(allies: PokeType[], def?: PokeType): boolean {
+  return !!def && allies.some(a => SUPER[a]?.includes(def))
+}
 function coverageMod(allies: PokeType[], def?: PokeType): number {
-  if (!def) return 0
-  return allies.some(a => SUPER[a]?.includes(def)) ? COVERAGE_BONUS : 0
+  return covers(allies, def) ? COVERAGE_BONUS : 0
 }
 const clampChance = (v: number) => Math.min(95, Math.max(20, Math.round(v)))
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)] as T
@@ -66,7 +80,7 @@ const CHARM = [
   { num: 6, name: 'Dracaufeu', imageUrl: '/mons/charizard.gif', type: 'Feu' }
 ] satisfies AdventureMon[]
 
-// Adversaires de dresseurs de route (types variés → l'avantage de type compte).
+// Adversaires de dresseurs de route / hautes herbes (types variés).
 const WILDMON = [
   { num: 2, name: 'Herbizarre', imageUrl: '/mons/ivysaur.gif', type: 'Plante' },
   { num: 8, name: 'Carabaffe', imageUrl: '/mons/wartortle.gif', type: 'Eau' },
@@ -74,7 +88,19 @@ const WILDMON = [
   { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' }
 ] satisfies AdventureMon[]
 
-// Aces du Conseil / Champion (sprites via le proxy /images).
+// As des 8 Champions d'Arène (sprites animés PokeAPI).
+const ACE = {
+  onix: { num: 95, name: 'Onix', imageUrl: '/mons/onix.gif', type: 'Roche' },
+  staross: { num: 121, name: 'Staross', imageUrl: '/mons/staross.gif', type: 'Eau' },
+  raichu: { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' },
+  rafflesia: { num: 45, name: 'Rafflesia', imageUrl: '/mons/rafflesia.gif', type: 'Plante' },
+  ectoplasma: { num: 94, name: 'Ectoplasma', imageUrl: '/mons/ectoplasma.gif', type: 'Poison' },
+  alakazam: { num: 65, name: 'Alakazam', imageUrl: '/mons/alakazam.gif', type: 'Psy' },
+  arcanin: { num: 59, name: 'Arcanin', imageUrl: '/mons/arcanin.gif', type: 'Feu' },
+  rhinoferos: { num: 112, name: 'Rhinoféros', imageUrl: '/mons/rhinoferos.gif', type: 'Sol' }
+} satisfies Record<string, AdventureMon>
+
+// Aces légendaires du Conseil / Champion (artwork via le proxy /images).
 const MON = {
   articuno: { num: 144, name: 'Artikodin', imageUrl: '/images/articuno.webp', type: 'Glace' },
   zapdos: { num: 145, name: 'Électhor', imageUrl: '/images/zapdos.webp', type: 'Électrik' },
@@ -82,11 +108,77 @@ const MON = {
   mew: { num: 151, name: 'Mew', imageUrl: '/images/mew.webp', type: 'Psy' }
 } satisfies Record<string, AdventureMon>
 
+// Gimmick d'arène (par type) : un modificateur d'UNE ligne, télégraphié sur la
+// carte de combat, qui crée une mini-décision de préparation. Résolu dans
+// `chanceFor` (numérique) et `fight` (drapeaux keepEdge / bonusXp).
+const GIMMICK: Partial<Record<PokeType, GymGimmick>> = {
+  Roche: { key: 'rock', tell: 'Armure de roche : ton objet tenu est ignoré ici.' },
+  Eau: { key: 'water', tell: 'Marée haute : −10 %, sauf si un allié te couvre.' },
+  Électrik: { key: 'electric', tell: 'Statique : ton élan ne compte qu\'à moitié.' },
+  Plante: { key: 'grass', tell: 'Terrain sec : ton avantage de type est doublé.' },
+  Poison: { key: 'poison', tell: 'Brume toxique : ta cote est plafonnée à 75 %.' },
+  Psy: { key: 'psy', tell: 'Prescience : ton élan n\'est pas consommé si tu gagnes.' },
+  Feu: { key: 'fire', tell: 'Fournaise : −8 %, mais +40 XP si tu gagnes.' },
+  Sol: { key: 'ground', tell: 'Séisme : ton bonus de niveau est annulé ici.' }
+}
+
 const SD = '/trainers/'
+// Les 8 Champions d'Arène (data mockée ; Phase 2 les câblera au backend).
+const GYMS: { trainer: AdvTrainer, type: PokeType }[] = [
+  { type: 'Roche', trainer: {
+    name: 'Pierre', title: 'Arène d\'Argenta', portraitUrl: SD + 'pierre.png', ace: ACE.onix,
+    intro: ['Je suis Pierre, le roc de la Ligue.', 'Mon Onix va tester ta ténacité !'],
+    concede: 'Solide… tu as fissuré ma défense. Le badge Roche est à toi.',
+    taunt: 'Trop tendre. Reviens quand tu seras plus dur que la pierre.'
+  } },
+  { type: 'Eau', trainer: {
+    name: 'Ondine', title: 'Arène d\'Azuria', portraitUrl: SD + 'ondine.png', ace: ACE.staross,
+    intro: ['Coucou ! Moi c\'est Ondine, la sirène.', 'Staross et moi allons te noyer de style !'],
+    concede: 'Pfff… bien joué. Tu mérites le badge Cascade.',
+    taunt: 'Trop lent ! La marée t\'a emporté.'
+  } },
+  { type: 'Électrik', trainer: {
+    name: 'Major Bob', title: 'Arène de Carmin', portraitUrl: SD + 'majorbob.png', ace: ACE.raichu,
+    intro: ['Attention, bleu ! Je suis Major Bob.', 'Mon Raichu va t\'électriser façon commando !'],
+    concede: 'Décharge encaissée sans broncher. Respect, soldat. Prends le badge.',
+    taunt: 'Grillé ! Retourne à l\'entraînement.'
+  } },
+  { type: 'Plante', trainer: {
+    name: 'Erika', title: 'Arène de Céladopole', portraitUrl: SD + 'erika.png', ace: ACE.rafflesia,
+    intro: ['Bienvenue… je suis Erika. *bâille*', 'Que le parfum de Rafflesia t\'endorme.'],
+    concede: 'Oh… tu m\'as réveillée. Le badge Prisme te revient.',
+    taunt: 'Zzz… le pollen a eu raison de toi.'
+  } },
+  { type: 'Poison', trainer: {
+    name: 'Koga', title: 'Arène de Parmanie', portraitUrl: SD + 'koga.png', ace: ACE.ectoplasma,
+    intro: ['Fou hahaha ! Je suis Koga, maître ninja.', 'Ectoplasma va dissoudre ton courage !'],
+    concede: 'Impressionnant… tu as percé la brume. Le badge Âme est tien.',
+    taunt: 'La toxine coule dans tes veines. Tu as perdu.'
+  } },
+  { type: 'Psy', trainer: {
+    name: 'Morgane', title: 'Arène de Safrania', portraitUrl: SD + 'morgane.png', ace: ACE.alakazam,
+    intro: ['J\'avais prévu ta venue. Je suis Morgane.', 'Alakazam lit déjà tes pensées…'],
+    concede: 'Mon esprit n\'avait pas prévu ça. Le badge Marais t\'appartient.',
+    taunt: 'Ton avenir était tracé : la défaite.'
+  } },
+  { type: 'Feu', trainer: {
+    name: 'Auguste', title: 'Arène de Cramois\'Île', portraitUrl: SD + 'auguste.png', ace: ACE.arcanin,
+    intro: ['Hé hé ! Une énigme brûlante t\'attend. Je suis Auguste.', 'Arcanin va t\'embraser !'],
+    concede: 'Quelle fournaise tu opposes ! Le badge Volcan est à toi.',
+    taunt: 'Réduit en cendres. La flamme t\'a vaincu.'
+  } },
+  { type: 'Sol', trainer: {
+    name: 'Giovanni', title: 'Arène de Jadielle', portraitUrl: SD + 'giovanni.png', ace: ACE.rhinoferos,
+    intro: ['Ainsi tu arrives jusqu\'à moi. Je suis Giovanni.', 'Rhinoféros va t\'engloutir sous la terre !'],
+    concede: 'Inconcevable… tu m\'as vaincu ? Prends le badge Terre. Nous nous reverrons.',
+    taunt: 'La terre a tremblé, et tu es tombé.'
+  } }
+]
+
 const COUNCIL: AdvTrainer[] = [
   {
     name: 'Olga', title: 'Maîtresse des Glaces', portraitUrl: SD + 'olga.png', ace: MON.articuno,
-    intro: ['Bienvenue au Conseil des 4, dresseur.', 'Je suis Olga. Mon Artikodin va geler tes espoirs — montre-moi ta valeur !'],
+    intro: ['Te voilà au Conseil des 4, dresseur.', 'Je suis Olga. Mon Artikodin va geler tes espoirs — montre-moi ta valeur !'],
     concede: 'Impressionnant… la glace a fondu devant toi. Poursuis ta route.',
     taunt: 'Le froid a eu raison de toi. Reviens quand tu seras prêt.'
   },
@@ -111,7 +203,7 @@ const COUNCIL: AdvTrainer[] = [
 ]
 const CHAMPION: AdvTrainer = {
   name: 'Blue', title: 'Champion de la Ligue', portraitUrl: SD + 'blue.png', ace: MON.mew,
-  intro: ['Alors c\'est toi qui as vaincu le Conseil des 4.', 'Je suis Blue, le Champion. Personne ne m\'a jamais battu — et ça ne changera pas aujourd\'hui !'],
+  intro: ['Alors c\'est toi qui as franchi les arènes et le Conseil.', 'Je suis Blue, le Champion. Personne ne m\'a jamais battu — et ça ne changera pas aujourd\'hui !'],
   concede: 'Impossible… tu m\'as battu ? Tu es le nouveau Champion. Chapeau.',
   taunt: 'Il en faut plus pour détrôner un Champion. Reviens me défier.'
 }
@@ -126,32 +218,12 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-// ─── Constructeurs de nœuds ──────────────────────────────────────────────────
-function wildNode(): AdvNode {
-  const mon = pick(WILDMON)
-  return {
-    kind: 'wild', title: 'Dresseur sur la route', opponent: mon, baseWinChance: 80,
-    optional: true, themeColor: themeFor(mon),
-    narration: ['Un dresseur te barre la route !', `« En garde ! » — il envoie son ${mon.name}.`]
-  }
-}
+// ─── Constructeurs de nœuds (non-combat / préparation) ───────────────────────
 function campNode(): AdvNode {
   return { kind: 'camp', title: 'Feu de camp', themeColor: '#5bbf82', narration: ['Un feu de camp crépite. Comment profites-tu de ce répit ?'] }
 }
 function treasureNode(): AdvNode {
   return { kind: 'treasure', title: 'Coffre ancien', themeColor: '#e0a92e', narration: ['Un coffre scellé repose dans l\'ombre…'] }
-}
-function evolveNode(): AdvNode {
-  return { kind: 'evolve', title: 'Autel d\'Évolution', themeColor: '#b57ee0', narration: ['Un autel ancien pulse d\'une lumière étrange…'] }
-}
-function fork(narration: string, a: AdvNode, aLabel: string, aIcon: string, aDesc: string, b: AdvNode, bLabel: string, bIcon: string, bDesc: string): AdvNode {
-  return {
-    kind: 'fork', title: 'Carrefour', themeColor: '#8b7fd6', narration: [narration],
-    paths: [
-      { label: aLabel, icon: aIcon, desc: aDesc, node: a },
-      { label: bLabel, icon: bIcon, desc: bDesc, node: b }
-    ]
-  }
 }
 function centerNode(): AdvNode {
   return { kind: 'center', title: 'Centre Pokémon', themeColor: '#ef6a7e', narration: ['Le Centre Pokémon t\'accueille, lumières chaudes et musique douce.', 'L\'Infirmière Joëlle te sourit. « Que puis-je faire pour toi ? »'] }
@@ -162,6 +234,23 @@ function merchantNode(): AdvNode {
 function grassNode(): AdvNode {
   const mon = pick(WILDMON)
   return { kind: 'grass', title: 'Hautes herbes', opponent: mon, baseWinChance: 82, themeColor: themeFor(mon), narration: ['Les hautes herbes s\'agitent devant toi…', `Un ${mon.name} sauvage en surgit !`] }
+}
+function wildNode(): AdvNode {
+  const mon = pick(WILDMON)
+  return {
+    kind: 'wild', title: 'Dresseur sur la route', opponent: mon, baseWinChance: 80,
+    optional: true, themeColor: themeFor(mon),
+    narration: ['Un dresseur te barre la route !', `« En garde ! » — il envoie son ${mon.name}.`]
+  }
+}
+function fork(narration: string, a: AdvNode, aLabel: string, aIcon: string, aDesc: string, b: AdvNode, bLabel: string, bIcon: string, bDesc: string): AdvNode {
+  return {
+    kind: 'fork', title: 'Carrefour', themeColor: '#8b7fd6', narration: [narration],
+    paths: [
+      { label: aLabel, icon: aIcon, desc: aDesc, node: a },
+      { label: bLabel, icon: bIcon, desc: bDesc, node: b }
+    ]
+  }
 }
 
 // Rencontres (dilemmes narratifs, ton Pokémon). Les options `evt:*` sont
@@ -197,31 +286,49 @@ function eventNode(): AdvNode {
   return { kind: 'event', title: 'Rencontre', themeColor: '#c79a5a', narration: e.narration, choices: e.options }
 }
 
-// Construit le périple : spine fixe (Conseil des 4 + Champion + Légendaire),
-// ponctué de dresseurs de route, carrefours, feu de camp et autel d'évolution.
+// Construit le périple en 3 actes.
 function buildNodes(): AdvNode[] {
+  // ── ACTE 1 : circuit de GYM_COUNT arènes tirées parmi les 8, difficulté ↑ ──
+  const gyms = shuffle(GYMS).slice(0, GYM_COUNT)
+  const gymBase = [86, 80, 73, 66, 58, 50]
+  const gymNode = (g: { trainer: AdvTrainer, type: PokeType }, i: number): AdvNode => ({
+    kind: 'gym', title: g.trainer.title, trainer: g.trainer, opponent: g.trainer.ace,
+    baseWinChance: gymBase[i] ?? 60, themeColor: themeFor(g.trainer.ace),
+    lethal: false, badge: i + 1, gimmick: GIMMICK[g.type]
+  })
+  const G = gyms.map(gymNode)
+
+  // ── ACTE 2 : Conseil des 4, cotes recalibrées (le joueur arrive costaud) ──
   const council = shuffle(COUNCIL)
-  const bases = [74, 69, 64, 59]
+  const eBase = [42, 38, 34, 30]
   const elite = (i: number): AdvNode => {
     const t = council[i] ?? (COUNCIL[0] as AdvTrainer)
-    return { kind: 'elite', title: `Conseil ${i + 1}`, trainer: t, opponent: t.ace, baseWinChance: bases[i] ?? 60, themeColor: themeFor(t.ace) }
+    return { kind: 'elite', title: `Conseil ${i + 1}`, trainer: t, opponent: t.ace, baseWinChance: eBase[i] ?? 30, themeColor: themeFor(t.ace), lethal: true }
   }
+
   return [
-    { kind: 'start', title: 'Le seuil du Conseil', themeColor: '#8b5cc4', narration: ['Les portes du Conseil des 4 s\'ouvrent devant toi…', 'Quatre Maîtres t\'attendent. Au bout : le Champion.'] },
-    elite(0),
-    treasureNode(),
+    { kind: 'start', title: 'L\'appel de la Ligue', themeColor: '#8b5cc4', narration: ['Ton périple commence. Huit Arènes se dressent avant le Conseil des 4…', 'Un starter t\'accompagne — il grandira à chaque victoire.'] },
+    G[0] as AdvNode,
     grassNode(),
-    elite(1),
+    G[1] as AdvNode,
+    merchantNode(),
+    G[2] as AdvNode,
+    campNode(),
+    G[3] as AdvNode,
     fork('La route se sépare. Quel chemin prends-tu ?',
       wildNode(), 'Sentier périlleux', 'i-lucide-swords', 'Un dresseur t\'y attend — de l\'XP et des pièces, mais un combat.',
       centerNode(), 'Vers le Centre Pokémon', 'i-lucide-plus', 'Souffler, soigner, s\'équiper — sans risque.'),
-    campNode(),
-    evolveNode(),
-    elite(2),
+    G[4] as AdvNode,
     eventNode(),
-    merchantNode(),
+    G[5] as AdvNode,
+    { kind: 'threshold', title: 'Le seuil du Conseil', themeColor: '#8b5cc4', narration: ['Les six badges brillent à ta ceinture.', 'Au-delà de cette porte, plus de seconde chance : le Conseil des 4 t\'attend.'] },
+    elite(0),
+    treasureNode(),
+    elite(1),
+    centerNode(),
+    elite(2),
     elite(3),
-    { kind: 'champion', title: 'Le Champion', trainer: CHAMPION, opponent: CHAMPION.ace, baseWinChance: 54, themeColor: themeFor(CHAMPION.ace) },
+    { kind: 'champion', title: 'Le Champion', trainer: CHAMPION, opponent: CHAMPION.ace, baseWinChance: 25, themeColor: themeFor(CHAMPION.ace), lethal: true },
     { kind: 'legendary', title: 'Présence légendaire', opponent: LEGENDARY, themeColor: '#8b5cc4', narration: ['Une aura ancienne emplit les lieux…', `Un ${LEGENDARY.name} légendaire apparaît devant toi !`] }
   ]
 }
@@ -237,16 +344,19 @@ export const useSpinStore = defineStore('spin', {
     evoChain: [] as AdventureMon[],
     heldItem: null as HeldItem | null,
     runCoins: 0, // pièces internes au run (Centre / Marchand)
-    lives: 0, // Rappels : survit à une défaite tant que > 0
+    lives: 0, // Rappels : survit à une défaite létale tant que > 0
     allies: [] as PokeType[], // couverture de type (Hautes Herbes)
+    badges: 0, // badges d'arène gagnés (Acte 1)
     nodes: [] as AdvNode[],
     index: 0, // nœud courant
-    edge: 0, // élan : bonus one-shot, consommé au prochain combat
+    edge: 0, // élan : bonus one-shot plafonné, consommé au prochain combat
     consecutiveLosses: 0, // pity légendaire (mock)
     lastReward: null as AdvReward | null,
     evolution: null as { from: AdventureMon, to: AdventureMon } | null, // révélation d'évolution
+    pendingEvolve: false, // une évolution est mûre (déclenchée après le combat)
+    pendingMilestone: false, // un jalon de badge attend sa révélation
     rewardCoins: 0,
-    legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon } | null,
+    legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon, consolation: number } | null,
     lostTo: null as AdvTrainer | null,
     busy: false
   }),
@@ -257,6 +367,7 @@ export const useSpinStore = defineStore('spin', {
     xpPct: state => Math.round((state.xp / XP_PER_LEVEL) * 100),
     maxStage: state => Math.max(0, state.evoChain.length - 1),
     nextForm: state => state.evoChain[state.stage + 1] ?? null,
+    badgeGoal: () => BADGE_GOAL,
     canEvolve(): boolean {
       return this.stage < this.maxStage && this.level >= (this.evolvesAt[this.stage] ?? Number.POSITIVE_INFINITY)
     },
@@ -268,7 +379,18 @@ export const useSpinStore = defineStore('spin', {
         const item = this.heldItem?.bonus ?? 0
         const t = typeMod(this.starter?.type, node.opponent?.type)
         const cov = coverageMod(this.allies, node.opponent?.type)
-        return clampChance(node.baseWinChance + lvl + stg + item + t + cov + this.edge)
+        let v = node.baseWinChance + lvl + stg + item + t + cov + this.edge
+        // Gimmick d'arène (modificateurs numériques).
+        const g = node.gimmick?.key
+        if (g === 'rock') v -= item
+        else if (g === 'grass' && t > 0) v += 12
+        else if (g === 'water' && !covers(this.allies, node.opponent?.type)) v -= 10
+        else if (g === 'electric') v -= Math.floor(this.edge / 2)
+        else if (g === 'fire') v -= 8
+        else if (g === 'ground') v -= lvl
+        let c = clampChance(v)
+        if (g === 'poison') c = Math.min(c, 75)
+        return c
       }
     },
     currentChance(): number {
@@ -283,22 +405,30 @@ export const useSpinStore = defineStore('spin', {
       this.level = START_LEVEL
       this.xp = 0
       this.stage = 0
-      this.evolvesAt = [7, 10]
+      this.evolvesAt = [7, 9]
       this.evoChain = [...CHARM]
       this.heldItem = null
       this.runCoins = 0
       this.lives = 0
       this.allies = []
+      this.badges = 0
       this.nodes = buildNodes()
       this.index = 0
       this.edge = 0
       this.consecutiveLosses = 0
       this.lastReward = null
       this.evolution = null
+      this.pendingEvolve = false
+      this.pendingMilestone = false
       this.rewardCoins = 0
       this.legendaryResult = null
       this.lostTo = null
       this.phase = 'map'
+    },
+
+    // Élan plafonné (empêche d'empiler un boss trivial).
+    addEdge(amount: number) {
+      this.edge = Math.min(EDGE_CAP, this.edge + amount)
     },
 
     gainXp(amount: number) {
@@ -307,20 +437,27 @@ export const useSpinStore = defineStore('spin', {
         this.xp -= XP_PER_LEVEL
         this.level++
       }
+      // Une évolution devient mûre → révélée après le combat en cours.
+      if (this.canEvolve) this.pendingEvolve = true
     },
 
-    // Combat plein écran (BattleScene). Renvoie l'issue : victoire, Rappel
-    // (survit à la défaite), ou défaite (game over).
-    async fight(node: AdvNode): Promise<'win' | 'revive' | 'loss'> {
+    // Combat plein écran (BattleScene). Renvoie l'issue :
+    //   'win'      victoire
+    //   'revive'   défaite LÉTALE encaissée grâce à un Rappel (survit, avance)
+    //   'setback'  défaite NON létale (arène / combat optionnel) : on continue
+    //   'loss'     défaite létale sans Rappel → game over
+    async fight(node: AdvNode): Promise<'win' | 'revive' | 'setback' | 'loss'> {
       const battle = useBattleStore()
       const op = node.opponent
       const me = this.starter
       if (!op || !me) return 'loss'
       const chance = this.chanceFor(node)
       const won = Math.random() * 100 < chance
-      const willRevive = !won && this.lives > 0
+      const lethal = node.lethal ?? false
+      const willRevive = !won && lethal && this.lives > 0
+      const g = node.gimmick?.key
       const champ = node.kind === 'champion'
-      const minor = node.kind === 'wild' || node.kind === 'grass'
+      const isGym = node.kind === 'gym'
       const rounds: BattleRound[] = [{
         round: 1,
         player: { name: me.name, imageUrl: me.imageUrl },
@@ -332,29 +469,76 @@ export const useSpinStore = defineStore('spin', {
         rounds,
         won,
         themeColor: node.themeColor,
-        title: champ ? `Champion — ${op.name}` : minor ? `Dresseur — ${op.name}` : `Conseil des 4 — ${op.name}`,
-        winTitle: champ ? 'Champion vaincu ! 👑' : 'Victoire !',
+        title: champ ? `Champion — ${op.name}` : node.kind === 'elite' ? `Conseil des 4 — ${op.name}` : isGym ? `${node.trainer?.name ?? 'Arène'} — ${op.name}` : `Sauvage — ${op.name}`,
+        winTitle: champ ? 'Champion vaincu ! 👑' : isGym ? 'Badge remporté ! 🏅' : 'Victoire !',
         winSub: champ ? `+${SPIN_REWARD_COINS} 🪙 — un légendaire t'attend encore.` : `${op.name} est battu — en avant !`,
-        loseSub: willRevive ? 'Ton Pokémon tombe… mais un Rappel le relève !' : 'Ton aventure s\'arrête ici… mais tu peux retenter.'
+        loseSub: willRevive ? 'Ton Pokémon tombe… mais un Rappel le relève !' : lethal ? 'Ton aventure s\'arrête ici… mais tu peux retenter.' : 'Défaite — mais le circuit continue (pas de badge).'
       })
+
       if (won) {
         this.index++
-        this.gainXp(champ ? 90 : minor ? 45 : 60)
-        this.runCoins += champ ? 60 : minor ? 25 : 40
-        this.edge = 0 // l'élan est consommé
+        let xp = champ ? 90 : node.kind === 'elite' ? 70 : isGym ? 60 : 45
+        if (g === 'fire') xp += 40 // gimmick Fournaise
+        const coins = champ ? 60 : node.kind === 'elite' ? 45 : isGym ? 35 : 25
+        if (g !== 'psy') this.edge = 0 // l'élan est consommé (sauf Prescience)
+        this.runCoins += coins
+        this.gainXp(xp) // peut armer pendingEvolve
         if (champ) this.rewardCoins = SPIN_REWARD_COINS
+        if (isGym) {
+          this.badges++
+          this.applyBadgeMilestone(this.badges)
+        }
         return 'win'
       }
       if (willRevive) {
         this.lives--
-        this.index++ // survit et avance
+        this.index++
         this.edge = 0
         return 'revive'
+      }
+      if (!lethal) {
+        // Contretemps : on avance, sans badge, en perdant un peu d'élan.
+        this.index++
+        this.edge = Math.max(0, this.edge - 6)
+        this.lostTo = node.trainer ?? null
+        return 'setback'
       }
       this.consecutiveLosses++
       this.lostTo = node.trainer ?? null
       this.phase = 'gameover'
       return 'loss'
+    },
+
+    // Jalons de badge (Acte 1) : rythment le circuit et récompensent la progression.
+    applyBadgeMilestone(n: number) {
+      if (n === 2) {
+        this.addEdge(10)
+        this.lastReward = { kind: 'rest', title: '2 badges !', amount: '+10 %', sub: 'la ferveur du circuit t\'anime' }
+        this.pendingMilestone = true
+      } else if (n === 3) {
+        this.lives++
+        this.lastReward = { kind: 'life', title: '3 badges !', amount: '+1 vie', sub: 'un Rappel offert par la Ligue' }
+        this.pendingMilestone = true
+      } else if (n === 4) {
+        this.level++
+        if (this.canEvolve) this.pendingEvolve = true
+        this.lastReward = { kind: 'xp', title: '4 badges !', amount: `Niveau ${this.level}`, sub: 'ton talent est reconnu' }
+        this.pendingMilestone = true
+      } else if (n >= GYM_COUNT) {
+        this.addEdge(15)
+        this.runCoins += 50
+        // Filet de sécurité : garantir la forme finale avant le Conseil.
+        if (this.stage < this.maxStage) {
+          this.level = Math.max(this.level, this.evolvesAt[this.stage] ?? this.level)
+          if (this.canEvolve) this.pendingEvolve = true
+        }
+        this.lastReward = { kind: 'badge', title: 'Circuit complet !', amount: `${GYM_COUNT} badges`, sub: '+50 🪙 · +15 % — direction le Conseil' }
+        this.pendingMilestone = true
+      }
+    },
+
+    consumeMilestone() {
+      this.pendingMilestone = false
     },
 
     // Avance d'un nœud (scènes narratives, choix résolus, récompenses fermées).
@@ -371,7 +555,7 @@ export const useSpinStore = defineStore('spin', {
 
     // Feu de camp — trois voies mutuellement exclusives.
     campRest() {
-      this.edge += 8
+      this.addEdge(8)
       this.lastReward = { kind: 'rest', title: 'Repos', amount: '+8 %', sub: 'de chances au prochain combat' }
     },
     campTrain() {
@@ -387,17 +571,16 @@ export const useSpinStore = defineStore('spin', {
       this.lastReward = { kind: 'item', title: this.heldItem.name, amount: `+${this.heldItem.bonus} %`, sub: 'objet tenu (bonus permanent)' }
     },
 
-    // Autel d'Évolution.
+    // Évolution (déclenchée automatiquement après le combat qui a fait monter le
+    // niveau). Enchaîne si deux paliers sont franchis d'un coup.
     doEvolve() {
+      this.pendingEvolve = false
       const to = this.nextForm
       if (!to || !this.starter) return
       this.evolution = { from: this.starter, to }
       this.stage++
       this.starter = to
-    },
-    autelChannel() {
-      this.edge += 12
-      this.lastReward = { kind: 'rest', title: 'Énergie canalisée', amount: '+12 %', sub: 'de chances au prochain combat' }
+      if (this.canEvolve) this.pendingEvolve = true
     },
 
     // ─── Centre Pokémon ───
@@ -411,6 +594,7 @@ export const useSpinStore = defineStore('spin', {
       if (this.runCoins < COST.train) return
       this.runCoins -= COST.train
       this.level++
+      if (this.canEvolve) this.pendingEvolve = true
       this.lastReward = { kind: 'xp', title: 'Entraînement intensif', amount: `Niveau ${this.level}`, sub: '+2 % de cote (permanent)' }
     },
 
@@ -424,7 +608,7 @@ export const useSpinStore = defineStore('spin', {
     merchantPotion() {
       if (this.runCoins < COST.potion) return
       this.runCoins -= COST.potion
-      this.edge += 12
+      this.addEdge(12)
       this.lastReward = { kind: 'rest', title: 'Potion d\'élan', amount: '+12 %', sub: 'de chances au prochain combat' }
     },
     merchantBag() {
@@ -441,7 +625,7 @@ export const useSpinStore = defineStore('spin', {
         this.runCoins += 50
         this.lastReward = { kind: 'coins', title: 'Sac mystère — Magot', amount: '+50 🪙', sub: 'tu te refais !' }
       } else {
-        this.edge += 15
+        this.addEdge(15)
         this.lastReward = { kind: 'rest', title: 'Sac mystère — Dynamo', amount: '+15 %', sub: 'au prochain combat' }
       }
     },
@@ -460,6 +644,7 @@ export const useSpinStore = defineStore('spin', {
       const k = key.slice(4) // 'evt:xxx' → 'xxx'
       if (k === 'bathe') {
         this.level++
+        if (this.canEvolve) this.pendingEvolve = true
         this.lastReward = { kind: 'xp', title: 'Bain revigorant', amount: `Niveau ${this.level}`, sub: 'tes forces reviennent' }
       } else if (k === 'search') {
         if (Math.random() < 0.5) {
@@ -484,7 +669,7 @@ export const useSpinStore = defineStore('spin', {
         this.allies.push(t)
         this.lastReward = { kind: 'ally', title: 'Un allié reconnaissant', amount: `Couverture ${t}`, sub: `+${COVERAGE_BONUS} % contre les types qu'il domine` }
       } else if (k === 'rest') {
-        this.edge += 10
+        this.addEdge(10)
         this.lastReward = { kind: 'rest', title: 'Campement', amount: '+10 %', sub: 'au prochain combat' }
       }
     },
@@ -492,17 +677,21 @@ export const useSpinStore = defineStore('spin', {
     // Coffre : prépare la récompense (l'avancée se fait après la révélation).
     openTreasure() {
       const boost = [10, 12, 15][Math.floor(Math.random() * 3)] ?? 12
-      this.edge += boost
+      this.addEdge(boost)
       this.lastReward = { kind: 'treasure', title: 'Trésor', amount: `+${boost} %`, sub: 'de chances au prochain combat' }
     },
 
-    // Capture du légendaire (mock) : taux de base + pity (+5 %/défaite).
+    // Capture du légendaire (mock) : taux de base + pity (+5 %/défaite), puis
+    // roulette de transfert (10 %). Une capture non transférée offre un lot de
+    // consolation pour rester lisible et gratifiant.
     async attemptLegendary(node: AdvNode) {
       const mon = node.opponent ?? LEGENDARY
       const rate = Math.min(80, 25 + this.consecutiveLosses * 5)
       const captured = Math.random() * 100 < rate
       const transferred = captured && Math.random() * 100 < 10
-      this.legendaryResult = { captured, transferred, mon }
+      const consolation = transferred ? 0 : captured ? 60 : 30
+      if (consolation) this.rewardCoins += consolation
+      this.legendaryResult = { captured, transferred, mon, consolation }
       this.phase = 'victory'
     },
 
@@ -514,10 +703,13 @@ export const useSpinStore = defineStore('spin', {
       this.phase = 'idle'
       this.nodes = []
       this.index = 0
+      this.badges = 0
       this.legendaryResult = null
       this.lostTo = null
       this.lastReward = null
       this.evolution = null
+      this.pendingEvolve = false
+      this.pendingMilestone = false
       this.runCoins = 0
       this.lives = 0
       this.allies = []

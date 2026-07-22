@@ -407,12 +407,19 @@ export interface AdvTrainer {
   taunt: string // réplique si le joueur perd
 }
 
-// Étapes du parcours (façon rogue-lite). Combats plein écran : `elite`,
-// `champion`, `legendary`, `wild` (dresseur de route, optionnel). `treasure`
-// accorde un bonus. Nœuds à choix : `fork` (carrefour), `camp` (feu de camp),
-// `evolve` (autel), `center` (Centre Pokémon), `merchant` (marchand), `grass`
-// (hautes herbes : capturer/combattre/fuir), `event` (rencontre narrative).
-export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'evolve' | 'center' | 'merchant' | 'grass' | 'event'
+// Étapes du parcours (façon rogue-lite). Combats plein écran : `gym` (Champion
+// d'Arène, Acte 1, non létal), `elite` (Conseil des 4, létal), `champion`,
+// `legendary`, `wild` (dresseur de route, optionnel). `treasure` accorde un
+// bonus, `threshold` marque le passage à l'Acte 2. Nœuds à choix : `fork`
+// (carrefour), `camp` (feu de camp), `center` (Centre Pokémon), `merchant`
+// (marchand), `grass` (hautes herbes), `event` (rencontre narrative).
+export type AdvNodeKind = 'start' | 'threshold' | 'gym' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'center' | 'merchant' | 'grass' | 'event'
+
+// Gimmick d'arène : un modificateur télégraphié, propre au type du Champion.
+export interface GymGimmick {
+  key: 'rock' | 'water' | 'electric' | 'grass' | 'poison' | 'psy' | 'fire' | 'ground'
+  tell: string // phrase affichée avant le combat
+}
 
 // Une option présentée au joueur (feu de camp, autel, combat optionnel).
 export interface AdvChoice {
@@ -439,7 +446,10 @@ export interface AdvNode {
   baseWinChance?: number // combats : cote de base (0-100), avant leviers
   themeColor?: string // teinte de la scène
   narration?: string[] // texte narratif
-  choices?: AdvChoice[] // camp / evolve / wild : options
+  choices?: AdvChoice[] // camp / wild / event : options
   paths?: AdvPath[] // fork : chemins candidats
   optional?: boolean // wild : le combat peut être évité
+  lethal?: boolean // combat : une défaite met fin au run (Conseil / Champion)
+  badge?: number // gym : n° du badge décerné à la victoire
+  gimmick?: GymGimmick // gym : modificateur de combat télégraphié
 }

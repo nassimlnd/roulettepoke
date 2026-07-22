@@ -2,9 +2,9 @@
 import { useSpinStore } from '~/stores/spin'
 import type { AdvChoice, AdvNode } from '~/types/domain'
 
-// Aventure plein écran (overlay immersif, façon combat). Présente chaque étape
-// (dresseur + dialogue, coffre, repos, légendaire) avec des transitions ; les
-// combats passent par un flash « Combat contre X ! » puis le BattleStage.
+// Aventure plein écran (overlay immersif). 3 actes : circuit des arènes (non
+// létal) → Conseil des 4 (létal) → Champion + légendaire. Chaque étape a sa
+// transition ; les combats passent par un écran d'arène « VS » puis BattleStage.
 const spin = useSpinStore()
 const reduced = usePreferredReducedMotion()
 
@@ -30,11 +30,17 @@ type VersusData = {
 }
 const vs = ref<VersusData | null>(null)
 let vsNode: AdvNode | null = null
-let vsBattle: Promise<'win' | 'revive' | 'loss'> | null = null
+let vsBattle: Promise<'win' | 'revive' | 'setback' | 'loss'> | null = null
+
+// Séquence post-combat (victoire) : évolution → réplique → jalon → nœud suivant.
+const inPostCombat = ref(false)
+const postQueue = ref<Array<'evolve' | 'reaction' | 'milestone'>>([])
+let reactSpeaker = ''
+let reactLine = ''
 
 function versusFrom(n: AdvNode): VersusData {
   const me = spin.starter
-  const combats = spin.nodes.filter(x => x.kind === 'elite' || x.kind === 'champion' || x.kind === 'wild')
+  const combats = spin.nodes.filter(x => x.kind === 'gym' || x.kind === 'elite' || x.kind === 'champion')
   const cur = Math.max(0, combats.indexOf(n))
   const foe: VersusSide = n.trainer
     ? { name: n.trainer.name, img: n.trainer.portraitUrl ?? '', sprite: false, sub: n.opponent?.type ?? '' }
@@ -42,8 +48,8 @@ function versusFrom(n: AdvNode): VersusData {
   return {
     me: { name: me?.name ?? 'Toi', img: me?.imageUrl ?? '', sprite: true, sub: me?.type ?? '' },
     foe,
-    heading: 'AVENTURE',
-    round: `COMBAT ${cur + 1} / ${combats.length}`,
+    heading: n.kind === 'gym' ? 'CHAMPION D\'ARÈNE' : n.kind === 'elite' ? 'CONSEIL DES 4' : n.kind === 'champion' ? 'LE CHAMPION' : 'AVENTURE',
+    round: n.kind === 'gym' ? `ARÈNE ${cur + 1}` : `COMBAT ${cur + 1} / ${combats.length}`,
     dots: { total: combats.length, current: cur }
   }
 }
@@ -64,24 +70,60 @@ async function onVsDone() {
     present() // Rappel : survit et avance
     return
   }
-  if (n?.trainer) {
-    speaker.value = n.trainer.name
-    lines.value = [n.trainer.concede]
+  // Défaite d'arène (non létale) : brève raillerie, puis on continue.
+  if (res === 'setback') {
+    if (n?.trainer) {
+      inPostCombat.value = true
+      postQueue.value = []
+      speaker.value = n.trainer.name
+      lines.value = [n.trainer.taunt]
+      step.value = 'reaction'
+    } else {
+      present()
+    }
+    return
+  }
+  // Victoire : évolution → réplique de concession → jalon de badge → suite.
+  const q: Array<'evolve' | 'reaction' | 'milestone'> = []
+  if (spin.pendingEvolve) q.push('evolve')
+  if (n?.trainer) q.push('reaction')
+  if (spin.pendingMilestone) q.push('milestone')
+  reactSpeaker = n?.trainer?.name ?? ''
+  reactLine = n?.trainer?.concede ?? ''
+  inPostCombat.value = true
+  postQueue.value = q
+  runPost()
+}
+// Joue l'étape suivante de la séquence post-combat (ou avance si terminée).
+function runPost() {
+  const next = postQueue.value.shift()
+  if (!next) {
+    inPostCombat.value = false
+    present()
+    return
+  }
+  if (next === 'evolve') {
+    spin.doEvolve()
+    step.value = 'evolving'
+  } else if (next === 'reaction') {
+    speaker.value = reactSpeaker
+    lines.value = [reactLine]
     step.value = 'reaction'
-  } else {
-    present() // dresseur de route / sauvage (sans dialogue) : on avance
+  } else if (next === 'milestone') {
+    step.value = 'reward' // affiche spin.lastReward (jalon)
   }
 }
 
 const node = computed(() => spin.current)
 const tc = computed(() => node.value?.themeColor || '#8b5cc4')
-const isTrainer = computed(() => node.value?.kind === 'elite' || node.value?.kind === 'champion')
+const isTrainer = computed(() => node.value?.kind === 'gym' || node.value?.kind === 'elite' || node.value?.kind === 'champion')
 
 const ICON: Record<AdvNode['kind'], string> = {
-  start: 'i-lucide-flag', elite: 'i-lucide-swords', champion: 'i-lucide-crown',
-  treasure: 'i-lucide-gift', legendary: 'i-lucide-sparkles',
-  wild: 'i-lucide-user-round', camp: 'i-lucide-tent', evolve: 'i-lucide-sparkles', fork: 'i-lucide-signpost',
-  center: 'i-lucide-plus', merchant: 'i-lucide-store', grass: 'i-lucide-sprout', event: 'i-lucide-message-circle'
+  start: 'i-lucide-flag', threshold: 'i-lucide-door-open', gym: 'i-lucide-medal',
+  elite: 'i-lucide-swords', champion: 'i-lucide-crown', treasure: 'i-lucide-gift',
+  legendary: 'i-lucide-sparkles', wild: 'i-lucide-user-round', camp: 'i-lucide-tent',
+  fork: 'i-lucide-signpost', center: 'i-lucide-plus', merchant: 'i-lucide-store',
+  grass: 'i-lucide-sprout', event: 'i-lucide-message-circle'
 }
 // Scène « icône » (Centre / Marchand / Rencontre) : un adversaire n'est pas montré.
 const isMon = computed(() => node.value?.kind === 'wild' || node.value?.kind === 'grass')
@@ -95,14 +137,16 @@ function pip(i: number): string {
 // Nœuds à CTA unique (les nœuds à choix passent par `choices` + onChoice).
 const cta = computed(() => {
   const k = node.value?.kind
-  if (k === 'start') return { label: 'Avancer', icon: 'i-lucide-chevron-right' }
+  if (k === 'start') return { label: 'Commencer', icon: 'i-lucide-chevron-right' }
+  if (k === 'threshold') return { label: 'Franchir le seuil', icon: 'i-lucide-door-open' }
+  if (k === 'gym') return { label: 'Défier le Champion', icon: 'i-lucide-swords' }
   if (k === 'elite') return { label: 'Combattre', icon: 'i-lucide-swords' }
   if (k === 'champion') return { label: 'Défier le Champion', icon: 'i-lucide-crown' }
   if (k === 'legendary') return { label: 'Tenter la capture', icon: 'i-lucide-sparkles' }
   return { label: 'Ouvrir le coffre', icon: 'i-lucide-gift' }
 })
 
-// Options d'un nœud à choix (carrefour, dresseur de route, camp, autel).
+// Options d'un nœud à choix (carrefour, dresseur de route, camp, boutiques…).
 const choices = computed<AdvChoice[] | null>(() => {
   const n = node.value
   if (!n) return null
@@ -116,12 +160,6 @@ const choices = computed<AdvChoice[] | null>(() => {
     { key: 'train', label: 'Entraînement', icon: 'i-lucide-dumbbell', desc: '+50 XP — vers l\'évolution' },
     { key: 'forge', label: 'Forge', icon: 'i-lucide-hammer', desc: spin.heldItem ? 'Renforce ton objet (+2 %)' : 'Fabrique un objet tenu' }
   ]
-  if (n.kind === 'evolve') return spin.canEvolve
-    ? [
-        { key: 'evolve', label: `Évoluer en ${spin.nextForm?.name}`, icon: 'i-lucide-sparkles', desc: `${spin.starter?.name} est prêt à évoluer !` },
-        { key: 'delay', label: 'Retarder', icon: 'i-lucide-hand', desc: '+12 % au prochain combat' }
-      ]
-    : [{ key: 'delay', label: 'Puiser l\'énergie', icon: 'i-lucide-sparkles', desc: `+12 % — évolution au niveau ${spin.evolvesAt[spin.stage] ?? '?'}` }]
   if (n.kind === 'center') return [
     { key: 'heal', label: 'Rappel', icon: 'i-lucide-heart', desc: '30 🪙 · +1 vie (survivre à une défaite)', disabled: spin.runCoins < 30 },
     { key: 'train', label: 'Entraînement', icon: 'i-lucide-dumbbell', desc: '40 🪙 · +1 niveau', disabled: spin.runCoins < 40 },
@@ -157,13 +195,22 @@ function present() {
 }
 
 function onDialogueDone() {
-  if (step.value === 'intro') step.value = 'action'
-  else if (step.value === 'reaction') present()
+  if (step.value === 'intro') {
+    step.value = 'action'
+  } else if (step.value === 'reaction') {
+    if (inPostCombat.value) runPost()
+    else present()
+  }
 }
 
-// Après la révélation d'une récompense : on avance — sauf dans une boutique
-// (Centre / Marchand) où l'on peut enchaîner les achats jusqu'à « Repartir ».
+// Après la révélation d'une récompense : jalon post-combat → suite de la
+// séquence ; boutique (Centre / Marchand) → on reste ; sinon on avance.
 function onRewardDone() {
+  if (inPostCombat.value) {
+    spin.consumeMilestone()
+    runPost()
+    return
+  }
   const k = node.value?.kind
   if (k === 'center' || k === 'merchant') {
     step.value = 'action'
@@ -173,13 +220,21 @@ function onRewardDone() {
   present()
 }
 
-// Après la révélation d'évolution.
+// Après la révélation d'évolution (enchaîne si un 2e palier est mûr).
 function onEvolveDone() {
-  spin.advancePast()
-  present()
+  if (spin.pendingEvolve) {
+    spin.doEvolve() // enchaîne un 2e palier
+    return
+  }
+  if (inPostCombat.value) {
+    runPost()
+  } else {
+    spin.advancePast()
+    present()
+  }
 }
 
-// Choix d'un nœud (carrefour, dresseur de route, camp, autel).
+// Choix d'un nœud (carrefour, dresseur de route, camp, boutiques, rencontre).
 async function onChoice(key: string) {
   const n = node.value
   if (!n || step.value !== 'action') return
@@ -205,16 +260,6 @@ async function onChoice(key: string) {
     if (key === 'rest') spin.campRest()
     else if (key === 'train') spin.campTrain()
     else spin.campForge()
-    step.value = 'reward'
-    return
-  }
-  if (n.kind === 'evolve') {
-    if (key === 'evolve') {
-      spin.doEvolve()
-      step.value = 'evolving'
-      return
-    }
-    spin.autelChannel()
     step.value = 'reward'
     return
   }
@@ -277,12 +322,12 @@ async function onCta() {
   if (!n || step.value !== 'action') return
   step.value = 'resolving'
 
-  if (n.kind === 'start') {
+  if (n.kind === 'start' || n.kind === 'threshold') {
     spin.advancePast()
     present()
     return
   }
-  if (n.kind === 'elite' || n.kind === 'champion') {
+  if (n.kind === 'gym' || n.kind === 'elite' || n.kind === 'champion') {
     // Écran d'arène « Combat » ; le relais vers le BattleStage est piloté par
     // les évènements du composant (onVsReveal / onVsDone).
     vsNode = n
@@ -430,17 +475,6 @@ onMounted(() => {
               </div>
 
               <div
-                v-else-if="node.kind === 'evolve'"
-                class="altar"
-              >
-                <span class="altar__aura" />
-                <UIcon
-                  name="i-lucide-sparkles"
-                  class="altar__ico"
-                />
-              </div>
-
-              <div
                 v-else-if="node.kind === 'fork'"
                 class="forkscene"
               >
@@ -532,21 +566,35 @@ onMounted(() => {
                 >{{ c.desc }}</span>
               </button>
             </div>
-            <PButton
+            <div
               v-else
-              color="primary"
-              size="lg"
-              @click="onCta"
+              class="acta__solo"
             >
-              <UIcon
-                :name="cta.icon"
-                class="size-5"
-              /> {{ cta.label }}
-              <span
-                v-if="node.baseWinChance"
-                class="acta__odds tabular"
-              >{{ spin.currentChance }} %</span>
-            </PButton>
+              <!-- Gimmick d'arène télégraphié (mini-décision de prep) -->
+              <p
+                v-if="node.kind === 'gym' && node.gimmick"
+                class="gymtell"
+              >
+                <UIcon
+                  name="i-lucide-triangle-alert"
+                  class="gymtell__i"
+                /> {{ node.gimmick.tell }}
+              </p>
+              <PButton
+                color="primary"
+                size="lg"
+                @click="onCta"
+              >
+                <UIcon
+                  :name="cta.icon"
+                  class="size-5"
+                /> {{ cta.label }}
+                <span
+                  v-if="node.baseWinChance"
+                  class="acta__odds tabular"
+                >{{ spin.currentChance }} %</span>
+              </PButton>
+            </div>
           </div>
           <RewardReveal
             v-else-if="step === 'reward' && spin.lastReward"
@@ -555,6 +603,7 @@ onMounted(() => {
           />
           <EvolveReveal
             v-else-if="step === 'evolving' && spin.evolution"
+            :key="spin.stage"
             :from="spin.evolution.from"
             :to="spin.evolution.to"
             @done="onEvolveDone"
@@ -603,9 +652,11 @@ onMounted(() => {
               {{ spin.legendaryResult.captured ? `${spin.legendaryResult.mon.name} capturé ! ✨` : 'Le légendaire s\'est échappé…' }}
             </p>
             <p class="leg__s">
-              {{ spin.legendaryResult.captured
-                ? (spin.legendaryResult.transferred ? 'Il rejoint ta collection !' : 'Capturé — mais pas transféré cette fois.')
-                : 'Reviens tenter ta chance.' }}
+              {{ spin.legendaryResult.transferred
+                ? 'Transféré dans ta collection ! 🎉'
+                : spin.legendaryResult.captured
+                  ? `Roulette de transfert manquée — +${spin.legendaryResult.consolation} 🪙 de consolation`
+                  : `Envolé — +${spin.legendaryResult.consolation} 🪙 de consolation, retente ta chance` }}
             </p>
           </div>
           <div class="verdict__actions">
@@ -746,7 +797,7 @@ onMounted(() => {
 }
 .trainer__portrait img { width: 100%; height: 100%; object-fit: contain; padding: 5px; image-rendering: auto; }
 .trainer__silhouette { width: 62px; height: 62px; color: color-mix(in oklab, var(--tc) 40%, #6a5a6a); }
-.trainer__ace { width: 132px; height: 132px; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(40, 30, 30, .3)); animation: floatY 3s ease-in-out infinite; }
+.trainer__ace { width: 132px; height: 132px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 8px 10px rgba(40, 30, 30, .3)); animation: floatY 3s ease-in-out infinite; }
 .trainer__plate {
   position: absolute;
   bottom: -12px;
@@ -783,7 +834,7 @@ onMounted(() => {
 .gate { display: grid; place-items: center; }
 .gate__ico { width: 88px; height: 88px; color: color-mix(in oklab, var(--tc) 62%, #4a3f4a); }
 
-/* Dresseur de route : le Pokémon adverse */
+/* Dresseur de route / hautes herbes : le Pokémon adverse */
 .wild { position: relative; display: grid; place-items: center; }
 .wild__aura { position: absolute; width: 168px; height: 168px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 45%, transparent), transparent 70%); animation: pulse 1.8s ease-in-out infinite; }
 .wild__mon { position: relative; width: 148px; height: 148px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 8px 10px rgba(40, 30, 30, .35)); animation: floatY 3s ease-in-out infinite; }
@@ -805,11 +856,6 @@ onMounted(() => {
 .wild__plate b { font-weight: 700; font-size: .95rem; color: var(--ui-text-highlighted); }
 .wild__plate i { font-style: normal; font-size: .68rem; font-weight: 700; color: var(--tc); filter: brightness(.8); }
 
-/* Autel d'évolution */
-.altar { position: relative; display: grid; place-items: center; }
-.altar__aura { position: absolute; width: 156px; height: 156px; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--tc) 52%, transparent), transparent 66%); animation: pulse 1.8s ease-in-out infinite; }
-.altar__ico { position: relative; width: 90px; height: 90px; color: color-mix(in oklab, var(--tc) 64%, #3a2f4a); animation: floatY 3s ease-in-out infinite; }
-
 /* Carrefour */
 .forkscene { display: grid; place-items: center; }
 .forkscene__ico { width: 96px; height: 96px; color: color-mix(in oklab, var(--tc) 60%, #4a3f4a); }
@@ -820,8 +866,25 @@ onMounted(() => {
 .iconscene__ico { position: relative; width: 88px; height: 88px; color: color-mix(in oklab, var(--tc) 62%, #4a3f4a); animation: floatY 3s ease-in-out infinite; }
 
 .acta { display: flex; justify-content: center; }
+.acta__solo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+/* Tell de gimmick d'arène */
+.gymtell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 420px;
+  font-weight: 700;
+  font-size: .82rem;
+  color: #ffe6a0;
+  text-align: left;
+  background: rgba(0, 0, 0, .32);
+  border: 1px solid rgba(255, 210, 120, .32);
+  padding: 8px 14px;
+  border-radius: 12px;
+}
+.gymtell__i { flex: none; width: 16px; height: 16px; color: #ffcf6b; }
 
-/* Grille de choix (carrefour, dresseur de route, camp, autel) */
+/* Grille de choix (carrefour, dresseur de route, camp, boutiques) */
 .choices { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; margin: 0 auto; }
 .choice {
   display: grid;

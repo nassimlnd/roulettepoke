@@ -23,6 +23,15 @@ const spin = useSpinStore()
         <span class="shud__lvl">Nv {{ spin.level }}</span>
         <span class="shud__stats">
           <span
+            class="shud__chip shud__chip--badge"
+            :title="`Badges d'arène : ${spin.badges}/${spin.badgeGoal}`"
+          >
+            <UIcon
+              name="i-lucide-medal"
+              class="size-3"
+            /> {{ spin.badges }}/{{ spin.badgeGoal }}
+          </span>
+          <span
             class="shud__chip shud__chip--coins"
             title="Pièces du run"
           >
@@ -100,6 +109,7 @@ const spin = useSpinStore()
 .shud__lvl { font-weight: 800; font-size: .74rem; color: #fff; background: rgba(255, 255, 255, .2); padding: 1px 8px; border-radius: 999px; }
 .shud__stats { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .shud__chip { display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .14); }
+.shud__chip--badge { color: #ffd76b; }
 .shud__chip--coins { color: #ffe08a; }
 .shud__chip--life { color: #ff9db0; }
 .shud__chip--item { color: #e8d7ff; }
