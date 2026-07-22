@@ -219,6 +219,14 @@ function onRewardDone() {
     runPost()
     return
   }
+  // Montée de niveau HORS combat (feu de camp, Centre, bain…) ayant mûri une
+  // évolution : on la joue tout de suite, sinon on affronterait le nœud suivant
+  // sous la forme pré-évolution.
+  if (spin.pendingEvolve) {
+    spin.doEvolve()
+    step.value = 'evolving'
+    return
+  }
   const k = node.value?.kind
   if (k === 'center' || k === 'merchant') {
     step.value = 'action'
@@ -236,6 +244,13 @@ function onEvolveDone() {
   }
   if (inPostCombat.value) {
     runPost()
+    return
+  }
+  // Évolution hors combat : on revient à la boutique si on y était (Centre /
+  // Marchand), sinon on avance au nœud suivant — désormais sous la forme évoluée.
+  const k = node.value?.kind
+  if (k === 'center' || k === 'merchant') {
+    step.value = 'action'
   } else {
     spin.advancePast()
     present()
