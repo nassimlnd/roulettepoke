@@ -7,10 +7,8 @@ import type { DomainOwnedCard } from '~/types/domain'
 // CTA mènent au jeu (ou directement à /play si déjà connecté).
 definePageMeta({ public: true, layout: false })
 
-useHead({
-  title: 'PokéRoulette — Ouvre, collectionne, deviens Maître',
-  meta: [{ name: 'description', content: 'Ouvre des boosters, complète ton Pokédex de cartes holographiques et pars à l\'aventure en combats réels — jusqu\'au légendaire.' }]
-})
+// Titre / description / Open Graph : définis globalement dans nuxt.config (app.head)
+// pour être présents dans le HTML initial (SPA) et lus par les crawlers.
 
 const auth = useAuthStore()
 const playTo = computed(() => (auth.isAuthenticated ? '/play' : '/register'))

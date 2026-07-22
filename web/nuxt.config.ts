@@ -4,8 +4,18 @@
 // same-origin en production, donc aucun proxy n'est nécessaire au build).
 const API_TARGET = process.env.NUXT_API_TARGET || 'https://pokeroulette.poulineau.ovh'
 
+// URL publique du site (accueil « landing » à `/`) — pour les métadonnées
+// absolues (Open Graph, Twitter Card, canonical). Surchargée via l'env au besoin.
+const SITE_URL = process.env.NUXT_PUBLIC_SITE_URL || 'https://pokeroulette.poulineau.ovh'
+const SITE_NAME = 'PokéRoulette'
+const SITE_TITLE = 'PokéRoulette — Ouvre, collectionne, deviens Maître'
+const SITE_DESC = 'Ouvre des boosters, complète ton Pokédex de cartes holographiques et pars à l\'aventure en combats réels — jusqu\'au légendaire.'
+const OG_IMAGE = `${SITE_URL}/og-image.png`
+
 export default defineNuxtConfig({
-  // Jeu 100 % authentifié derrière login : aucun SEO utile, aucun état à hydrater.
+  // L'accueil `/` est une landing PUBLIQUE : les métadonnées globales ci-dessous
+  // (dans le HTML initial servi, même en SPA) sont ce que voient les crawlers et
+  // les aperçus de partage. Le reste du jeu est derrière login.
 
   modules: [
     '@nuxt/eslint',
@@ -25,8 +35,38 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'fr' },
-      meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }],
-      link: [{ rel: 'icon', href: '/favicon.ico' }]
+      title: SITE_TITLE,
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'description', content: SITE_DESC },
+        { name: 'author', content: SITE_NAME },
+        { name: 'theme-color', content: '#e8402f' },
+        // Open Graph (Facebook, Discord, LinkedIn, iMessage…)
+        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: SITE_NAME },
+        { property: 'og:title', content: SITE_TITLE },
+        { property: 'og:description', content: SITE_DESC },
+        { property: 'og:url', content: SITE_URL },
+        { property: 'og:image', content: OG_IMAGE },
+        { property: 'og:image:type', content: 'image/png' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:image:alt', content: 'PokéRoulette — ouvre, collectionne, deviens Maître' },
+        { property: 'og:locale', content: 'fr_FR' },
+        // Twitter / X
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: SITE_TITLE },
+        { name: 'twitter:description', content: SITE_DESC },
+        { name: 'twitter:image', content: OG_IMAGE },
+        { name: 'twitter:image:alt', content: 'PokéRoulette — ouvre, collectionne, deviens Maître' }
+      ],
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' },
+        { rel: 'canonical', href: SITE_URL }
+      ]
     }
   },
 
