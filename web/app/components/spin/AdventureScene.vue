@@ -72,7 +72,10 @@ async function onVsDone() {
   vsBattle = null
   if (res === 'loss') return // le store bascule en game over
   if (res === 'revive') {
-    present() // Rappel : survit et avance
+    // Rappel : on ressuscite et on REJOUE le même combat (l'index n'a pas bougé).
+    // On revient directement à l'action pour relancer l'affrontement.
+    present()
+    step.value = 'action'
     return
   }
   // Défaite d'arène (non létale) : brève raillerie, puis on continue.

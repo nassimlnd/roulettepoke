@@ -533,7 +533,7 @@ export const useSpinStore = defineStore('spin', {
 
     // Combat plein écran (BattleScene). Renvoie l'issue :
     //   'win'      victoire
-    //   'revive'   défaite LÉTALE encaissée grâce à un Rappel (survit, avance)
+    //   'revive'   défaite LÉTALE encaissée grâce à un Rappel (survit, REJOUE le combat)
     //   'setback'  défaite NON létale (arène / combat optionnel) : on continue
     //   'loss'     défaite létale sans Rappel → game over
     async fight(node: AdvNode): Promise<'win' | 'revive' | 'setback' | 'loss'> {
@@ -562,7 +562,7 @@ export const useSpinStore = defineStore('spin', {
         title: champ ? `Champion — ${op.name}` : node.kind === 'elite' ? `Conseil des 4 — ${op.name}` : isGym ? `${node.trainer?.name ?? 'Arène'} — ${op.name}` : `Sauvage — ${op.name}`,
         winTitle: champ ? 'Champion vaincu ! 👑' : isGym ? 'Badge remporté ! 🏅' : 'Victoire !',
         winSub: champ ? (this.rewardedThisWeek ? 'Récompense hebdo déjà obtenue — mais le voyage continue.' : `+${SPIN_REWARD_COINS} 🪙 — un légendaire t'attend encore.`) : `${op.name} est battu — en avant !`,
-        loseSub: willRevive ? 'Ton Pokémon tombe… mais un Rappel le relève !' : lethal ? 'Ton aventure s\'arrête ici… mais tu peux retenter.' : 'Défaite — mais le circuit continue (pas de badge).'
+        loseSub: willRevive ? 'Ton Pokémon tombe… un Rappel le relève — reprends le combat !' : lethal ? 'Ton aventure s\'arrête ici… mais tu peux retenter.' : 'Défaite — mais le circuit continue (pas de badge).'
       })
 
       if (won) {
@@ -581,8 +581,9 @@ export const useSpinStore = defineStore('spin', {
         return 'win'
       }
       if (willRevive) {
+        // Rappel : on ressuscite mais on NE progresse PAS — le même combat est
+        // REJOUÉ (sinon acheter des Rappels reviendrait à sauter les combats).
         this.lives--
-        this.index++
         this.edge = 0
         return 'revive'
       }
