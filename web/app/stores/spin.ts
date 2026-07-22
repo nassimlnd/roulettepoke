@@ -58,19 +58,20 @@ function coverageMod(allies: PokeType[], def?: PokeType): number {
 const clampChance = (v: number) => Math.min(95, Math.max(20, Math.round(v)))
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)] as T
 
-// Chaîne d'évolution du starter (sprites Showdown auto-hébergés, /mons/*).
+// Chaîne d'évolution du starter (vrais sprites animés PokeAPI, Gén. 5 « BW »,
+// auto-hébergés dans /mons/*).
 const CHARM = [
-  { num: 4, name: 'Salamèche', imageUrl: '/mons/charmander.png', type: 'Feu' },
-  { num: 5, name: 'Reptincel', imageUrl: '/mons/charmeleon.png', type: 'Feu' },
-  { num: 6, name: 'Dracaufeu', imageUrl: '/mons/charizard.png', type: 'Feu' }
+  { num: 4, name: 'Salamèche', imageUrl: '/mons/charmander.gif', type: 'Feu' },
+  { num: 5, name: 'Reptincel', imageUrl: '/mons/charmeleon.gif', type: 'Feu' },
+  { num: 6, name: 'Dracaufeu', imageUrl: '/mons/charizard.gif', type: 'Feu' }
 ] satisfies AdventureMon[]
 
 // Adversaires de dresseurs de route (types variés → l'avantage de type compte).
 const WILDMON = [
-  { num: 2, name: 'Herbizarre', imageUrl: '/mons/ivysaur.png', type: 'Plante' },
-  { num: 8, name: 'Carabaffe', imageUrl: '/mons/wartortle.png', type: 'Eau' },
-  { num: 75, name: 'Gravalanch', imageUrl: '/mons/graveler.png', type: 'Roche' },
-  { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.png', type: 'Électrik' }
+  { num: 2, name: 'Herbizarre', imageUrl: '/mons/ivysaur.gif', type: 'Plante' },
+  { num: 8, name: 'Carabaffe', imageUrl: '/mons/wartortle.gif', type: 'Eau' },
+  { num: 75, name: 'Gravalanch', imageUrl: '/mons/graveler.gif', type: 'Roche' },
+  { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' }
 ] satisfies AdventureMon[]
 
 // Aces du Conseil / Champion (sprites via le proxy /images).
