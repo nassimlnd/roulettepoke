@@ -82,8 +82,10 @@ const spin = useSpinStore()
 
 <style scoped>
 .shud {
-  width: 100%;
-  max-width: 420px;
+  /* Taille adaptative : un plancher, puis on grandit avec les éléments. */
+  width: fit-content;
+  min-width: min(300px, 90vw);
+  max-width: min(94vw, 560px);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -104,11 +106,11 @@ const spin = useSpinStore()
 }
 .shud__pic img { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
 .shud__mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.shud__row { display: flex; align-items: center; gap: 8px; }
-.shud__name { font-weight: 700; font-size: .95rem; color: #fff; }
-.shud__lvl { font-weight: 800; font-size: .74rem; color: #fff; background: rgba(255, 255, 255, .2); padding: 1px 8px; border-radius: 999px; }
-.shud__stats { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.shud__chip { display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .14); }
+.shud__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 5px; }
+.shud__name { font-weight: 700; font-size: .95rem; color: #fff; white-space: nowrap; }
+.shud__lvl { flex: none; font-weight: 800; font-size: .74rem; color: #fff; background: rgba(255, 255, 255, .2); padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.shud__stats { margin-left: auto; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; row-gap: 4px; justify-content: flex-end; }
+.shud__chip { flex: none; display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-size: .72rem; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, .14); white-space: nowrap; }
 .shud__chip--badge { color: #ffd76b; }
 .shud__chip--coins { color: #ffe08a; }
 .shud__chip--life { color: #ff9db0; }

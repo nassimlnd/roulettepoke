@@ -4,9 +4,9 @@
 // victoire, et des SFX courts. Un seul AudioContext partagé (singleton module),
 // démarré au premier geste utilisateur (politique d'autoplay des navigateurs).
 
-type TrackName = 'adventure' | 'battle'
+type TrackName = 'adventure' | 'battle' | 'boss' | 'evolve'
 interface Voice { bass: number[], arp: number[], mel: number[], perc?: number[] }
-interface Track { bpm: number, steps: number, voice: Voice }
+interface Track { bpm: number, steps: number, voice: Voice, perc?: boolean, soft?: boolean }
 
 // Note → MIDI (C4 = 60). Ex. 'A4' = 69. 0 = silence.
 const SEMI: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
@@ -28,17 +28,34 @@ const ADVENTURE: Track = {
   }
 }
 const BATTLE: Track = {
-  bpm: 152, steps: 32,
+  bpm: 152, steps: 32, perc: true,
   voice: {
     bass: seq('A2 A2 A2 A2 A2 A2 A2 A2  F2 F2 F2 F2 F2 F2 F2 F2  C2 C2 C2 C2 C2 C2 C2 C2  G2 G2 G2 G2 G2 G2 G2 G2'),
     arp: seq('A4 C5 E5 C5 A4 C5 E5 C5  F4 A4 C5 A4 F4 A4 C5 A4  C4 E4 G4 E4 C4 E4 G4 E4  G4 B4 D5 B4 G4 B4 D5 B4'),
-    mel: seq('A5 . G5 A5 . E5 . .  F5 . E5 F5 . C5 . .  E5 . G5 E5 . C5 . .  D5 . B4 D5 . G5 . .'),
-    perc: seq('K . H . K . H .  K . H . K . H .  K . H . K . H .  K . H . K . H .').map((_, i) => i)
+    mel: seq('A5 . G5 A5 . E5 . .  F5 . E5 F5 . C5 . .  E5 . G5 E5 . C5 . .  D5 . B4 D5 . G5 . .')
   }
 }
-// La perc est décrite à part (K/H) : on regénère un masque simple.
+// Thème « boss » (Conseil des 4 / Champion) : plus épique, ré mineur dramatique.
+const BOSS: Track = {
+  bpm: 136, steps: 32, perc: true,
+  voice: {
+    bass: seq('D2 D3 D2 A2 D2 D3 F2 A2  A#2 A#1 A#2 F2 A#2 A#1 D2 F2  C2 C3 C2 G2 C2 C3 E2 G2  A2 A1 A2 E2 A2 A1 C#2 E2'),
+    arp: seq('D4 F4 A4 F4 D4 F4 A4 D5  A#3 D4 F4 D4 A#3 D4 F4 A#4  C4 E4 G4 E4 C4 E4 G4 C5  A3 C#4 E4 C#4 A3 C#4 E4 A4'),
+    mel: seq('D5 . . A5 . F5 . D5  A#5 . . F5 . D5 . A#4  C5 . . G5 . E5 . C5  A5 . . E5 . C#5 . E5')
+  }
+}
+// Thème d'évolution : mystérieux et lumineux, montée douce (sons adoucis).
+const EVOLVE: Track = {
+  bpm: 100, steps: 32, soft: true,
+  voice: {
+    bass: seq('C2 . . . . . . .  A2 . . . . . . .  F2 . . . . . . .  G2 . . . . . . .'),
+    arp: seq('C4 E4 G4 C5 E5 G5 C5 G4  A4 C5 E5 A5 C6 A5 E5 C5  F4 A4 C5 F5 A5 F5 C5 A4  G4 B4 D5 G5 B5 G5 D5 B4'),
+    mel: seq('G5 . . . E5 . . .  A5 . . . C6 . . .  A5 . . . F5 . . .  B5 . . . D6 . . .')
+  }
+}
+// Masque de percussion (K = grosse caisse, H = charley).
 const PERC = 'K . H . K . H .  K . H . K . H .  K . H . K . H .  K . H . K . H .'.trim().split(/\s+/)
-const TRACKS: Record<TrackName, Track> = { adventure: ADVENTURE, battle: BATTLE }
+const TRACKS: Record<TrackName, Track> = { adventure: ADVENTURE, battle: BATTLE, boss: BOSS, evolve: EVOLVE }
 
 // ── État singleton (partagé entre tous les appels du composable) ──
 let ctx: AudioContext | null = null
@@ -118,9 +135,9 @@ function scheduler() {
     const i = stepIdx % track.steps
     const v = track.voice
     tone(musicGain, v.bass[i] as number, nextTime, stepDur * 1.8, 'triangle', 0.5)
-    tone(musicGain, v.arp[i] as number, nextTime, stepDur * 0.9, 'square', 0.14)
-    tone(musicGain, v.mel[i] as number, nextTime, stepDur * 1.6, 'square', 0.22)
-    if (current === 'battle') {
+    tone(musicGain, v.arp[i] as number, nextTime, stepDur * 0.9, track.soft ? 'triangle' : 'square', track.soft ? 0.1 : 0.14)
+    tone(musicGain, v.mel[i] as number, nextTime, stepDur * 1.6, track.soft ? 'sine' : 'square', track.soft ? 0.2 : 0.22)
+    if (track.perc) {
       const perc = PERC[i % PERC.length]
       if (perc === 'K') noise(nextTime, 0.12, 0.5, false)
       else if (perc === 'H') noise(nextTime, 0.04, 0.18, true)
