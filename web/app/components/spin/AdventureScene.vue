@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { useSpinStore } from '~/stores/spin'
+import { useBattleStore } from '~/stores/battle'
 import type { AdvChoice, AdvNode } from '~/types/domain'
 
 // Aventure plein écran (overlay immersif). 3 actes : circuit des arènes (non
 // létal) → Conseil des 4 (létal) → Champion + légendaire. Chaque étape a sa
 // transition ; les combats passent par un écran d'arène « VS » puis BattleStage.
 const spin = useSpinStore()
+const battle = useBattleStore()
 const reduced = usePreferredReducedMotion()
 const audio = useSpinAudio()
+// Piste de combat courante ('boss' pour le Conseil / Champion).
+let combatTrack: 'battle' | 'boss' = 'battle'
 
 // Masque la gouttière de scrollbar réservée tant que l'aventure est à l'écran.
 useViewportLock(() => spin.phase !== 'idle')
@@ -253,6 +257,7 @@ async function onChoice(key: string) {
       present()
       return
     }
+    combatTrack = 'battle'
     step.value = 'resolving'
     vsNode = n
     vs.value = versusFrom(n)
@@ -302,6 +307,7 @@ async function onChoice(key: string) {
       step.value = 'reward'
       return
     }
+    combatTrack = 'battle'
     step.value = 'resolving' // combattre
     vsNode = n
     vs.value = versusFrom(n)
@@ -334,6 +340,7 @@ async function onCta() {
   if (n.kind === 'gym' || n.kind === 'elite' || n.kind === 'champion') {
     // Écran d'arène « Combat » ; le relais vers le BattleStage est piloté par
     // les évènements du composant (onVsReveal / onVsDone).
+    combatTrack = n.kind === 'gym' ? 'battle' : 'boss' // Conseil / Champion = épique
     vsNode = n
     vs.value = versusFrom(n)
     return
@@ -364,13 +371,22 @@ function onSelectStarter(id: string) {
   spin.start(id)
 }
 
+// Choisit la musique selon l'état : le combat (VS + BattleStage) prime, puis
+// l'évolution, puis la carte. Idempotent (playMusic ignore une piste identique).
+function updateMusic() {
+  const p = spin.phase
+  if (p === 'victory' || p === 'gameover' || p === 'idle') return // géré par le watch de phase
+  if (vs.value || battle.active) {
+    audio.playMusic(combatTrack)
+  } else if (step.value === 'evolving') {
+    audio.playMusic('evolve')
+  } else if (p === 'map' || p === 'select') {
+    audio.playMusic('adventure')
+  }
+}
 watch(() => spin.phase, (p) => {
   if (p === 'map') present()
-  // Musique selon la phase (combat géré par le watch de `vs`).
-  if (p === 'select' || p === 'map') {
-    audio.resume()
-    if (!vs.value) audio.playMusic('adventure')
-  } else if (p === 'gameover') {
+  if (p === 'gameover') {
     audio.stopMusic()
     audio.sfx('faint')
   } else if (p === 'victory') {
@@ -378,17 +394,16 @@ watch(() => spin.phase, (p) => {
     audio.sfx('victory')
   } else if (p === 'idle') {
     audio.stopMusic()
+  } else {
+    audio.resume()
+    updateMusic()
   }
 })
-// Bascule musique aventure ↔ combat.
-watch(vs, (v) => {
-  if (v) audio.playMusic('battle')
-  else if (spin.phase === 'map') audio.playMusic('adventure')
-})
-// SFX des révélations (récompense / évolution).
+// Recalcule la musique quand le combat / l'évolution démarre ou s'arrête.
+watch([() => !!vs.value, () => battle.active, step], updateMusic)
+// SFX de récompense (l'évolution, elle, a sa propre musique).
 watch(step, (s) => {
   if (s === 'reward') audio.sfx(spin.lastReward?.kind === 'coins' ? 'coin' : spin.lastReward?.kind === 'badge' ? 'badge' : 'reward')
-  else if (s === 'evolving') audio.sfx('evolve')
 })
 onMounted(() => {
   if (spin.phase === 'map') present()
