@@ -385,3 +385,23 @@ export interface DomainLeagueStatus {
 
 export interface LegendaryOdds { captureProbability: number, challengers: string[] }
 export interface LegendaryReward { won: boolean, card: DomainCard, rounds: BattleRound[] }
+
+// ─── Spin / Aventure ─────────────────────────────────────────────────────────
+// Un Pokémon de l'aventure (starter ou adversaire). `num` = n° national.
+export interface AdventureMon {
+  num: number
+  name: string
+  imageUrl: string
+  type: PokeType
+}
+
+// Étapes du parcours (façon rogue-lite). Les combats (`elite`, `champion`,
+// `legendary`) se jouent en plein écran ; `treasure` accorde un bonus.
+export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary'
+
+export interface AdvNode {
+  kind: AdvNodeKind
+  title: string
+  opponent?: AdventureMon // elite / champion / legendary
+  baseWinChance?: number // combats : cote de base (0-100), avant bonus/pity
+}
