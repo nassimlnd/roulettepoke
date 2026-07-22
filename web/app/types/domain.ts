@@ -407,16 +407,38 @@ export interface AdvTrainer {
   taunt: string // réplique si le joueur perd
 }
 
-// Étapes du parcours (façon rogue-lite). Les combats (`elite`, `champion`,
-// `legendary`) se jouent en plein écran ; `treasure` accorde un bonus.
-export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary'
+// Étapes du parcours (façon rogue-lite). Combats plein écran : `elite`,
+// `champion`, `legendary`, `wild` (dresseur de route, optionnel). `treasure`
+// accorde un bonus. Nœuds à choix : `fork` (carrefour), `camp` (feu de camp :
+// Repos / Entraînement / Forge), `evolve` (autel : Évoluer / Retarder).
+export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'evolve'
+
+// Une option présentée au joueur (feu de camp, autel, combat optionnel).
+export interface AdvChoice {
+  key: string // identifiant traité par la scène (rest/train/forge, evolve/delay, fight/skip)
+  label: string
+  icon: string
+  desc?: string
+  disabled?: boolean // ex. évolution non débloquée
+}
+
+// Un chemin d'un carrefour : le nœud choisi est inséré juste après.
+export interface AdvPath {
+  label: string
+  icon: string
+  desc: string
+  node: AdvNode
+}
 
 export interface AdvNode {
   kind: AdvNodeKind
   title: string
-  opponent?: AdventureMon // elite / champion / legendary (sprite du combat)
+  opponent?: AdventureMon // combats (sprite adverse)
   trainer?: AdvTrainer // elite / champion (personnage + dialogues)
-  baseWinChance?: number // combats : cote de base (0-100), avant bonus/pity
+  baseWinChance?: number // combats : cote de base (0-100), avant leviers
   themeColor?: string // teinte de la scène
-  narration?: string[] // texte narratif (start / treasure / legendary)
+  narration?: string[] // texte narratif
+  choices?: AdvChoice[] // camp / evolve / wild : options
+  paths?: AdvPath[] // fork : chemins candidats
+  optional?: boolean // wild : le combat peut être évité
 }

@@ -6,7 +6,8 @@ import type { AdvReward } from '~/stores/spin'
 // ce qu'il a gagné et avance à son rythme.
 const props = defineProps<{ reward: AdvReward }>()
 const emit = defineEmits<{ continue: [] }>()
-const icon = computed(() => props.reward.kind === 'rest' ? 'i-lucide-flame' : 'i-lucide-gem')
+const ICONS = { rest: 'i-lucide-flame', xp: 'i-lucide-trending-up', item: 'i-lucide-shield-plus', treasure: 'i-lucide-gem' }
+const icon = computed(() => ICONS[props.reward.kind] ?? 'i-lucide-gem')
 </script>
 
 <template>
@@ -90,6 +91,8 @@ const icon = computed(() => props.reward.kind === 'rest' ? 'i-lucide-flame' : 'i
 }
 .reveal__disc--treasure { background: linear-gradient(150deg, #ffd76b, #f0a52e); box-shadow: 0 12px 30px -8px rgba(240, 165, 46, .7), inset 0 -6px 14px rgba(0, 0, 0, .12); }
 .reveal__disc--rest { background: linear-gradient(150deg, #ff9d5c, #ef5a48); box-shadow: 0 12px 30px -8px rgba(239, 90, 72, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
+.reveal__disc--xp { background: linear-gradient(150deg, #8fd6a8, #4faa78); box-shadow: 0 12px 30px -8px rgba(79, 170, 120, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
+.reveal__disc--item { background: linear-gradient(150deg, #b79cf0, #8b5cc4); box-shadow: 0 12px 30px -8px rgba(139, 92, 196, .6), inset 0 -6px 14px rgba(0, 0, 0, .12); }
 .reveal__ico { width: 64px; height: 64px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); animation: icoWiggle 2.4s ease-in-out 1s infinite; }
 .reveal__spark {
   position: absolute;
@@ -114,6 +117,8 @@ const icon = computed(() => props.reward.kind === 'rest' ? 'i-lucide-flame' : 'i
   animation: amountIn .5s var(--ease-pop) .26s both;
 }
 .reveal__disc--rest ~ .reveal__amount { color: #e0662e; }
+.reveal__disc--xp ~ .reveal__amount { color: #3f9469; }
+.reveal__disc--item ~ .reveal__amount { color: #7c4fb0; }
 .reveal__sub { font-size: .92rem; color: var(--ui-text-muted); margin-top: 2px; }
 .reveal__cta { margin-top: 18px; }
 
