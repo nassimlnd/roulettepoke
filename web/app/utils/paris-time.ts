@@ -51,6 +51,14 @@ function parisCivilToUtc(year: number, month: number, day: number, hour: number,
   return new Date(guess - off * 60000)
 }
 
+// Clé de jour civil Paris « YYYY-MM-DD ». Sert à ne célébrer un évènement
+// quotidien (ex. bonus de connexion) qu'une fois par jour, quel que soit le
+// nombre de rechargements de page — le reset suit minuit Paris comme les quotas.
+export function parisDayKey(from: Date = new Date()): string {
+  const p = parisParts(from)
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`
+}
+
 // Prochain minuit Paris (reset quotidien : bonus, entraînement, jackpot).
 export function nextDailyReset(from: Date = new Date()): Date {
   const p = parisParts(from)
