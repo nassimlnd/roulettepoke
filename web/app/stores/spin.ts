@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { PokeType } from '~/types/api'
+import type { PokeType, SpinStatus } from '~/types/api'
 import type { AdventureMon, AdvNode, AdvTrainer, BattleRound, GymGimmick } from '~/types/domain'
 import { useBattleStore } from '~/stores/battle'
 import { useWalletStore } from '~/stores/wallet'
@@ -397,7 +397,9 @@ export const useSpinStore = defineStore('spin', {
     pendingEvolve: false, // une évolution est mûre (déclenchée après le combat)
     pendingMilestone: false, // un jalon de badge attend sa révélation
     rewardCoins: 0,
-    // Statut hebdomadaire (mock ; PHASE 2 : fourni par /spin/status).
+    // Statut hebdomadaire (source : /spin/status).
+    weekStatus: null as SpinStatus | null, // statut brut pour l'écran de lancement
+    statusLoaded: false, // false tant que /spin/status n'a pas répondu (skeleton)
     rewardedThisWeek: false, // récompense hebdo déjà obtenue → pas de pièces
     legendaryLockedThisWeek: false, // légendaire déjà capturé → pas de tentative
     legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon } | null,
@@ -445,6 +447,18 @@ export const useSpinStore = defineStore('spin', {
   },
 
   actions: {
+    // Statut hebdo pour l'écran de lancement (GET pur, SANS effet de bord —
+    // ne démarre aucune run). Alimente le panneau « Statut de la semaine ».
+    async loadStatus() {
+      try {
+        const s = await spinRepo.status(useApi())
+        this.weekStatus = s
+        this.rewardedThisWeek = s.rewardedThisWeek
+        this.legendaryLockedThisWeek = s.legendaryGrantedThisWeek ?? false
+      } catch { /* silencieux : l'aventure reste jouable, statut par défaut */ }
+      this.statusLoaded = true
+    },
+
     // Ouvre l'écran de sélection du starter (avant le run).
     begin() {
       this.phase = 'select'
