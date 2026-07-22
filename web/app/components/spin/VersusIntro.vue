@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
   z-index: 70;
   overflow: hidden;
   pointer-events: none;
-  background: #fbf4e8;
+  background: radial-gradient(circle at 50% 44%, #241f33 0%, #15121e 52%, #0b0910 100%);
   font-family: Nunito, var(--font-body, system-ui), sans-serif;
 }
 .vsx.is-out { animation: vsxFade .56s ease-in both; }
@@ -207,47 +207,47 @@ onBeforeUnmount(() => {
 .vsx__sun {
   position: absolute;
   inset: -45%;
-  background: repeating-conic-gradient(from 0deg at 50% 50%, #fbf3e6 0deg 3.4deg, #ece0cd 3.4deg 6.8deg);
-  opacity: .7;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .015) 0deg 3.4deg, rgba(180, 170, 224, .06) 3.4deg 6.8deg);
+  opacity: .9;
   animation: sunSpin 80s linear infinite;
 }
 .vsx__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 252, 246, .96) 6%, rgba(255, 252, 246, .25) 40%, transparent 72%);
+  background: radial-gradient(circle at 50% 46%, rgba(255, 240, 214, .22) 3%, rgba(255, 214, 170, .08) 24%, transparent 58%);
 }
 
 /* Titre */
 .vsx__title { position: absolute; top: 5%; left: 0; right: 0; text-align: center; z-index: 6; }
-.vsx__title-a { font-weight: 700; font-size: clamp(15px, 2.4vmin, 24px); letter-spacing: .5vmin; color: #b89a6f; }
-.vsx__title-b { font-weight: 800; font-size: clamp(11px, 1.6vmin, 15px); letter-spacing: .3vmin; color: #cbb596; margin-top: 2px; }
+.vsx__title-a { font-weight: 700; font-size: clamp(15px, 2.4vmin, 24px); letter-spacing: .5vmin; color: #e7cfa0; }
+.vsx__title-b { font-weight: 800; font-size: clamp(11px, 1.6vmin, 15px); letter-spacing: .3vmin; color: #b3a082; margin-top: 2px; }
 
-/* Créatures (sprites) */
-.vsx__side { position: absolute; top: 41%; transform: translateY(-50%); width: clamp(140px, 25vmin, 290px); z-index: 4; }
-.vsx__side--l { left: 3%; }
-.vsx__side--r { right: 3%; }
+/* Créatures (sprites) — grandes, juste au-dessus de leur bannière-nom */
+.vsx__side { position: absolute; transform: translateY(-50%); width: clamp(190px, 37vmin, 410px); z-index: 4; }
+.vsx__side--l { left: 2%; top: 40%; }
+.vsx__side--r { right: 2%; top: 48%; }
 .vsx__lunge.is-l { animation: lungeL 2s ease-in-out infinite; }
 .vsx__lunge.is-r { animation: lungeR 2s ease-in-out infinite; }
 .vsx__float { animation: bob 3.4s ease-in-out infinite; }
 .vsx__disc { position: relative; width: 100%; aspect-ratio: 1; }
 .vsx__glowdisc { position: absolute; inset: -8%; border-radius: 50%; }
-.vsx__glowdisc--l { background: radial-gradient(circle, rgba(232, 80, 106, .28), transparent 66%); }
-.vsx__glowdisc--r { background: radial-gradient(circle, rgba(63, 155, 214, .28), transparent 66%); }
+.vsx__glowdisc--l { background: radial-gradient(circle, rgba(232, 80, 106, .4), transparent 66%); }
+.vsx__glowdisc--r { background: radial-gradient(circle, rgba(63, 155, 214, .4), transparent 66%); }
 .vsx__sprite {
   position: absolute;
-  inset: 6%;
-  width: 88%;
-  height: 88%;
+  inset: 3%;
+  width: 94%;
+  height: 94%;
   object-fit: contain;
   image-rendering: pixelated;
-  filter: drop-shadow(0 12px 14px rgba(58, 47, 40, .3));
+  filter: drop-shadow(0 14px 16px rgba(58, 47, 40, .34));
 }
 .vsx__ph { position: absolute; inset: 22%; width: 56%; height: 56%; color: #b0a084; }
 
 /* Bannières inclinées */
 .vsx__banner { position: absolute; width: 56%; transform: translateY(-50%); z-index: 5; }
-.vsx__banner--l { left: 2%; top: 66%; }
-.vsx__banner--r { right: 2%; top: 74%; }
+.vsx__banner--l { left: 2%; top: 62%; }
+.vsx__banner--r { right: 2%; top: 70%; }
 .vsx__skew {
   border-radius: 8px;
   box-shadow: 12px 12px 0 rgba(74, 63, 53, .14), 0 8px 22px rgba(210, 60, 80, .4);
@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
 .vsx__sub { font-weight: 800; font-size: clamp(10px, 1.5vmin, 15px); letter-spacing: .2vmin; color: rgba(255, 255, 255, .9); margin-top: .5vmin; text-transform: uppercase; }
 
 /* Emblème VS */
-.vsx__vsroot { position: absolute; left: 50%; top: 70%; width: 0; height: 0; z-index: 7; }
+.vsx__vsroot { position: absolute; left: 50%; top: 66%; width: 0; height: 0; z-index: 7; }
 .vsx__ring {
   position: absolute;
   left: 50%;
