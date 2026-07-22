@@ -11,7 +11,7 @@ const reduced = usePreferredReducedMotion()
 // Masque la gouttière de scrollbar réservée tant que l'aventure est à l'écran.
 useViewportLock(() => spin.phase !== 'idle')
 
-type Step = 'intro' | 'action' | 'resolving' | 'reaction'
+type Step = 'intro' | 'action' | 'resolving' | 'reaction' | 'reward'
 const step = ref<Step>('intro')
 const speaker = ref('')
 const lines = ref<string[]>([])
@@ -109,6 +109,12 @@ function onDialogueDone() {
   else if (step.value === 'reaction') present()
 }
 
+// Après la révélation de la récompense : on avance enfin au nœud suivant.
+function onRewardDone() {
+  spin.advancePast()
+  present()
+}
+
 async function onCta() {
   const n = node.value
   if (!n || step.value !== 'action') return
@@ -128,11 +134,9 @@ async function onCta() {
   }
   if (n.kind === 'treasure') {
     chestOpen.value = true
-    await wait(900)
-    spin.openTreasure()
-    speaker.value = ''
-    lines.value = [spin.lastTreasure]
-    step.value = 'reaction'
+    await wait(750)
+    spin.openTreasure() // applique le bonus + prépare la récompense (sans avancer)
+    step.value = 'reward' // révélation « en grand »
     return
   }
   if (n.kind === 'legendary') {
@@ -183,6 +187,7 @@ onMounted(() => {
             mode="out-in"
           >
             <div
+              v-if="step !== 'reward'"
               :key="spin.index"
               class="scene"
             >
@@ -297,6 +302,11 @@ onMounted(() => {
               >{{ spin.currentChance }} %</span>
             </PButton>
           </div>
+          <RewardReveal
+            v-else-if="step === 'reward' && spin.lastReward"
+            :reward="spin.lastReward"
+            @continue="onRewardDone"
+          />
           <div
             v-else
             class="acta__wait"

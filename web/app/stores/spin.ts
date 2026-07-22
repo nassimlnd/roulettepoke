@@ -15,6 +15,14 @@ import { useBattleStore } from '~/stores/battle'
 export type SpinPhase = 'idle' | 'map' | 'gameover' | 'victory'
 export const SPIN_REWARD_COINS = 250
 
+// Récompense d'un coffre / feu de camp, révélée en grand avant de continuer.
+export interface AdvReward {
+  kind: 'treasure' | 'rest'
+  title: string
+  amount: string
+  sub: string
+}
+
 const TYPE_HEX: Partial<Record<PokeType, string>> = {
   Glace: '#7fd0e0', Électrik: '#f2c94c', Feu: '#f0895e', Psy: '#e88bb6',
   Plante: '#7fc98a', Eau: '#6db6e6', Roche: '#cbb083', Dragon: '#8b7fd6'
@@ -104,7 +112,7 @@ export const useSpinStore = defineStore('spin', {
     index: 0, // nœud validé courant ; on affronte index+1
     edge: 0, // bonus de cote cumulé (trésors)
     consecutiveLosses: 0, // pity légendaire (mock)
-    lastTreasure: '' as string,
+    lastReward: null as AdvReward | null,
     rewardCoins: 0,
     legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon } | null,
     lostTo: null as AdvTrainer | null,
@@ -127,7 +135,7 @@ export const useSpinStore = defineStore('spin', {
       this.nodes = buildNodes()
       this.index = 0
       this.edge = 0
-      this.lastTreasure = ''
+      this.lastReward = null
       this.rewardCoins = 0
       this.legendaryResult = null
       this.lostTo = null
@@ -175,18 +183,19 @@ export const useSpinStore = defineStore('spin', {
       this.index++
     },
 
-    // Applique le bonus d'un coffre/repos et avance (animation gérée par la scène).
+    // Applique le bonus d'un coffre/repos et prépare la récompense à révéler.
+    // L'avancée (index++) se fait après la révélation (advancePast).
     openTreasure() {
       const node = this.nodes[this.index]
+      const sub = 'de chances au prochain combat'
       if (node?.title.includes('camp')) {
         this.edge += 8
-        this.lastTreasure = 'Repos : +8 % de chances au prochain combat'
+        this.lastReward = { kind: 'rest', title: 'Repos', amount: '+8 %', sub }
       } else {
         const boost = [10, 12, 15][Math.floor(Math.random() * 3)] ?? 12
         this.edge += boost
-        this.lastTreasure = `Trésor : +${boost} % de chances au prochain combat`
+        this.lastReward = { kind: 'treasure', title: 'Trésor', amount: `+${boost} %`, sub }
       }
-      this.index++
     },
 
     // Capture du légendaire (mock) : taux de base + pity (+5 %/défaite).
@@ -209,6 +218,7 @@ export const useSpinStore = defineStore('spin', {
       this.index = 0
       this.legendaryResult = null
       this.lostTo = null
+      this.lastReward = null
     }
   }
 })
