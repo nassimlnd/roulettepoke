@@ -9,6 +9,7 @@ const links = [
   { label: 'Collection', to: '/collection', icon: 'i-lucide-layout-grid' },
   { label: 'Équipe', to: '/team', icon: 'i-lucide-users' },
   { label: 'Arènes', to: '/gyms', icon: 'i-lucide-swords' },
+  { label: 'Aventure', to: '/spin', icon: 'i-lucide-compass' },
   { label: 'Jackpot', to: '/slot-machine', icon: 'i-lucide-cherry' },
   { label: 'Classement', to: '/leaderboard', icon: 'i-lucide-trophy' },
   { label: 'Stats', to: '/stats', icon: 'i-lucide-chart-column' },
@@ -37,12 +38,14 @@ const links = [
           :to="l.to"
           class="nav__link"
           active-class="nav__link--on"
+          :aria-label="l.label"
+          :title="l.label"
         >
           <UIcon
             :name="l.icon"
             class="size-4"
           />
-          <span>{{ l.label }}</span>
+          <span class="nav__label">{{ l.label }}</span>
         </NuxtLink>
       </nav>
 
@@ -119,20 +122,29 @@ const links = [
 .nav {
   display: none;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
 }
 @media (min-width: 1024px) { .nav { display: flex; } }
 .nav__link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
+  gap: 5px;
+  padding: 8px;
   border-radius: 11px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: .88rem;
+  font-size: .84rem;
   color: var(--ui-text-muted);
+  white-space: nowrap;
   transition: color .15s ease, background .15s ease;
+}
+/* 1024-1279 (iPad paysage, laptops étroits) : icônes seules pour tout faire tenir. */
+.nav__label { display: none; }
+/* Dès qu'on a la place (≥ 1280) : libellés + un peu plus d'air. */
+@media (min-width: 1280px) {
+  .nav { gap: 3px; }
+  .nav__link { gap: 6px; padding: 7px 12px; font-size: .88rem; }
+  .nav__label { display: inline; }
 }
 .nav__link:hover { color: var(--ui-text); background: var(--ui-bg-muted); }
 .nav__link--on {
