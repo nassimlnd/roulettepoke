@@ -62,12 +62,14 @@ export default defineNuxtConfig({
         { name: 'twitter:image', content: OG_IMAGE },
         { name: 'twitter:image:alt', content: 'PokéRoulette — ouvre, collectionne, deviens Maître' }
       ],
-      // Icônes générées depuis le vrai logo de l'app (composant PokeBall).
+      // Icônes générées depuis le vrai logo de l'app (composant PokeBall / SVG).
+      // `?v=` casse le cache navigateur (le favicon est mis en cache ~4 h) :
+      // à bumper si l'icône change à nouveau.
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48.png' },
-        { rel: 'icon', href: '/favicon.ico' },
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=2' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48.png?v=2' },
+        { rel: 'icon', href: '/favicon.ico?v=2' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png?v=2' },
         { rel: 'manifest', href: '/site.webmanifest' },
         { rel: 'canonical', href: SITE_URL }
       ]
