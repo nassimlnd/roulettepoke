@@ -24,6 +24,13 @@ export const useWalletStore = defineStore('wallet', {
       this.lastSync = { source, at: Date.now() }
     },
 
+    // Crédit (récompense accordée côté serveur, ex. Aventure) : reflété localement
+    // pour un retour immédiat. Le prochain sync absolu (auth/me, hub) réconcilie.
+    credit(amount: number, source: string) {
+      if (this.coins !== null) this.coins += amount
+      this.lastSync = { source, at: Date.now() }
+    },
+
     // Débit optimiste (roll 10 🪙, retrait 10 🪙, inscription 20 🪙) : affiché
     // immédiatement, confirmé par la réponse serveur ou annulé sur erreur.
     debitOptimistic(amount: number, ref: string) {
