@@ -142,7 +142,7 @@ const cta = computed(() => {
   if (k === 'gym') return { label: 'Défier le Champion', icon: 'i-lucide-swords' }
   if (k === 'elite') return { label: 'Combattre', icon: 'i-lucide-swords' }
   if (k === 'champion') return { label: 'Défier le Champion', icon: 'i-lucide-crown' }
-  if (k === 'legendary') return { label: 'Tenter la capture', icon: 'i-lucide-sparkles' }
+  if (k === 'legendary') return spin.legendaryLockedThisWeek ? { label: 'Terminer l\'aventure', icon: 'i-lucide-flag' } : { label: 'Tenter la capture', icon: 'i-lucide-sparkles' }
   return { label: 'Ouvrir le coffre', icon: 'i-lucide-gift' }
 })
 
@@ -342,10 +342,18 @@ async function onCta() {
     return
   }
   if (n.kind === 'legendary') {
+    if (spin.legendaryLockedThisWeek) {
+      spin.finishLegendaryLocked() // déjà capturé cette semaine : pas de tentative
+      return
+    }
     throwing.value = true
     await wait(1100)
     await spin.attemptLegendary(n)
   }
+}
+
+function onSelectStarter(id: string) {
+  spin.start(id)
 }
 
 watch(() => spin.phase, (p) => {
@@ -378,7 +386,10 @@ onMounted(() => {
         </button>
 
         <!-- Progression -->
-        <ol class="atrail">
+        <ol
+          v-if="spin.nodes.length"
+          class="atrail"
+        >
           <li
             v-for="(n, i) in spin.nodes"
             :key="i"
@@ -394,6 +405,13 @@ onMounted(() => {
 
         <!-- Bandeau du starter (croissance visible) -->
         <StarterHud v-if="spin.phase === 'map'" />
+
+        <!-- ═══ Sélection du starter ═══ -->
+        <StarterSelect
+          v-if="spin.phase === 'select'"
+          :starters="spin.starters"
+          @select="onSelectStarter"
+        />
 
         <!-- ═══ Parcours ═══ -->
         <div
@@ -580,6 +598,16 @@ onMounted(() => {
                   class="gymtell__i"
                 /> {{ node.gimmick.tell }}
               </p>
+              <!-- Légendaire déjà capturé cette semaine : pas de tentative -->
+              <p
+                v-else-if="node.kind === 'legendary' && spin.legendaryLockedThisWeek"
+                class="gymtell"
+              >
+                <UIcon
+                  name="i-lucide-info"
+                  class="gymtell__i"
+                /> Tu as déjà capturé un légendaire cette semaine — pas de tentative aujourd'hui.
+              </p>
               <PButton
                 color="primary"
                 size="lg"
@@ -637,6 +665,15 @@ onMounted(() => {
               class="size-5"
             /> +{{ spin.rewardCoins }} 🪙
           </p>
+          <p
+            v-else-if="spin.rewardedThisWeek"
+            class="verdict__note"
+          >
+            <UIcon
+              name="i-lucide-calendar-check"
+              class="size-4"
+            /> Récompense hebdo déjà obtenue — pas de pièces cette semaine.
+          </p>
           <div
             v-if="spin.legendaryResult"
             class="leg"
@@ -655,10 +692,19 @@ onMounted(() => {
               {{ spin.legendaryResult.transferred
                 ? 'Transféré dans ta collection ! 🎉'
                 : spin.legendaryResult.captured
-                  ? `Roulette de transfert manquée — +${spin.legendaryResult.consolation} 🪙 de consolation`
-                  : `Envolé — +${spin.legendaryResult.consolation} 🪙 de consolation, retente ta chance` }}
+                  ? 'Roulette de transfert manquée — il retourne à l\'état sauvage.'
+                  : 'Reviens tenter ta chance.' }}
             </p>
           </div>
+          <p
+            v-else-if="spin.legendaryLockedThisWeek"
+            class="verdict__note"
+          >
+            <UIcon
+              name="i-lucide-sparkles"
+              class="size-4"
+            /> Légendaire déjà capturé cette semaine — rendez-vous lundi.
+          </p>
           <div class="verdict__actions">
             <button
               class="astage__continue"
@@ -677,7 +723,7 @@ onMounted(() => {
 
         <!-- ═══ Défaite ═══ -->
         <div
-          v-else
+          v-else-if="spin.phase === 'gameover'"
           class="verdict verdict--lose"
         >
           <UIcon
@@ -960,6 +1006,7 @@ onMounted(() => {
 .verdict__quote { font-size: .92rem; font-style: italic; color: var(--ui-text-toned); line-height: 1.5; }
 .verdict__quote span { font-style: normal; font-weight: 700; font-size: .82rem; color: var(--ui-text-muted); }
 .verdict__coins { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-display); font-weight: 800; color: #b7791f; background: color-mix(in oklab, #f6c453 18%, transparent); padding: 6px 14px; border-radius: 999px; }
+.verdict__note { display: inline-flex; align-items: center; gap: 7px; font-size: .84rem; color: var(--ui-text-muted); background: var(--ui-bg-muted); padding: 6px 14px; border-radius: 999px; }
 .verdict__actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
 .astage__continue {
   font-family: var(--font-display);

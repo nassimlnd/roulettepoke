@@ -18,7 +18,7 @@ import { useBattleStore } from '~/stores/battle'
 // PHASE 1.5 : moteur + données MOCKÉES (starter = Salamèche, sprites animés PokeAPI).
 // PHASE 2 : vrai starter (collection), endpoints /spin/*, vraies arènes/récompenses.
 
-export type SpinPhase = 'idle' | 'map' | 'gameover' | 'victory'
+export type SpinPhase = 'idle' | 'select' | 'map' | 'gameover' | 'victory'
 export const SPIN_REWARD_COINS = 250
 const XP_PER_LEVEL = 100
 const START_LEVEL = 5
@@ -72,20 +72,54 @@ function coverageMod(allies: PokeType[], def?: PokeType): number {
 const clampChance = (v: number) => Math.min(95, Math.max(20, Math.round(v)))
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)] as T
 
-// Chaîne d'évolution du starter (vrais sprites animés PokeAPI, Gén. 5 « BW »,
-// auto-hébergés dans /mons/*).
-const CHARM = [
-  { num: 4, name: 'Salamèche', imageUrl: '/mons/charmander.gif', type: 'Feu' },
-  { num: 5, name: 'Reptincel', imageUrl: '/mons/charmeleon.gif', type: 'Feu' },
-  { num: 6, name: 'Dracaufeu', imageUrl: '/mons/charizard.gif', type: 'Feu' }
-] satisfies AdventureMon[]
+// Starters sélectionnables (vrais sprites animés PokeAPI). `evolvesAt` = niveaux
+// des paliers d'évolution. PHASE 2 : remplacé par les Pokémon de base du joueur.
+export interface StarterOption { id: string, chain: AdventureMon[], evolvesAt: number[] }
+const STARTERS: StarterOption[] = [
+  { id: 'bulbasaur', evolvesAt: [7, 9], chain: [
+    { num: 1, name: 'Bulbizarre', imageUrl: '/mons/bulbasaur.gif', type: 'Plante' },
+    { num: 2, name: 'Herbizarre', imageUrl: '/mons/ivysaur.gif', type: 'Plante' },
+    { num: 3, name: 'Florizarre', imageUrl: '/mons/venusaur.gif', type: 'Plante' }
+  ] },
+  { id: 'charmander', evolvesAt: [7, 9], chain: [
+    { num: 4, name: 'Salamèche', imageUrl: '/mons/charmander.gif', type: 'Feu' },
+    { num: 5, name: 'Reptincel', imageUrl: '/mons/charmeleon.gif', type: 'Feu' },
+    { num: 6, name: 'Dracaufeu', imageUrl: '/mons/charizard.gif', type: 'Feu' }
+  ] },
+  { id: 'squirtle', evolvesAt: [7, 9], chain: [
+    { num: 7, name: 'Carapuce', imageUrl: '/mons/squirtle.gif', type: 'Eau' },
+    { num: 8, name: 'Carabaffe', imageUrl: '/mons/wartortle.gif', type: 'Eau' },
+    { num: 9, name: 'Tortank', imageUrl: '/mons/blastoise.gif', type: 'Eau' }
+  ] },
+  { id: 'pikachu', evolvesAt: [8], chain: [
+    { num: 25, name: 'Pikachu', imageUrl: '/mons/pikachu.gif', type: 'Électrik' },
+    { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' }
+  ] }
+]
 
-// Adversaires de dresseurs de route / hautes herbes (types variés).
+// Adversaires de dresseurs de route / hautes herbes (pool varié, tiré au hasard).
 const WILDMON = [
   { num: 2, name: 'Herbizarre', imageUrl: '/mons/ivysaur.gif', type: 'Plante' },
   { num: 8, name: 'Carabaffe', imageUrl: '/mons/wartortle.gif', type: 'Eau' },
   { num: 75, name: 'Gravalanch', imageUrl: '/mons/graveler.gif', type: 'Roche' },
-  { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' }
+  { num: 26, name: 'Raichu', imageUrl: '/mons/raichu.gif', type: 'Électrik' },
+  { num: 17, name: 'Roucoups', imageUrl: '/mons/pidgeotto.gif', type: 'Vol' },
+  { num: 24, name: 'Arbok', imageUrl: '/mons/arbok.gif', type: 'Poison' },
+  { num: 28, name: 'Sablaireau', imageUrl: '/mons/sandslash.gif', type: 'Sol' },
+  { num: 53, name: 'Persian', imageUrl: '/mons/persian.gif', type: 'Normal' },
+  { num: 57, name: 'Colossinge', imageUrl: '/mons/primeape.gif', type: 'Combat' },
+  { num: 93, name: 'Spectrum', imageUrl: '/mons/haunter.gif', type: 'Spectre' }
+] satisfies AdventureMon[]
+
+// Légendaires (rotation) — un est tiré par run. PHASE 2 : liste fournie par
+// l'endpoint (et la tentative de capture est gérée côté serveur).
+const LEGENDARIES = [
+  { num: 144, name: 'Artikodin', imageUrl: '/mons/articuno.gif', type: 'Glace' },
+  { num: 145, name: 'Électhor', imageUrl: '/mons/zapdos.gif', type: 'Électrik' },
+  { num: 146, name: 'Sulfura', imageUrl: '/mons/moltres.gif', type: 'Feu' },
+  { num: 149, name: 'Dracolosse', imageUrl: '/mons/dragonite.gif', type: 'Dragon' },
+  { num: 150, name: 'Mewtwo', imageUrl: '/mons/mewtwo.gif', type: 'Psy' },
+  { num: 151, name: 'Mew', imageUrl: '/mons/mew.gif', type: 'Psy' }
 ] satisfies AdventureMon[]
 
 // As des 8 Champions d'Arène (sprites animés PokeAPI).
@@ -207,7 +241,6 @@ const CHAMPION: AdvTrainer = {
   concede: 'Impossible… tu m\'as battu ? Tu es le nouveau Champion. Chapeau.',
   taunt: 'Il en faut plus pour détrôner un Champion. Reviens me défier.'
 }
-const LEGENDARY = MON.articuno
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -287,7 +320,7 @@ function eventNode(): AdvNode {
 }
 
 // Construit le périple en 3 actes.
-function buildNodes(): AdvNode[] {
+function buildNodes(leg: AdventureMon): AdvNode[] {
   // ── ACTE 1 : circuit de GYM_COUNT arènes tirées parmi les 8, difficulté ↑ ──
   const gyms = shuffle(GYMS).slice(0, GYM_COUNT)
   const gymBase = [86, 80, 73, 66, 58, 50]
@@ -329,13 +362,14 @@ function buildNodes(): AdvNode[] {
     elite(2),
     elite(3),
     { kind: 'champion', title: 'Le Champion', trainer: CHAMPION, opponent: CHAMPION.ace, baseWinChance: 25, themeColor: themeFor(CHAMPION.ace), lethal: true },
-    { kind: 'legendary', title: 'Présence légendaire', opponent: LEGENDARY, themeColor: '#8b5cc4', narration: ['Une aura ancienne emplit les lieux…', `Un ${LEGENDARY.name} légendaire apparaît devant toi !`] }
+    { kind: 'legendary', title: 'Présence légendaire', opponent: leg, themeColor: themeFor(leg), narration: ['Une aura ancienne emplit les lieux…', `Un ${leg.name} légendaire apparaît devant toi !`] }
   ]
 }
 
 export const useSpinStore = defineStore('spin', {
   state: () => ({
     phase: 'idle' as SpinPhase,
+    starterId: '' as string, // starter choisi
     starter: null as AdventureMon | null,
     level: START_LEVEL,
     xp: 0,
@@ -351,17 +385,22 @@ export const useSpinStore = defineStore('spin', {
     index: 0, // nœud courant
     edge: 0, // élan : bonus one-shot plafonné, consommé au prochain combat
     consecutiveLosses: 0, // pity légendaire (mock)
+    legendaryMon: null as AdventureMon | null, // légendaire tiré pour ce run
     lastReward: null as AdvReward | null,
     evolution: null as { from: AdventureMon, to: AdventureMon } | null, // révélation d'évolution
     pendingEvolve: false, // une évolution est mûre (déclenchée après le combat)
     pendingMilestone: false, // un jalon de badge attend sa révélation
     rewardCoins: 0,
-    legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon, consolation: number } | null,
+    // Statut hebdomadaire (mock ; PHASE 2 : fourni par /spin/status).
+    rewardedThisWeek: false, // récompense hebdo déjà obtenue → pas de pièces
+    legendaryLockedThisWeek: false, // légendaire déjà capturé → pas de tentative
+    legendaryResult: null as { captured: boolean, transferred: boolean, mon: AdventureMon } | null,
     lostTo: null as AdvTrainer | null,
     busy: false
   }),
 
   getters: {
+    starters: () => STARTERS,
     current: state => state.nodes[state.index] ?? null,
     total: state => state.nodes.length,
     xpPct: state => Math.round((state.xp / XP_PER_LEVEL) * 100),
@@ -400,19 +439,34 @@ export const useSpinStore = defineStore('spin', {
   },
 
   actions: {
-    start() {
-      this.starter = CHARM[0] as AdventureMon // Salamèche
+    // Ouvre l'écran de sélection du starter (avant le run).
+    begin() {
+      this.phase = 'select'
+    },
+
+    // Statut hebdomadaire (mock ; PHASE 2 : appliqué depuis /spin/status au boot).
+    setWeekStatus(s: { rewardedThisWeek?: boolean, legendaryLockedThisWeek?: boolean }) {
+      if (s.rewardedThisWeek !== undefined) this.rewardedThisWeek = s.rewardedThisWeek
+      if (s.legendaryLockedThisWeek !== undefined) this.legendaryLockedThisWeek = s.legendaryLockedThisWeek
+    },
+
+    // Démarre un run avec le starter choisi (défaut : Salamèche).
+    start(starterId?: string) {
+      const s = STARTERS.find(o => o.id === starterId) ?? STARTERS.find(o => o.id === 'charmander') ?? (STARTERS[0] as StarterOption)
+      this.starterId = s.id
+      this.evoChain = [...s.chain]
+      this.evolvesAt = [...s.evolvesAt]
+      this.starter = s.chain[0] as AdventureMon
       this.level = START_LEVEL
       this.xp = 0
       this.stage = 0
-      this.evolvesAt = [7, 9]
-      this.evoChain = [...CHARM]
       this.heldItem = null
       this.runCoins = 0
       this.lives = 0
       this.allies = []
       this.badges = 0
-      this.nodes = buildNodes()
+      this.legendaryMon = pick(LEGENDARIES)
+      this.nodes = buildNodes(this.legendaryMon)
       this.index = 0
       this.edge = 0
       this.consecutiveLosses = 0
@@ -471,7 +525,7 @@ export const useSpinStore = defineStore('spin', {
         themeColor: node.themeColor,
         title: champ ? `Champion — ${op.name}` : node.kind === 'elite' ? `Conseil des 4 — ${op.name}` : isGym ? `${node.trainer?.name ?? 'Arène'} — ${op.name}` : `Sauvage — ${op.name}`,
         winTitle: champ ? 'Champion vaincu ! 👑' : isGym ? 'Badge remporté ! 🏅' : 'Victoire !',
-        winSub: champ ? `+${SPIN_REWARD_COINS} 🪙 — un légendaire t'attend encore.` : `${op.name} est battu — en avant !`,
+        winSub: champ ? (this.rewardedThisWeek ? 'Récompense hebdo déjà obtenue — mais le voyage continue.' : `+${SPIN_REWARD_COINS} 🪙 — un légendaire t'attend encore.`) : `${op.name} est battu — en avant !`,
         loseSub: willRevive ? 'Ton Pokémon tombe… mais un Rappel le relève !' : lethal ? 'Ton aventure s\'arrête ici… mais tu peux retenter.' : 'Défaite — mais le circuit continue (pas de badge).'
       })
 
@@ -483,7 +537,7 @@ export const useSpinStore = defineStore('spin', {
         if (g !== 'psy') this.edge = 0 // l'élan est consommé (sauf Prescience)
         this.runCoins += coins
         this.gainXp(xp) // peut armer pendingEvolve
-        if (champ) this.rewardCoins = SPIN_REWARD_COINS
+        if (champ && !this.rewardedThisWeek) this.rewardCoins = SPIN_REWARD_COINS // sinon : déjà pris cette semaine
         if (isGym) {
           this.badges++
           this.applyBadgeMilestone(this.badges)
@@ -682,21 +736,25 @@ export const useSpinStore = defineStore('spin', {
     },
 
     // Capture du légendaire (mock) : taux de base + pity (+5 %/défaite), puis
-    // roulette de transfert (10 %). Une capture non transférée offre un lot de
-    // consolation pour rester lisible et gratifiant.
+    // roulette de transfert (10 %). Aucune pièce ici — c'est une règle backend.
     async attemptLegendary(node: AdvNode) {
-      const mon = node.opponent ?? LEGENDARY
+      const mon = node.opponent ?? this.legendaryMon ?? (LEGENDARIES[0] as AdventureMon)
       const rate = Math.min(80, 25 + this.consecutiveLosses * 5)
       const captured = Math.random() * 100 < rate
       const transferred = captured && Math.random() * 100 < 10
-      const consolation = transferred ? 0 : captured ? 60 : 30
-      if (consolation) this.rewardCoins += consolation
-      this.legendaryResult = { captured, transferred, mon, consolation }
+      this.legendaryResult = { captured, transferred, mon }
       this.phase = 'victory'
     },
 
+    // Légendaire déjà capturé cette semaine : pas de tentative, on clôt le run.
+    finishLegendaryLocked() {
+      this.legendaryResult = null
+      this.phase = 'victory'
+    },
+
+    // « Nouvelle aventure » → repasse par la sélection du starter.
     renew() {
-      this.start()
+      this.begin()
     },
 
     reset() {
