@@ -4,12 +4,14 @@
 // same-origin en production, donc aucun proxy n'est nécessaire au build).
 const API_TARGET = process.env.NUXT_API_TARGET || 'https://pokeroulette.poulineau.ovh'
 
-// URL publique du site (accueil « landing » à `/`) — pour les métadonnées
-// absolues (Open Graph, Twitter Card, canonical). Surchargée via l'env au besoin.
-const SITE_URL = process.env.NUXT_PUBLIC_SITE_URL || 'https://pokeroulette.poulineau.ovh'
+// URL PUBLIQUE du site (le front est servi sur ce domaine, distinct du backend
+// API) — pour les métadonnées absolues (Open Graph, Twitter Card, canonical, et
+// donc l'og:image). Surchargeable via l'env (NUXT_PUBLIC_SITE_URL) au déploiement.
+const SITE_URL = process.env.NUXT_PUBLIC_SITE_URL || 'https://roulettepoke.nassimlounadi.fr'
 const SITE_NAME = 'PokéRoulette'
 const SITE_TITLE = 'PokéRoulette — Ouvre, collectionne, deviens Maître'
-const SITE_DESC = 'Ouvre des boosters, complète ton Pokédex de cartes holographiques et pars à l\'aventure en combats réels — jusqu\'au légendaire.'
+// ≤ 125 caractères : au-delà, les aperçus sociaux tronquent (surtout sur mobile).
+const SITE_DESC = 'Ouvre des boosters, complète ton Pokédex et pars à l\'aventure en combats réels — jusqu\'au légendaire.'
 const OG_IMAGE = `${SITE_URL}/og-image.png`
 
 export default defineNuxtConfig({
