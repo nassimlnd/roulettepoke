@@ -60,10 +60,12 @@ export default defineNuxtConfig({
         { name: 'twitter:image', content: OG_IMAGE },
         { name: 'twitter:image:alt', content: 'PokéRoulette — ouvre, collectionne, deviens Maître' }
       ],
+      // Icônes générées depuis le vrai logo de l'app (composant PokeBall).
       link: [
-        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48.png' },
+        { rel: 'icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
         { rel: 'canonical', href: SITE_URL }
       ]
