@@ -235,6 +235,19 @@ onMounted(() => {
         class="astage"
         :style="{ '--tc': tc }"
       >
+        <!-- Quitter l'aventure à tout moment -->
+        <button
+          class="aclose"
+          aria-label="Quitter l'aventure"
+          title="Quitter l'aventure"
+          @click="spin.reset()"
+        >
+          <UIcon
+            name="i-lucide-x"
+            class="size-5"
+          />
+        </button>
+
         <!-- Progression -->
         <ol class="atrail">
           <li
@@ -460,13 +473,6 @@ onMounted(() => {
               class="size-6 animate-spin"
             />
           </div>
-
-          <button
-            class="aquit"
-            @click="spin.reset()"
-          >
-            Abandonner l'aventure
-          </button>
         </div>
 
         <!-- ═══ Victoire ═══ -->
@@ -748,6 +754,25 @@ onMounted(() => {
   padding: 4px 10px;
 }
 .aquit:hover { color: #fff; }
+
+/* Croix « quitter » — coin haut-droit, présente à tout moment */
+.aclose {
+  position: absolute;
+  top: 14px;
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, .72);
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .16);
+  backdrop-filter: blur(4px);
+  transition: background .15s, color .15s, transform .15s;
+}
+.aclose:hover { background: rgba(255, 255, 255, .22); color: #fff; transform: scale(1.08); }
 
 /* Verdict (victoire / défaite) plein écran */
 .verdict {
