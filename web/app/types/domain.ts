@@ -395,6 +395,18 @@ export interface AdventureMon {
   type: PokeType
 }
 
+// Un dresseur adverse (Conseil des 4 / Champion) : personnage + dialogues.
+// `portraitUrl` null → silhouette stylisée (en attendant de vrais portraits).
+export interface AdvTrainer {
+  name: string
+  title: string
+  portraitUrl: string | null
+  ace: AdventureMon
+  intro: string[] // répliques avant le combat
+  concede: string // réplique si le joueur gagne
+  taunt: string // réplique si le joueur perd
+}
+
 // Étapes du parcours (façon rogue-lite). Les combats (`elite`, `champion`,
 // `legendary`) se jouent en plein écran ; `treasure` accorde un bonus.
 export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legendary'
@@ -402,6 +414,9 @@ export type AdvNodeKind = 'start' | 'elite' | 'champion' | 'treasure' | 'legenda
 export interface AdvNode {
   kind: AdvNodeKind
   title: string
-  opponent?: AdventureMon // elite / champion / legendary
+  opponent?: AdventureMon // elite / champion / legendary (sprite du combat)
+  trainer?: AdvTrainer // elite / champion (personnage + dialogues)
   baseWinChance?: number // combats : cote de base (0-100), avant bonus/pity
+  themeColor?: string // teinte de la scène
+  narration?: string[] // texte narratif (start / treasure / legendary)
 }
