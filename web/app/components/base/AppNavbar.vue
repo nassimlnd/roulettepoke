@@ -51,6 +51,7 @@ const links = [
 
       <div class="navbar__right">
         <CoinBalance size="sm" />
+        <ThemeToggle />
         <UChip
           :show="hub.unreadNotifications > 0"
           :text="hub.unreadNotifications"

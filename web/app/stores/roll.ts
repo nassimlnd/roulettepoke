@@ -44,6 +44,36 @@ export const useRollStore = defineStore('roll', {
       }
     },
 
+    // Ouverture « ×N » (le backend n'a pas d'endpoint groupé) : on enchaîne N
+    // tirages séquentiels. Chacun débite son propre coût et n'est annulé que s'il
+    // échoue — les tirages déjà réussis restent acquis (échec partiel géré par
+    // l'appelant, ex. quota atteint en cours de route). Séquentiel = `isNew` fiable
+    // (le doublon d'un même tirage renvoie isNew:false au tirage suivant).
+    async performBatch(
+      biome: string | null,
+      unitCost: number,
+      count: number
+    ): Promise<{ outcomes: RollOutcome[], error: unknown }> {
+      const wallet = useWalletStore()
+      const outcomes: RollOutcome[] = []
+      for (let i = 0; i < count; i++) {
+        const ref = `roll-batch-${Date.now()}-${i}`
+        wallet.debitOptimistic(unitCost, ref)
+        try {
+          const outcome = await rollRepo.perform(useApi(), biome)
+          wallet.confirm(ref)
+          if (outcome.kind === 'coins' && wallet.coins !== null) {
+            wallet.coins += outcome.amount
+          }
+          outcomes.push(outcome)
+        } catch (err) {
+          wallet.rollback(ref)
+          return { outcomes, error: err }
+        }
+      }
+      return { outcomes, error: null }
+    },
+
     previewBatch(count: number, biome: string | null, type: string | null) {
       return rollRepo.previewBatch(useApi(), count, biome, type)
     }
