@@ -127,15 +127,16 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       sizeLimitKb: 512,
-      // Icônes liées DYNAMIQUEMENT (ex. symboles du Jackpot via SLOT_SYMBOLS[...])
-      // que le scan statique ne peut pas voir → à inclure explicitement, sinon
-      // elles s'affichent vides (cas de « trees », propre au Jackpot).
+      // Icônes liées DYNAMIQUEMENT (ex. symboles du Jackpot via SLOT_SYMBOLS[...],
+      // liens du menu mobile via :name="l.icon") que le scan statique ne peut pas
+      // voir → à inclure explicitement, sinon elles s'affichent vides.
       icons: [
         'lucide:crown',
         'lucide:sparkles',
         'lucide:trees',
         'lucide:ticket',
-        'lucide:coins'
+        'lucide:coins',
+        'lucide:settings'
       ]
     }
   }
