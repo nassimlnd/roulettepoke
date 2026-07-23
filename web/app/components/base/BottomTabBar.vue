@@ -1,15 +1,23 @@
 <script setup lang="ts">
-// Navigation mobile au pouce : 5 onglets, dock flottant arrondi (style Mochidex),
-// actif rouge. Masquée ≥ lg (la navbar prend le relais).
+// Navigation mobile au pouce : 4 destinations principales + un onglet « Menu »
+// qui ouvre le tiroir complet (MobileMenu) donnant accès à TOUTES les sections.
+// Masquée ≥ lg (la navbar prend le relais).
+const route = useRoute()
 const hub = useHubStore()
 
-const tabs = computed(() => [
-  { label: 'Jouer', to: '/play', icon: 'i-lucide-dices', badge: 0 },
-  { label: 'Collection', to: '/collection', icon: 'i-lucide-layout-grid', badge: 0 },
-  { label: 'Défis', to: '/gyms', icon: 'i-lucide-swords', badge: 0 },
-  { label: 'Social', to: '/leaderboard', icon: 'i-lucide-trophy', badge: hub.tradeActionsRequired },
-  { label: 'Plus', to: '/rules', icon: 'i-lucide-menu', badge: 0 }
-])
+const menuOpen = ref(false)
+
+const tabs = [
+  { label: 'Jouer', to: '/play', icon: 'i-lucide-dices' },
+  { label: 'Collection', to: '/collection', icon: 'i-lucide-layout-grid' },
+  { label: 'Aventure', to: '/spin', icon: 'i-lucide-compass' },
+  { label: 'Arènes', to: '/gyms', icon: 'i-lucide-swords' }
+]
+
+// L'onglet Menu s'allume quand le tiroir est ouvert OU quand la page courante
+// n'est pas l'une des 4 destinations principales (l'utilisateur est « dans le Menu »).
+const onPrimary = computed(() => tabs.some(t => route.path === t.to || route.path.startsWith(t.to + '/')))
+const menuActive = computed(() => menuOpen.value || !onPrimary.value)
 </script>
 
 <template>
@@ -28,21 +36,38 @@ const tabs = computed(() => [
           class="dock__tab"
           active-class="dock__tab--on"
         >
+          <UIcon
+            :name="t.icon"
+            class="size-5"
+          />
+          <span class="dock__label">{{ t.label }}</span>
+        </NuxtLink>
+      </li>
+      <li class="dock__item">
+        <button
+          type="button"
+          class="dock__tab"
+          :class="{ 'dock__tab--on': menuActive }"
+          aria-label="Ouvrir le menu"
+          @click="menuOpen = true"
+        >
           <UChip
-            :show="t.badge > 0"
-            :text="t.badge"
+            :show="hub.tradeActionsRequired > 0"
+            :text="hub.tradeActionsRequired"
             size="xl"
             color="error"
           >
             <UIcon
-              :name="t.icon"
+              name="i-lucide-menu"
               class="size-5"
             />
           </UChip>
-          <span class="dock__label">{{ t.label }}</span>
-        </NuxtLink>
+          <span class="dock__label">Menu</span>
+        </button>
       </li>
     </ul>
+
+    <MobileMenu v-model:open="menuOpen" />
   </nav>
 </template>
 
@@ -78,6 +103,7 @@ const tabs = computed(() => [
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  width: 100%;
   padding: 8px 4px;
   border-radius: 14px;
   color: var(--ui-text-muted);
