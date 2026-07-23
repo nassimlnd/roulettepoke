@@ -7,7 +7,6 @@ import { SLOT_ORDER, LINE_CELLS } from '~/utils/slot'
 // briller les cellules gagnantes.
 interface Cell { symbol: SlotSymbol, key: string | null }
 
-const CELL = 60
 const PAD = 16
 const DURATIONS = [1.9, 2.3, 2.7]
 const ROWS = ['top', 'mid', 'bot'] as const
@@ -25,10 +24,15 @@ function randomSym(): SlotSymbol {
 function idle(): Cell[][] {
   return [0, 1, 2].map(col => ROWS.map(row => ({ symbol: randomSym(), key: `${col}_${row}` })))
 }
+// Décalage exprimé en % de la hauteur de la bande (indépendant de la taille en
+// px des cellules) → la machine peut être redimensionnée librement en CSS sans
+// casser l'arrêt des rouleaux : montrer les 3 dernières cellules = translater de
+// (len − 3)/len de la hauteur totale.
 function stripStyle(col: number) {
   const strip = strips.value[col]!
+  const pct = ((strip.length - 3) / strip.length) * 100
   return {
-    transform: spun.value[col] ? `translateY(-${(strip.length - 3) * CELL}px)` : 'translateY(0)',
+    transform: spun.value[col] ? `translateY(-${pct}%)` : 'translateY(0)',
     transitionDuration: noTransition.value ? '0s' : (DURATIONS[col] ?? 2) + 's'
   }
 }
@@ -92,7 +96,7 @@ defineExpose({ spin })
             >
               <SlotSymbolTile
                 :symbol="cell.symbol"
-                :size="44"
+                class="reel__sym"
               />
             </div>
           </div>
@@ -106,31 +110,37 @@ defineExpose({ spin })
 .machine {
   display: flex;
   justify-content: center;
+  width: 100%;
+  container-type: inline-size; /* --cell dérivé de la largeur dispo (cqw) */
 }
+/* Taille de cellule pilotant TOUTE la machine : grande sur desktop pour remplir
+   la colonne, plus compacte sur mobile. Tout le reste (rouleaux, symboles,
+   paddings) s'exprime en fonction de --cell. */
 .machine__frame {
-  padding: 14px;
-  border-radius: 24px;
+  --cell: clamp(58px, 20cqw, 112px);
+  padding: calc(var(--cell) * 0.22);
+  border-radius: calc(var(--cell) * 0.34);
   background: linear-gradient(180deg, #ee5a48 0%, #c62617 55%, #a41f14 100%);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, .3),
     inset 0 -6px 14px rgba(0, 0, 0, .3),
-    0 16px 34px rgba(150, 30, 20, .3);
+    0 18px 40px rgba(150, 30, 20, .32);
   border: 3px solid rgba(255, 255, 255, .25);
 }
 .machine__reels {
   display: flex;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 16px;
+  gap: calc(var(--cell) * 0.13);
+  padding: calc(var(--cell) * 0.16);
+  border-radius: calc(var(--cell) * 0.22);
   background: linear-gradient(180deg, #2a1210, #3a1a16);
   box-shadow: inset 0 3px 10px rgba(0, 0, 0, .5);
 }
 .reel {
   position: relative;
-  width: 70px;
-  height: 180px; /* 3 × 60 */
+  width: calc(var(--cell) * 1.17);
+  height: calc(var(--cell) * 3);
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: calc(var(--cell) * 0.18);
   background: var(--ui-bg-elevated);
   box-shadow: inset 0 8px 12px -6px rgba(0, 0, 0, .3), inset 0 -8px 12px -6px rgba(0, 0, 0, .3);
 }
@@ -152,11 +162,13 @@ defineExpose({ spin })
 }
 .reel__cell {
   position: relative;
-  height: 60px;
+  height: var(--cell);
   flex: none;
   display: grid;
   place-items: center;
 }
+/* Le symbole suit la taille de la cellule (prime sur le --s px du composant). */
+.reel__cell :deep(.reel__sym) { width: calc(var(--cell) * 0.72); height: calc(var(--cell) * 0.72); }
 .reel__cell--win::before {
   content: "";
   position: absolute;
