@@ -17,7 +17,43 @@ const wallet = useWalletStore()
 const prefs = usePreferencesStore()
 const rollStore = useRollStore()
 const collection = useCollectionStore()
+const inventory = useInventoryStore()
 const { celebrate, tierFor } = useCelebration()
+
+// Sac à dos : Charme Chroma (shiny ×2) + tickets biome/type (filtrent le prochain
+// tirage, usage unique, exclusifs). Un ticket actif prend le pas sur le biome payant.
+const bagOpen = ref(false)
+const deactivating = ref(false)
+const hasActiveTicket = computed(() => inventory.hasActiveTicket)
+const activeTicketLabel = computed(() => inventory.activeBiomeName ?? inventory.activeTypeName ?? '')
+const charmeRolls = computed(() => auth.user?.charme_chroma_rolls ?? 0)
+const bagCount = computed(() =>
+  inventory.charmeCount
+  + inventory.biomeTickets.reduce((n, t) => n + t.quantity, 0)
+  + inventory.typeTickets.reduce((n, t) => n + t.quantity, 0))
+
+// Biome effectivement tiré : biome payant choisi, sinon le ticket biome actif.
+function rollBiome(): string | null {
+  return prefs.selectedBiome || inventory.activeBiomeName || null
+}
+
+async function deactivateActiveTicket() {
+  deactivating.value = true
+  try {
+    if (inventory.activeBiomeTicket) await inventory.deactivateBiomeTicket()
+    else await inventory.deactivateTypeTicket()
+  } catch (err) {
+    errorMsg.value = humanizeError(err)
+  } finally {
+    deactivating.value = false
+  }
+}
+
+// Un ticket actif remplace le filtre biome payant : on réinitialise la sélection
+// pour éviter qu'ils se combinent silencieusement (règle reprise du jeu original).
+watch(hasActiveTicket, (on) => {
+  if (on && prefs.selectedBiome) prefs.selectedBiome = ''
+})
 
 type Phase = 'idle' | 'opening' | 'reveal'
 const phase = ref<Phase>('idle')
@@ -45,7 +81,9 @@ const boosters = computed<BoosterOption[]>(() => [
   ...rollStore.biomes.map(b => ({ biome: b.biome, cost: b.cost, owned: b.ownedCount, total: b.cardCount }))
 ])
 const selected = computed(() => prefs.selectedBiome)
-const currentCost = computed(() => rollStore.costForBiome(prefs.selectedBiome))
+// Un ticket actif filtre le tirage au coût de base (le ticket EST l'accès au biome).
+const currentCost = computed(() =>
+  hasActiveTicket.value ? BASE_ROLL_COST : rollStore.costForBiome(prefs.selectedBiome))
 const currentTint = computed(() =>
   prefs.selectedBiome ? `var(--color-biome-${biomeSlug(prefs.selectedBiome as Biome)})` : 'var(--color-poke-500)')
 
@@ -91,7 +129,9 @@ async function open() {
   outcome.value = null
   resolvedCard.value = null
   phase.value = 'opening'
-  const biome = prefs.selectedBiome || null
+  const biome = rollBiome()
+  const hadTicket = hasActiveTicket.value
+  const boosted = charmeRolls.value > 0
 
   try {
     // Le tourbillon joue ~3 s ; la carte n'est révélée qu'une fois le serveur prêt.
@@ -104,9 +144,11 @@ async function open() {
       resolvedCard.value = { card: o.card, isNew: o.isNew, quantity: qtyFor(o.card, o.isNew) }
       celebrate(tierFor(o.card))
       refreshCollection()
+      if (boosted) auth.consumeCharmeRoll() // le backend ne décrémente que les tirages normaux
     }
     phase.value = 'reveal'
     refreshBalance()
+    if (hadTicket) inventory.refresh().catch(() => {}) // ticket usage unique : peut être consommé
   } catch (err) {
     errorMsg.value = humanizeError(err)
     phase.value = 'idle'
@@ -143,6 +185,9 @@ function celebrateBest(cards: DomainCard[]) {
 
 async function open5() {
   if (phase.value !== 'idle') return
+  // Les tickets sont à usage unique : l'ouverture ×5 ne s'y prête pas (le ticket
+  // serait consommé au 1er tirage). On la réserve aux tirages sans ticket.
+  if (hasActiveTicket.value) return
   if (!affordableBatch.value) {
     const miss = Math.max(0, batchCost.value - (wallet.balance ?? 0))
     errorMsg.value = `Il te manque ${miss} pièce${miss > 1 ? 's' : ''} pour ouvrir 5 paquets.`
@@ -242,6 +287,7 @@ async function refreshBalance() {
 onMounted(() => {
   rollStore.ensureBiomes().catch(() => {})
   collection.ensureFresh().catch(() => {})
+  inventory.ensureFresh().catch(() => {})
 })
 </script>
 
@@ -258,7 +304,25 @@ onMounted(() => {
         />
         <span class="font-medium">{{ auth.user?.username }}</span>
       </div>
-      <CoinBalance />
+      <div class="play__actions">
+        <button
+          type="button"
+          class="bag-btn"
+          aria-label="Ouvrir le sac à dos"
+          @click="bagOpen = true"
+        >
+          <UIcon
+            name="i-lucide-backpack"
+            class="size-5"
+          />
+          <span class="bag-btn__lbl">Sac</span>
+          <span
+            v-if="bagCount"
+            class="bag-btn__badge tabular"
+          >{{ bagCount }}</span>
+        </button>
+        <CoinBalance />
+      </div>
     </div>
 
     <!-- Scène -->
@@ -282,7 +346,33 @@ onMounted(() => {
             </p>
           </div>
 
+          <!-- Ticket actif : remplace le sélecteur de biome (prochain tirage filtré) -->
           <div
+            v-if="hasActiveTicket"
+            class="ticket-slot"
+          >
+            <span class="ticket-slot__ico">
+              <UIcon
+                name="i-lucide-ticket"
+                class="size-6"
+              />
+            </span>
+            <div class="ticket-slot__info">
+              <span class="ticket-slot__label font-display">Ticket {{ activeTicketLabel }} actif</span>
+              <span class="ticket-slot__sub">Ton prochain tirage sera filtré · coût normal</span>
+            </div>
+            <PButton
+              color="neutral"
+              size="sm"
+              :loading="deactivating"
+              @click="deactivateActiveTicket"
+            >
+              Désactiver
+            </PButton>
+          </div>
+
+          <div
+            v-else
             class="carousel"
             role="radiogroup"
             aria-label="Choix du booster par région"
@@ -307,6 +397,18 @@ onMounted(() => {
             </button>
           </div>
 
+          <!-- Charme Chroma actif : tirages boostés restants -->
+          <p
+            v-if="charmeRolls > 0"
+            class="idle__charme"
+          >
+            <UIcon
+              name="i-lucide-sparkles"
+              class="size-4"
+            />
+            Charme Chroma actif · <b>{{ charmeRolls }}</b> tirage{{ charmeRolls > 1 ? 's' : '' }} boosté{{ charmeRolls > 1 ? 's' : '' }} · shiny ×2
+          </p>
+
           <div class="idle__cta">
             <div class="idle__btns">
               <PButton
@@ -320,6 +422,7 @@ onMounted(() => {
                 Ouvrir — <span class="coin" />{{ currentCost }}
               </PButton>
               <PButton
+                v-if="!hasActiveTicket"
                 color="neutral"
                 :disabled="!affordableBatch"
                 :title="!affordableBatch ? 'Solde insuffisant pour 5 paquets' : 'Ouvre 5 paquets d\'un coup'"
@@ -394,6 +497,8 @@ onMounted(() => {
 
     <!-- Hub : quotas du jour / de la semaine (masqué pendant l'ouverture) -->
     <HubPanel v-if="phase === 'idle'" />
+
+    <BagModal v-model:open="bagOpen" />
   </div>
 </template>
 
@@ -401,6 +506,40 @@ onMounted(() => {
 .play { display: flex; flex-direction: column; gap: 20px; }
 .play__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .play__who { display: flex; align-items: center; gap: 8px; }
+.play__actions { display: flex; align-items: center; gap: 10px; }
+
+/* Bouton Sac à dos (ouvre l'inventaire) */
+.bag-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .84rem;
+  color: var(--ui-text-toned);
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  transition: color .15s ease, background .15s ease, transform .15s var(--ease-pop);
+}
+.bag-btn:hover { color: var(--color-poke-600); background: var(--color-poke-50); transform: translateY(-1px); }
+.bag-btn:focus-visible { outline: 2px solid var(--color-poke-400); outline-offset: 2px; }
+.bag-btn__lbl { display: none; }
+@media (min-width: 480px) { .bag-btn__lbl { display: inline; } }
+.bag-btn__badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--color-poke-500);
+}
 
 .play__stage {
   position: relative;
@@ -423,6 +562,49 @@ onMounted(() => {
 .idle__intro { text-align: center; display: flex; flex-direction: column; gap: 6px; max-width: 34rem; }
 .idle__title { font-weight: 700; font-size: clamp(1.6rem, 5vw, 2rem); }
 .idle__lead { font-weight: 600; font-size: 0.9rem; color: var(--ui-text-muted); }
+
+/* Slot ticket actif (remplace le carrousel) */
+.ticket-slot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 30rem;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--color-poke-500) 8%, var(--ui-bg-elevated));
+  border: 1px dashed color-mix(in oklab, var(--color-poke-500) 45%, transparent);
+}
+.ticket-slot__ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(150deg, #ee5a48, var(--color-poke-500));
+  box-shadow: 0 3px 0 var(--color-poke-700);
+}
+.ticket-slot__info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ticket-slot__label { font-weight: 700; font-size: 1rem; color: var(--ui-text-highlighted); }
+.ticket-slot__sub { font-size: .82rem; color: var(--ui-text-muted); }
+
+/* Bandeau Charme Chroma actif */
+.idle__charme {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: .84rem;
+  color: #8b5cc4;
+  background: color-mix(in oklab, #c9b3ff 20%, transparent);
+  padding: 7px 14px;
+  border-radius: 999px;
+}
+.idle__charme :deep(svg) { color: #a06cc4; }
+.idle__charme b { color: #7a49a8; }
 
 .carousel {
   display: flex;

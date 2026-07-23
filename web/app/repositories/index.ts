@@ -109,7 +109,9 @@ export const mergeRepo = {
 
 export const inventoryRepo = {
   get: (api: Api) => api<WireInventory>('/inventory'),
-  activateCharme: (api: Api) => api<{ rolls: number }>('/inventory/activate-charme', { method: 'POST' }),
+  // Réponse observée en prod : { charme_chroma_rolls } (l'ancien doc disait
+  // { rolls }) — on lit les deux par prudence côté store.
+  activateCharme: (api: Api) => api<{ charme_chroma_rolls?: number, rolls?: number }>('/inventory/activate-charme', { method: 'POST' }),
   activateBiomeTicket: (api: Api, biomeSlug: string) =>
     api('/inventory/activate-biome-ticket', { method: 'POST', body: { biomeSlug } }),
   activateTypeTicket: (api: Api, typeSlug: string) =>
