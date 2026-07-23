@@ -51,12 +51,15 @@ const chips = [
           <PokeBall :size="30" />
           <span class="font-display">Poké<b>Roulette</b></span>
         </NuxtLink>
-        <PButton
-          :to="loginTo"
-          size="md"
-        >
-          Jouer
-        </PButton>
+        <div class="lp-nav__actions">
+          <ThemeToggle />
+          <PButton
+            :to="loginTo"
+            size="md"
+          >
+            Jouer
+          </PButton>
+        </div>
       </div>
     </header>
 
@@ -383,6 +386,7 @@ const chips = [
   border-bottom: 1px solid var(--ui-border);
 }
 .lp-nav__in { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+.lp-nav__actions { display: flex; align-items: center; gap: 6px; }
 .lp-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.16rem; color: var(--ui-text-highlighted); text-decoration: none; }
 .lp-brand b { color: var(--color-poke-500); }
 

@@ -10,6 +10,14 @@ const wallet = useWalletStore()
 const prefs = usePreferencesStore()
 const sound = useSound()
 const toast = useToast()
+const colorMode = useColorMode()
+
+// ─── Apparence (thème clair / sombre / système) ───────────────────────────────
+const THEME_OPTS = [
+  { value: 'system', label: 'Système', hint: 'Suit ton appareil' },
+  { value: 'light', label: 'Clair', hint: 'Toujours clair' },
+  { value: 'dark', label: 'Sombre', hint: 'Toujours sombre' }
+] as const
 
 const user = computed(() => auth.user)
 const coins = computed(() => wallet.balance ?? user.value?.coins ?? 0)
@@ -173,6 +181,27 @@ async function sendReset() {
       <h2 class="sect font-display">
         Préférences
       </h2>
+
+      <SettingRow
+        icon="i-lucide-moon"
+        title="Apparence"
+        description="Thème clair ou sombre de l'interface."
+      >
+        <div class="seg">
+          <button
+            v-for="o in THEME_OPTS"
+            :key="o.value"
+            class="seg__btn"
+            :class="{ 'seg__btn--on': colorMode.preference === o.value }"
+            :title="o.hint"
+            @click="colorMode.preference = o.value"
+          >
+            {{ o.label }}
+          </button>
+        </div>
+      </SettingRow>
+
+      <div class="sep" />
 
       <SettingRow
         icon="i-lucide-volume-2"

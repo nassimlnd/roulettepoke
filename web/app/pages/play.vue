@@ -2,6 +2,7 @@
 import type { Biome } from '~/types/api'
 import type { DomainCard, RollOutcome } from '~/types/domain'
 import type { RevealView } from '~/components/game/BoosterReveal.vue'
+import type { BatchTile } from '~/components/game/BoosterRevealBatch.vue'
 import type { RevealMode } from '~/stores/preferences'
 import { BASE_ROLL_COST } from '~/stores/roll'
 import { eventRepo } from '~/repositories'
@@ -24,6 +25,11 @@ const outcome = ref<RollOutcome | null>(null)
 const resolvedCard = ref<{ card: DomainCard, isNew: boolean, quantity?: number } | null>(null)
 const choiceResolving = ref(false)
 const errorMsg = ref('')
+
+// Ouverture groupée « ×5 » : la grille de révélation vit dans batchTiles.
+const BATCH_SIZE = 5
+const batchTiles = ref<BatchTile[] | null>(null)
+const batchCount = ref(0)
 
 const motionOn = computed(() => !prefs.effectiveReducedMotion)
 
@@ -52,6 +58,8 @@ function selectBooster(biome: string) {
 const balance = computed(() => wallet.balance)
 const affordable = computed(() => wallet.canAfford(currentCost.value))
 const shortfall = computed(() => Math.max(0, currentCost.value - (wallet.balance ?? 0)))
+const batchCost = computed(() => currentCost.value * BATCH_SIZE)
+const affordableBatch = computed(() => wallet.canAfford(batchCost.value))
 
 // ─── Vue de révélation dérivée de l'état ──────────────────────────────────────
 const revealView = computed<RevealView | null>(() => {
@@ -105,6 +113,93 @@ async function open() {
   }
 }
 
+// ─── Ouverture ×5 ──────────────────────────────────────────────────────────────
+const TIER_ORDER = ['common', 'rare', 'epic', 'legendary', 'shiny', 'shiny-legendary']
+
+// Construit les tuiles de révélation : la quantité tient compte des doublons
+// tirés DANS ce même lot (tally local + quantité déjà en collection).
+function buildTiles(outcomes: RollOutcome[]): BatchTile[] {
+  const seen = new Map<string, number>()
+  const qtyOf = (card: DomainCard): number => {
+    const prior = collection.cards.find(c => c.id === card.id)?.quantity ?? 0
+    const n = (seen.get(card.id) ?? 0) + 1
+    seen.set(card.id, n)
+    return prior + n
+  }
+  return outcomes.map<BatchTile>((o) => {
+    if (o.kind === 'card') return { kind: 'card', card: o.card, isNew: o.isNew, quantity: qtyOf(o.card) }
+    if (o.kind === 'coins') return { kind: 'coins', amount: o.amount }
+    if (o.kind === 'charme') return { kind: 'charme' }
+    return { kind: 'choice', choiceId: o.choiceId, left: o.left, right: o.right, resolving: false, resolved: null }
+  })
+}
+
+function celebrateBest(cards: DomainCard[]) {
+  if (!cards.length) return
+  const best = cards.reduce((a, b) =>
+    (TIER_ORDER.indexOf(tierFor(b)) > TIER_ORDER.indexOf(tierFor(a)) ? b : a))
+  celebrate(tierFor(best))
+}
+
+async function open5() {
+  if (phase.value !== 'idle') return
+  if (!affordableBatch.value) {
+    const miss = Math.max(0, batchCost.value - (wallet.balance ?? 0))
+    errorMsg.value = `Il te manque ${miss} pièce${miss > 1 ? 's' : ''} pour ouvrir 5 paquets.`
+    return
+  }
+  errorMsg.value = ''
+  outcome.value = null
+  resolvedCard.value = null
+  batchTiles.value = null
+  batchCount.value = 0
+  phase.value = 'opening'
+  const biome = prefs.selectedBiome || null
+
+  try {
+    const [{ outcomes, error }] = await Promise.all([
+      rollStore.performBatch(biome, currentCost.value, BATCH_SIZE),
+      wait(orbitMs.value)
+    ])
+    if (!outcomes.length) {
+      errorMsg.value = humanizeError(error)
+      phase.value = 'idle'
+      return
+    }
+    batchTiles.value = buildTiles(outcomes)
+    batchCount.value = outcomes.length
+    celebrateBest(outcomes.flatMap(o => (o.kind === 'card' ? [o.card] : [])))
+    refreshCollection()
+    // Échec partiel (ex. quota atteint en cours) : on révèle le butin acquis.
+    if (error) {
+      errorMsg.value = `Ouverture interrompue après ${outcomes.length} paquet${outcomes.length > 1 ? 's' : ''} — ${humanizeError(error)}`
+    }
+    phase.value = 'reveal'
+    refreshBalance()
+  } catch (err) {
+    errorMsg.value = humanizeError(err)
+    phase.value = 'idle'
+  }
+}
+
+async function pickBatchChoice(index: number, card: DomainCard) {
+  const tiles = batchTiles.value
+  const tile = tiles?.[index]
+  if (!tile || tile.kind !== 'choice' || tile.resolving || tile.resolved) return
+  tile.resolving = true
+  try {
+    const { card: chosen, isNew } = await eventRepo.confirmCardChoice(useApi(), tile.choiceId, card.id)
+    tile.resolved = { card: chosen, isNew, quantity: qtyFor(chosen, isNew) }
+    celebrate(tierFor(chosen))
+    refreshCollection()
+    refreshBalance()
+  } catch (err) {
+    errorMsg.value = humanizeError(err)
+  } finally {
+    tile.resolving = false
+  }
+}
+
 // ─── Choix (event card-choice) : on retient une carte sur deux ────────────────
 async function pickChoice(card: DomainCard) {
   const o = outcome.value
@@ -127,6 +222,9 @@ function finish() {
   phase.value = 'idle'
   outcome.value = null
   resolvedCard.value = null
+  batchTiles.value = null
+  batchCount.value = 0
+  errorMsg.value = ''
 }
 
 // ─── Synchronisations ─────────────────────────────────────────────────────────
@@ -210,16 +308,30 @@ onMounted(() => {
           </div>
 
           <div class="idle__cta">
-            <PButton
-              :disabled="!affordable"
-              @click="open"
-            >
-              <UIcon
-                name="i-lucide-sparkles"
-                class="size-5"
-              />
-              Ouvrir le paquet — <span class="coin" />{{ currentCost }}
-            </PButton>
+            <div class="idle__btns">
+              <PButton
+                :disabled="!affordable"
+                @click="open"
+              >
+                <UIcon
+                  name="i-lucide-sparkles"
+                  class="size-5"
+                />
+                Ouvrir — <span class="coin" />{{ currentCost }}
+              </PButton>
+              <PButton
+                color="neutral"
+                :disabled="!affordableBatch"
+                :title="!affordableBatch ? 'Solde insuffisant pour 5 paquets' : 'Ouvre 5 paquets d\'un coup'"
+                @click="open5"
+              >
+                <UIcon
+                  name="i-lucide-layers"
+                  class="size-5"
+                />
+                Ouvrir ×5 — <span class="coin" />{{ batchCost }}
+              </PButton>
+            </div>
             <p class="idle__solde">
               <span
                 v-if="balance !== null"
@@ -257,8 +369,15 @@ onMounted(() => {
           key="reveal"
           class="reveal-wrap"
         >
+          <BoosterRevealBatch
+            v-if="batchTiles"
+            :tiles="batchTiles"
+            :count="batchCount"
+            @pick="pickBatchChoice"
+            @finish="finish"
+          />
           <BoosterReveal
-            v-if="revealView"
+            v-else-if="revealView"
             :view="revealView"
             @pick="pickChoice"
             @finish="finish"
@@ -346,6 +465,7 @@ onMounted(() => {
 }
 
 .idle__cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.idle__btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .coin {
   display: inline-block;
   width: 15px;
