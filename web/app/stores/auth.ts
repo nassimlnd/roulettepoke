@@ -86,6 +86,18 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Compteur de tirages boostés par le Charme Chroma. Mis à jour localement
+    // (miroir du serveur) pour un retour immédiat, SANS repasser par /auth/me
+    // (dont le GET crédite le bonus quotidien par effet de bord).
+    setCharmeRolls(n: number) {
+      if (this.user) this.user.charme_chroma_rolls = Math.max(0, n)
+    },
+    // Le backend ne décrémente le charme que sur un tirage « normal » (jamais sur
+    // les événements coins/charme/choix) — on reflète la même règle côté client.
+    consumeCharmeRoll() {
+      if (this.user && this.user.charme_chroma_rolls > 0) this.user.charme_chroma_rolls -= 1
+    },
+
     logout() {
       this.token = null
       this.user = null
