@@ -37,7 +37,7 @@ function presentRun(run: LeagueRun | null): Promise<void> {
   })
 }
 
-const busy = ref(false)
+const { pending: busy, run } = useAsyncAction()
 
 const status = computed(() => league.status)
 const hasBadges = computed(() => gyms.isChampion)
@@ -58,31 +58,21 @@ const pct = (p: number): string => `${Math.round(p)} %`
 
 // ─── Défi ─────────────────────────────────────────────────────────────────────
 const confirmOpen = ref(false)
-async function doChallenge() {
-  busy.value = true
-  try {
-    const run = await league.challenge()
+function doChallenge() {
+  return run(async () => {
+    const leagueRun = await league.challenge()
     confirmOpen.value = false
-    await presentRun(run)
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+    await presentRun(leagueRun)
+  })
 }
 
 // ─── Récompense : pièces ──────────────────────────────────────────────────────
-async function claimCoins() {
-  busy.value = true
-  try {
+function claimCoins() {
+  return run(async () => {
     await league.claimCoins()
     await refreshBalance()
     toast.add({ title: `+${LEAGUE_COINS_REWARD} pièces empochées !`, color: 'success', icon: 'i-lucide-coins' })
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+  })
 }
 
 // ─── Récompense : légendaire ──────────────────────────────────────────────────
@@ -104,20 +94,16 @@ async function openLegendary(l: LeagueLegendary) {
     oddsLoading.value = false
   }
 }
-async function captureLegendary() {
-  if (!picked.value) return
-  busy.value = true
-  try {
-    const res = await league.captureLegendary(picked.value.id)
+function captureLegendary() {
+  const target = picked.value
+  if (!target) return
+  return run(async () => {
+    const res = await league.captureLegendary(target.id)
     legendaryOpen.value = false
     refreshCollection()
     if (res?.won) toast.add({ title: `${res.card.name} capturé ! 🎉`, color: 'success', icon: 'i-lucide-sparkles' })
     else toast.add({ title: 'Le légendaire s\'est échappé…', color: 'warning' })
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+  })
 }
 
 function refreshCollection() {

@@ -49,24 +49,19 @@ function medalFor(place: number): string {
 
 // ─── Inscription ──────────────────────────────────────────────────────────────
 const registerOpen = ref(false)
-const registering = ref(false)
+const { pending: registering, run } = useAsyncAction()
 const canAfford = computed(() => wallet.canAfford(TOURNAMENT_ENTRY_FEE))
 
-async function confirmRegister() {
+function confirmRegister() {
   if (!canAfford.value) {
     toast.add({ title: `Il te manque des pièces (inscription : ${TOURNAMENT_ENTRY_FEE} 🪙).`, color: 'error' })
     return
   }
-  registering.value = true
-  try {
+  return run(async () => {
     await tourney.register()
     toast.add({ title: 'Inscription confirmée ! 🎉', color: 'success', icon: 'i-lucide-check' })
     registerOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    registering.value = false
-  }
+  })
 }
 
 const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
