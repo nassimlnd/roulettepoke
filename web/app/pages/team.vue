@@ -4,6 +4,7 @@ import { useStorage } from '@vueuse/core'
 import { useTeamStore, TEAM_MAX, REMOVE_COST } from '~/stores/team'
 import { inventoryRepo } from '~/repositories'
 import { TYPE_SLUG_TO_NAME } from '~/utils/poke'
+import { STORAGE_KEYS } from '~/constants/storage-keys'
 
 // Page Équipe — 6 slots. Ajout par « roulette d'équipe » (destructif : la carte
 // tirée quitte la collection), retrait à -10 🪙 (définitif), réorganisation par
@@ -80,7 +81,7 @@ const rollOpen = ref(false)
 const rollPhase = ref<RollPhase>('confirm')
 const rolled = ref<TeamMember | null>(null)
 const rollError = ref('')
-const skipRollConfirm = useStorage('pkr_team_roll_skip_confirm', false)
+const skipRollConfirm = useStorage(STORAGE_KEYS.teamRollSkipConfirm, false)
 
 function openRoll() {
   if (team.isFull) return

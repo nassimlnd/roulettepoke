@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_LONG } from '~/constants/cache'
 import type { WireInventory } from '~/types/api'
 import { inventoryRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 import { BIOME_SLUG_TO_NAME, TYPE_SLUG_TO_NAME } from '~/utils/poke'
 
-const TTL = 5 * 60_000
+const TTL = CACHE_TTL_LONG
 
 export interface InvTicket { slug: string, name: string, quantity: number }
 

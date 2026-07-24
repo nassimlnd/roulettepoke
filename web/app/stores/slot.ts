@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { SpinResult, RecentWin } from '~/types/domain'
 import type { SlotStatus } from '~/types/api'
 import { slotRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 
 export const useSlotStore = defineStore('slot', {
   state: () => ({

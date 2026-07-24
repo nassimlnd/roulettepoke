@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DomainOwnedCard } from '~/types/domain'
 import { SELL_PRICE } from '~/utils/poke'
+import { SHINY_PITY_DENOMINATOR, MERGE_COST } from '~/constants/game'
 
 const collection = useCollectionStore()
 const toast = useToast()
@@ -47,7 +48,7 @@ function openDetail(card: DomainOwnedCard) {
 }
 
 function shinyChance(card: DomainOwnedCard): string {
-  return `~${Math.round(((card.quantity + 1) / 500) * 1000) / 10}%`
+  return `~${Math.round(((card.quantity + 1) / SHINY_PITY_DENOMINATOR) * 1000) / 10}%`
 }
 
 function canMerge(card: DomainOwnedCard): boolean {
@@ -247,7 +248,7 @@ async function confirmMerge() {
     <ConfirmDialog
       v-model:open="mergeOpen"
       title="Fusionner cette carte ?"
-      :message="`Cette fusion consomme 10 exemplaires de ${selected?.name} pour obtenir son évolution. Cette action est définitive.`"
+      :message="`Cette fusion consomme ${MERGE_COST} exemplaires de ${selected?.name} pour obtenir son évolution. Cette action est définitive.`"
       confirm-label="Fusionner"
       danger
       :loading="actionLoading"

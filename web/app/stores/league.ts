@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainLeagueStatus, LeagueEstimate, LeagueRun, LegendaryReward } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { leagueRepo } from '~/repositories'
 
 // Ligue des 4 (Elite Four) : statut hebdomadaire, estimation, défi (1/semaine),
 // puis récompense (500 pièces ou capture d'un légendaire).
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 export const LEAGUE_COINS_REWARD = 500
 
 export const useLeagueStore = defineStore('league', {

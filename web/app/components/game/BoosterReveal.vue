@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DomainCard } from '~/types/domain'
+import { SHINY_PITY_DENOMINATOR } from '~/constants/game'
 
 // Révélation post-ouverture (direction Mochidex) : burst doré + carte qui
 // « émerge ». Gère la carte, les événements pièces / charme, et le choix
@@ -38,7 +39,7 @@ const pity = computed(() => {
   if (props.view.kind !== 'card' || props.view.isNew) return ''
   const q = props.view.quantity ?? 0
   if (q < 2) return ''
-  const chance = Math.round(((q) / 500) * 1000) / 10
+  const chance = Math.round(((q) / SHINY_PITY_DENOMINATOR) * 1000) / 10
   return `Doublon ×${q} · chance shiny estimée ~${chance}%`
 })
 </script>

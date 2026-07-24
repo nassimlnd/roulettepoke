@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DomainOwnedCard } from '~/types/domain'
+import { ROUTES } from '~/constants/routes'
 
 // Accueil public de PokéRoulette : landing / vitrine du jeu redessiné. Construite
 // avec nos composants (PokeBall, BoosterPack, HoloCard, PButton) + Nuxt UI (UIcon),
@@ -11,8 +12,8 @@ definePageMeta({ public: true, layout: false })
 // pour être présents dans le HTML initial (SPA) et lus par les crawlers.
 
 const auth = useAuthStore()
-const playTo = computed(() => (auth.isAuthenticated ? '/play' : '/register'))
-const loginTo = computed(() => (auth.isAuthenticated ? '/play' : '/login'))
+const playTo = computed(() => (auth.isAuthenticated ? ROUTES.home : ROUTES.register))
+const loginTo = computed(() => (auth.isAuthenticated ? ROUTES.home : ROUTES.login))
 
 type Sample = Pick<DomainOwnedCard, 'num' | 'name' | 'type' | 'rarity' | 'isShiny' | 'biome' | 'level' | 'imageUrl' | 'owned' | 'quantity'>
 function toCard(c: Sample): DomainOwnedCard {

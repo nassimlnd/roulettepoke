@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_MEDIUM } from '~/constants/cache'
 import type { DomainStats } from '~/types/domain'
 import { statsRepo } from '~/repositories'
 
 // Statistiques globales (GET /stats) — un seul gros payload agrégé, mis en cache
 // (TTL) : la page ne re-fetch pas à chaque visite.
-const TTL = 120_000
+const TTL = CACHE_TTL_MEDIUM
 
 export const useStatsStore = defineStore('stats', {
   state: () => ({

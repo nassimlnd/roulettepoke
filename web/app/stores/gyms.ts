@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome } from '~/types/domain'
 import type { TrainingStatus, UUID } from '~/types/api'
 import { gymRepo, trainingRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 export const TOTAL_GYMS = 8
 
 export const useGymStore = defineStore('gyms', {

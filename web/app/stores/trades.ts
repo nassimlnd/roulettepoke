@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainTrade, TradePlayer, RealRarity } from '~/types/domain'
 import type { TradeEligibility, UUID } from '~/types/api'
 import { tradesRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 export const TRADE_MIN_CARDS = 120
 const CLOSED: DomainTrade['status'][] = ['completed', 'declined', 'cancelled', 'expired']
 

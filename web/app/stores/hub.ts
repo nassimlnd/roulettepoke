@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT, CACHE_TTL_LONG } from '~/constants/cache'
 import type {
   TrainingStatus, SlotStatus, SpinStatus,
   TradeEligibility, NotificationsResponse
@@ -11,8 +12,8 @@ import {
 import { dedupe } from '~/utils/dedupe'
 import { nextDailyReset, nextWeekly } from '~/utils/paris-time'
 
-const TTL_SHORT = 60_000
-const TTL_LONG = 5 * 60_000
+const TTL_SHORT = CACHE_TTL_SHORT
+const TTL_LONG = CACHE_TTL_LONG
 
 export interface QuotaTile {
   key: string

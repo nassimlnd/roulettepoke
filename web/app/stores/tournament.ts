@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainTournament, TournamentAnalysis } from '~/types/domain'
 import { tournamentRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 export const TOURNAMENT_ENTRY_FEE = 20
 
 export const useTournamentStore = defineStore('tournament', {
