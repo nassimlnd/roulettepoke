@@ -110,6 +110,24 @@ web/
 | 12 | Phase 11 | high | ⚠️ oui | XL |
 | 13 | Phase 12 | medium | non | M |
 
+### État d'implémentation (branche `claude/pokeroulette-frontend-redesign-pxitc0`)
+
+Les phases non-breaking à faible risque ont été implémentées de façon incrémentale, chaque commit gardant `typecheck` + `eslint` + `vitest` + `build` verts (« sans rien casser »).
+
+| Phase | Statut | Commit / note |
+|-------|--------|---------------|
+| Phase 0 — outillage (`check`/`test:watch`/`test:coverage`, SEO source unique) | ✅ fait | scripts npm + nettoyage app.vue |
+| Phase 2 — constantes centralisées (`routes`, `storage-keys`, `cache`, `game`) | ✅ fait | clés localStorage **gelées** (valeurs identiques → pas de perte de session) |
+| Phase 3 — utils purs testables (`time.timeAgo`, `probability.probColor`, `jwt.decodeJwtUserId`) | ✅ fait | + tests unitaires (`tests/unit/{time,probability,jwt}.spec.ts`) ; copies divergentes de `probColor` unifiées |
+| Phase 4 — composables transverses `usePageData` (chargement de page) + `useAsyncAction` (busy + toast) | ✅ fait | adoptés dans ~10 pages ; `useThemeToggle`/`useDailyBonus` **écartés** (aucune duplication à factoriser → YAGNI) |
+| Phase 5 — repositories par feature derrière le barrel `~/repositories` | ✅ fait | 1 fichier/feature + `_client.ts` (type `Api`) |
+| Phase 5 (bis) — normalizers par feature derrière `~/repositories/normalize` | ✅ fait | helpers transverses partagés (`card.ts`, `battle.ts`) |
+| Phase 6 — `types/primitives.ts` (source unique) + fin du couplage `domain.ts → api.ts` | ✅ fait | primitives ré-exportées → `~/types/api` et `~/types/domain` inchangés |
+
+**Écart assumé sur la Phase 6 :** l'éclatement complet de `api.ts`/`domain.ts` en sous-dossiers `types/api/<feature>.ts` + `types/domain/<feature>.ts` (≈ 30 fichiers) n'a **pas** été réalisé. Décision d'ingénierie : ces deux fichiers sont déjà sectionnés par feature et lisibles ; les fragmenter en une trentaine de fichiers avec un maillage d'imports inter-features (`ChampionMon`, `BattleRound` partagés) apporte un bénéfice DX marginal pour un coût de churn/revue élevé. L'extraction des `primitives` (le vrai smell de couche) a été faite ; le reste est différé et à décider avec l'équipe.
+
+**Phases suivantes (7-12)** — allègement des stores (cache `createTtlResource`), décomposition des God-components (`AdventureScene`, `league`, `play`…), extraction du contenu éditorial FR vers `app/content/`, moteur audio unique, conversion factory des repos (⚠️ breaking), outillage de tests (fixtures) — **non réalisées** (risque/effort croissants, certaines breaking) : à planifier séparément.
+
 ### Détail des étapes
 
 #### 1. Phase 0 — Outillage : ajouter les scripts npm `check` (nuxt typecheck && eslint . && vitest run), `test:watch`, `test:coverage` ; nettoyer eslint.config.mjs (retirer le placeholder, décider d'une source unique pour la config stylistic).
