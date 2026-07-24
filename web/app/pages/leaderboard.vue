@@ -8,6 +8,11 @@ import { useLeaderboardStore, SCORE_RULES } from '~/stores/leaderboard'
 const lb = useLeaderboardStore()
 const auth = useAuthStore()
 
+const TABS = [
+  { value: 'main', label: 'Classement', icon: 'i-lucide-trophy' },
+  { value: 'cheaters', label: 'Tricheurs', icon: 'i-lucide-shield-alert' }
+] as const
+
 const tab = ref<'main' | 'cheaters'>('main')
 
 const me = computed(() => auth.user?.username)
@@ -75,35 +80,13 @@ const { loading, errorMsg } = usePageData(() => lb.ensureFresh())
     </header>
 
     <!-- Onglets -->
-    <div
+    <PSegmented
       class="tabs"
-      role="tablist"
-    >
-      <button
-        class="tab"
-        :class="{ 'tab--on': tab === 'main' }"
-        role="tab"
-        :aria-selected="tab === 'main'"
-        @click="switchTab('main')"
-      >
-        <UIcon
-          name="i-lucide-trophy"
-          class="size-4"
-        /> Classement
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab--on': tab === 'cheaters' }"
-        role="tab"
-        :aria-selected="tab === 'cheaters'"
-        @click="switchTab('cheaters')"
-      >
-        <UIcon
-          name="i-lucide-shield-alert"
-          class="size-4"
-        /> Tricheurs
-      </button>
-    </div>
+      :model-value="tab"
+      :options="TABS"
+      aria-label="Vue du classement"
+      @update:model-value="switchTab"
+    />
 
     <UAlert
       v-if="errorMsg"
@@ -317,36 +300,8 @@ const { loading, errorMsg } = usePageData(() => lb.ensureFresh())
 }
 .scale b { color: var(--color-poke-600); }
 
-.tabs {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 14px;
-  background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
-  align-self: flex-start;
-}
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: .9rem;
-  border: none;
-  background: transparent;
-  color: var(--ui-text-muted);
-  padding: 7px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all .15s ease;
-}
-.tab--on {
-  background: var(--ui-bg-elevated);
-  color: var(--ui-text-highlighted);
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .1);
-}
-.tab:not(.tab--on):hover { color: var(--ui-text); }
+/* Le style du contrôle vit dans PSegmented ; la page ne règle que son calage. */
+.tabs { align-self: flex-start; }
 
 .lb__grid {
   display: grid;

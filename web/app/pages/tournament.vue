@@ -128,7 +128,7 @@ const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
         </div>
         <div class="recap__cell recap__cell--pool">
           <span class="recap__k">Cagnotte</span>
-          <span class="recap__v tabular"><i class="coin" />{{ t.prizePool }}</span>
+          <span class="recap__v tabular"><CoinChip size="sm" />{{ t.prizePool }}</span>
           <span class="recap__prizes">
             <span
               v-for="p in prizes"
@@ -205,7 +205,7 @@ const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
             <span
               v-if="r.prize"
               class="res__prize tabular"
-            ><i class="coin" />{{ r.prize }}</span>
+            ><CoinChip size="sm" />{{ r.prize }}</span>
           </div>
         </div>
       </section>
@@ -375,17 +375,6 @@ const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
 .tn__empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 34px 16px; color: var(--ui-text-muted); }
 .tn__empty .font-display { font-weight: 700; font-size: 1.1rem; color: var(--ui-text-highlighted); }
 .tn__empty-sub { font-size: .85rem; }
-
-.coin {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-right: 4px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, #f6c453 62%, #e0a92e);
-  box-shadow: 0 0 5px rgba(246, 196, 83, .7);
-  vertical-align: -2px;
-}
 
 .recap { display: flex; flex-wrap: wrap; gap: 10px 30px; align-items: flex-start; }
 .recap__cell { display: flex; flex-direction: column; gap: 2px; }
