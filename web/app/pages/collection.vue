@@ -8,18 +8,8 @@ const toast = useToast()
 
 const tab = ref<'standard' | 'shiny'>('standard')
 const sortByPity = ref(false)
-const loading = ref(true)
-const errorMsg = ref('')
 
-onMounted(async () => {
-  try {
-    await collection.ensureFresh()
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
-})
+const { loading, errorMsg } = usePageData(() => collection.ensureFresh())
 
 const cards = computed(() => {
   const list = collection.cards.filter(c => (tab.value === 'shiny' ? c.isShiny : !c.isShiny))

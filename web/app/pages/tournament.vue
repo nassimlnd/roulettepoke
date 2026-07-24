@@ -10,9 +10,6 @@ const tourney = useTournamentStore()
 const wallet = useWalletStore()
 const toast = useToast()
 
-const loading = ref(true)
-const errorMsg = ref('')
-
 const t = computed(() => tourney.current)
 const a = computed(() => tourney.analysis)
 
@@ -72,15 +69,7 @@ async function confirmRegister() {
   }
 }
 
-onMounted(async () => {
-  try {
-    await tourney.ensureFresh()
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
-})
+const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
 </script>
 
 <template>

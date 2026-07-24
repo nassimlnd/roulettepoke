@@ -9,8 +9,6 @@ import { useStatsStore } from '~/stores/stats'
 const stats = useStatsStore()
 const auth = useAuthStore()
 
-const loading = ref(true)
-const errorMsg = ref('')
 const data = computed(() => stats.data)
 
 type Tone = 'good' | 'bad' | 'gold' | 'neutral'
@@ -64,17 +62,11 @@ const anecdotes = computed<{ icon: string, label: string, name: string, detail: 
   ]
 })
 
-onMounted(async () => {
-  try {
-    await stats.ensureFresh()
-    const me = auth.user?.username
-    const list = data.value?.players ?? []
-    selectedPlayer.value = me && list.some(p => p.username === me) ? me : (list[0]?.username ?? '')
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
+const { loading, errorMsg } = usePageData(async () => {
+  await stats.ensureFresh()
+  const me = auth.user?.username
+  const list = data.value?.players ?? []
+  selectedPlayer.value = me && list.some(p => p.username === me) ? me : (list[0]?.username ?? '')
 })
 </script>
 

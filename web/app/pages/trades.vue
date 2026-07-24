@@ -10,8 +10,6 @@ const collection = useCollectionStore()
 const auth = useAuthStore()
 const toast = useToast()
 
-const loading = ref(true)
-const errorMsg = ref('')
 const busy = ref(false)
 
 const me = computed(() => auth.userId)
@@ -109,16 +107,10 @@ const confirmTrade = (t: DomainTrade) => run(() => trades.confirm(t.id, true), '
 const rejectTrade = (t: DomainTrade) => run(() => trades.confirm(t.id, false), 'Échange refusé')
 const cancelTrade = (t: DomainTrade) => run(() => trades.cancel(t.id), 'Échange annulé')
 
-onMounted(async () => {
-  try {
-    await trades.ensureFresh()
-    collection.ensureFresh().catch(() => {})
-    if (canBrowse.value) trades.loadPlayers()
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
+const { loading, errorMsg } = usePageData(async () => {
+  await trades.ensureFresh()
+  collection.ensureFresh().catch(() => {})
+  if (canBrowse.value) trades.loadPlayers()
 })
 </script>
 

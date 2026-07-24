@@ -11,8 +11,7 @@ const gym = useGymStore()
 const battle = useBattleStore()
 const toast = useToast()
 
-const loading = ref(true)
-const errorMsg = ref('')
+const { loading, errorMsg } = usePageData(() => gym.ensureFresh())
 const trainingLoading = ref(false)
 
 const training = computed(() => gym.training)
@@ -99,16 +98,6 @@ async function train() {
     trainingLoading.value = false
   }
 }
-
-onMounted(async () => {
-  try {
-    await gym.ensureFresh()
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>

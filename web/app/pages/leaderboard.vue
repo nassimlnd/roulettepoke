@@ -8,8 +8,6 @@ import { useLeaderboardStore, SCORE_RULES } from '~/stores/leaderboard'
 const lb = useLeaderboardStore()
 const auth = useAuthStore()
 
-const loading = ref(true)
-const errorMsg = ref('')
 const tab = ref<'main' | 'cheaters'>('main')
 
 const me = computed(() => auth.user?.username)
@@ -42,15 +40,7 @@ async function switchTab(t: 'main' | 'cheaters') {
   }
 }
 
-onMounted(async () => {
-  try {
-    await lb.ensureFresh()
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
-})
+const { loading, errorMsg } = usePageData(() => lb.ensureFresh())
 </script>
 
 <template>
