@@ -56,11 +56,6 @@ const phase = computed(() => {
 function typeColor(type: string): string {
   return `var(--color-type-${typeSlug(type as PokeType)}, var(--color-ash-400))`
 }
-function probColor(p: number): string {
-  if (p >= 60) return '#3f9e66'
-  if (p >= 40) return '#c98a1a'
-  return '#d1463a'
-}
 const pct = (p: number): string => `${Math.round(p)} %`
 
 // ─── Défi ─────────────────────────────────────────────────────────────────────

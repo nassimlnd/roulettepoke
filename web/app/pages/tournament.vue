@@ -46,11 +46,6 @@ function typeColor(type: PokeType): string {
   // Repli neutre pour un type hors de notre palette (ex. Acier).
   return `var(--color-type-${typeSlug(type)}, var(--color-ash-400))`
 }
-function probColor(p: number): string {
-  if (p >= 60) return '#3f9e66'
-  if (p >= 40) return '#cc6f16'
-  return '#c62617'
-}
 function medalFor(place: number): string {
   return place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`
 }
