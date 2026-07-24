@@ -15,9 +15,6 @@ const collection = useCollectionStore()
 const prefs = usePreferencesStore()
 const toast = useToast()
 
-const loading = ref(true)
-const errorMsg = ref('')
-
 const motionOn = computed(() => !prefs.effectiveReducedMotion)
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -34,18 +31,12 @@ const activeTypeTicket = ref<string | null>(null)
 const activeTypeLabel = computed(() =>
   activeTypeTicket.value ? (TYPE_SLUG_TO_NAME[activeTypeTicket.value] ?? activeTypeTicket.value) : null)
 
-onMounted(async () => {
-  try {
-    await team.ensureFresh()
-    collection.ensureFresh().catch(() => {})
-    inventoryRepo.get(useApi())
-      .then((inv) => { activeTypeTicket.value = inv.activeTypeTicket })
-      .catch(() => {})
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
+const { loading, errorMsg } = usePageData(async () => {
+  await team.ensureFresh()
+  collection.ensureFresh().catch(() => {})
+  inventoryRepo.get(useApi())
+    .then((inv) => { activeTypeTicket.value = inv.activeTypeTicket })
+    .catch(() => {})
 })
 
 // ─── Réorganisation (échange de 2 slots) ──────────────────────────────────────

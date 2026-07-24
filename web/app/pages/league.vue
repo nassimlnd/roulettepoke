@@ -37,8 +37,6 @@ function presentRun(run: LeagueRun | null): Promise<void> {
   })
 }
 
-const loading = ref(true)
-const errorMsg = ref('')
 const busy = ref(false)
 
 const status = computed(() => league.status)
@@ -135,15 +133,9 @@ async function refreshBalance() {
   }
 }
 
-onMounted(async () => {
-  try {
-    await Promise.all([league.ensureFresh(), gyms.ensureFresh().catch(() => {})])
-    if (phase.value === 'ready') league.loadEstimate().catch(() => {})
-  } catch (err) {
-    errorMsg.value = humanizeError(err)
-  } finally {
-    loading.value = false
-  }
+const { loading, errorMsg } = usePageData(async () => {
+  await Promise.all([league.ensureFresh(), gyms.ensureFresh().catch(() => {})])
+  if (phase.value === 'ready') league.loadEstimate().catch(() => {})
 })
 </script>
 
