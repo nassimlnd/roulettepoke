@@ -3,9 +3,10 @@
 // notamment la rareté 'Alt' (shiny dans /collection) est réconciliée en
 // `isShiny` + rareté réelle.
 
-import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine } from './api'
+import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine, RealRarity, TradeStatus, TournamentStatus } from './primitives'
 
-export type RealRarity = 'Commun' | 'Rare' | 'Épique' | 'Légendaire'
+// Ré-export pour préserver les imports existants depuis `~/types/domain`.
+export type { RealRarity, TradeStatus, TournamentStatus }
 
 export interface DomainCard {
   id: UUID
@@ -45,8 +46,6 @@ export interface BiomeInfo {
 }
 
 // ─── Échanges ────────────────────────────────────────────────────────────────
-export type TradeStatus = 'pending_target' | 'pending_initiator' | 'completed' | 'declined' | 'cancelled' | 'expired'
-
 export interface TradeCardRef {
   id: UUID | null
   name: string
@@ -85,8 +84,6 @@ export interface TradeCard {
 }
 
 // ─── Tournoi ─────────────────────────────────────────────────────────────────
-export type TournamentStatus = 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
-
 export interface TournamentParticipant {
   userId: UUID
   username: string

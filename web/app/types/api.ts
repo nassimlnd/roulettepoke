@@ -3,17 +3,10 @@
 // Ces types ne sont consommés QUE par la couche repositories, qui les
 // normalise en types `domain.ts` pour le reste de l'application.
 
-export type UUID = string
-export type ISODate = string
+import type { UUID, ISODate, Rarity, Biome, PokeType, SlotSymbol, SlotLine } from './primitives'
 
-export type Rarity = 'Commun' | 'Rare' | 'Épique' | 'Légendaire' | 'Alt'
-export type Biome
-  = | 'Lac' | 'Mer' | 'Forêt' | 'Montagnes' | 'Ville' | 'Plaines'
-    | 'Désert' | 'Cave' | 'Tundra' | 'Légendaire'
-export type PokeType
-  = | 'Combat' | 'Dragon' | 'Eau' | 'Feu' | 'Fée' | 'Glace' | 'Insecte'
-    | 'Normal' | 'Plante' | 'Poison' | 'Psy' | 'Roche' | 'Sol'
-    | 'Spectre' | 'Vol' | 'Électrik'
+// Ré-export pour préserver les imports existants depuis `~/types/api`.
+export type { UUID, ISODate, Rarity, Biome, PokeType, SlotSymbol, SlotLine }
 
 export interface ApiError { error: string }
 
@@ -195,9 +188,6 @@ export interface SlotStatus {
   lastSpin: ISODate | null
   coins: number
 }
-
-export type SlotSymbol = 'legendary' | 'charme' | 'biome_ticket' | 'type_ticket' | 'coins'
-export type SlotLine = 'L1' | 'L2' | 'L3' | 'D1' | 'D2'
 
 export type WireLineResult
   = | { line: SlotLine, type: 'nothing' }
