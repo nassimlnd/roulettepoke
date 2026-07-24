@@ -1,10 +1,6 @@
-<script setup lang="ts">
-useSeoMeta({
-  title: 'PokeRoulette',
-  description: 'Le jeu gacha de collection Pokémon entre amis.'
-})
-</script>
-
+<!-- Racine de l'app. Les métadonnées SEO (title, description, Open Graph…) sont
+     définies une seule fois dans nuxt.config.ts › app.head — pas de useSeoMeta
+     ici pour éviter une seconde source divergente. -->
 <template>
   <UApp :toaster="{ position: 'top-center' }">
     <NuxtLayout>
