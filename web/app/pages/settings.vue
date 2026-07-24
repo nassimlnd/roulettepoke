@@ -25,20 +25,15 @@ const charme = computed(() => user.value?.charme_chroma_rolls ?? 0)
 
 // ─── Avatar ─────────────────────────────────────────────────────────────────
 const avatarOpen = ref(false)
-const savingAvatar = ref(false)
+const { pending: savingAvatar, run: runAvatar } = useAsyncAction()
 const loadAvatarCards = (): Promise<DomainCard[]> => authRepo.avatarCards(useApi())
 
-async function onPickAvatar(card: DomainCard) {
-  savingAvatar.value = true
-  try {
+function onPickAvatar(card: DomainCard) {
+  return runAvatar(async () => {
     await auth.setAvatar(card.id)
     toast.add({ title: 'Avatar mis à jour !', color: 'success', icon: 'i-lucide-check' })
     avatarOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    savingAvatar.value = false
-  }
+  })
 }
 
 // ─── Son ────────────────────────────────────────────────────────────────────
@@ -73,23 +68,19 @@ const REVEAL_OPTS: { value: RevealMode, label: string, hint: string }[] = [
 ]
 
 // ─── Mot de passe ─────────────────────────────────────────────────────────────
-const sendingReset = ref(false)
-async function sendReset() {
+const { pending: sendingReset, run: runReset } = useAsyncAction()
+function sendReset() {
   if (!user.value) return
-  sendingReset.value = true
-  try {
-    await authRepo.forgotPassword(useApi(), user.value.email)
+  const email = user.value.email
+  return runReset(async () => {
+    await authRepo.forgotPassword(useApi(), email)
     toast.add({
       title: 'Lien envoyé',
-      description: `Un e-mail de réinitialisation part vers ${user.value.email}.`,
+      description: `Un e-mail de réinitialisation part vers ${email}.`,
       color: 'success',
       icon: 'i-lucide-mail'
     })
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    sendingReset.value = false
-  }
+  })
 }
 </script>
 

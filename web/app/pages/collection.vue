@@ -29,7 +29,7 @@ const selected = ref<DomainOwnedCard | null>(null)
 const detailOpen = ref(false)
 const sellOpen = ref(false)
 const mergeOpen = ref(false)
-const actionLoading = ref(false)
+const { pending: actionLoading, run } = useAsyncAction()
 
 function openDetail(card: DomainOwnedCard) {
   if (!card.owned) return
@@ -50,11 +50,10 @@ const sellPrice = computed(() => {
   return selected.value.isShiny ? 0 : SELL_PRICE[selected.value.rarity]
 })
 
-async function confirmSell() {
+function confirmSell() {
   if (!selected.value) return
-  actionLoading.value = true
-  try {
-    const res = await collection.sell(selected.value.id)
+  return run(async () => {
+    const res = await collection.sell(selected.value!.id)
     toast.add({
       title: res.charmeObtained ? 'Charme Chroma obtenu !' : `+${res.sellPrice} coins`,
       color: 'success',
@@ -63,27 +62,18 @@ async function confirmSell() {
     sellOpen.value = false
     detailOpen.value = false
     await collection.ensureFresh(true)
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    actionLoading.value = false
-  }
+  })
 }
 
-async function confirmMerge() {
+function confirmMerge() {
   if (!selected.value) return
-  actionLoading.value = true
-  try {
-    const parent = selected.value.parentCardId ?? selected.value.id
-    const card = await collection.merge(parent, selected.value.level)
+  return run(async () => {
+    const parent = selected.value!.parentCardId ?? selected.value!.id
+    const card = await collection.merge(parent, selected.value!.level)
     toast.add({ title: `Fusion réussie : ${card.name} !`, color: 'success', icon: 'i-lucide-arrow-up-circle' })
     mergeOpen.value = false
     detailOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    actionLoading.value = false
-  }
+  })
 }
 </script>
 

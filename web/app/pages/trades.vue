@@ -10,7 +10,7 @@ const collection = useCollectionStore()
 const auth = useAuthStore()
 const toast = useToast()
 
-const busy = ref(false)
+const { pending: busy, run: guard } = useAsyncAction()
 
 const me = computed(() => auth.userId)
 const elig = computed(() => trades.eligibility)
@@ -48,18 +48,14 @@ function startCreate(player: TradePlayer) {
   createOpen.value = true
 }
 const createLoad = (r: RealRarity) => (createTarget.value ? trades.playerCards(createTarget.value.id, r) : Promise.resolve([]))
-async function onCreatePick(card: TradeCard) {
-  if (!createTarget.value) return
-  busy.value = true
-  try {
-    await trades.create(createTarget.value.id, card.id)
+function onCreatePick(card: TradeCard) {
+  const target = createTarget.value
+  if (!target) return
+  return guard(async () => {
+    await trades.create(target.id, card.id)
     toast.add({ title: 'Demande d\'échange envoyée !', color: 'success', icon: 'i-lucide-send' })
     createOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+  })
 }
 
 // ─── Réponse (la cible propose une carte du même palier) ──────────────────────
@@ -76,31 +72,22 @@ function startRespond(trade: DomainTrade) {
   respondTrade.value = trade
   respondOpen.value = true
 }
-async function onRespondPick(card: TradeCard) {
-  if (!respondTrade.value) return
-  busy.value = true
-  try {
-    await trades.respond(respondTrade.value.id, true, card.id)
+function onRespondPick(card: TradeCard) {
+  const trade = respondTrade.value
+  if (!trade) return
+  return guard(async () => {
+    await trades.respond(trade.id, true, card.id)
     toast.add({ title: 'Contre-offre envoyée !', color: 'success' })
     respondOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+  })
 }
 
 // ─── Actions simples ──────────────────────────────────────────────────────────
-async function run(fn: () => Promise<unknown>, okMsg: string) {
-  busy.value = true
-  try {
+function run(fn: () => Promise<unknown>, okMsg: string) {
+  return guard(async () => {
     await fn()
     toast.add({ title: okMsg, color: 'success' })
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    busy.value = false
-  }
+  })
 }
 const decline = (t: DomainTrade) => run(() => trades.respond(t.id, false), 'Échange refusé')
 const confirmTrade = (t: DomainTrade) => run(() => trades.confirm(t.id, true), 'Échange conclu ! 🎉')

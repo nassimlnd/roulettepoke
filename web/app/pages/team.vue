@@ -104,41 +104,32 @@ async function startRoll() {
 const removeTarget = ref<TeamMember | null>(null)
 const removeOpen = ref(false)
 const clearOpen = ref(false)
-const actionLoading = ref(false)
+const { pending: actionLoading, run } = useAsyncAction()
 
 function askRemove(member: TeamMember) {
   removeTarget.value = member
   removeOpen.value = true
 }
-async function confirmRemove() {
-  if (!removeTarget.value) return
+function confirmRemove() {
+  const target = removeTarget.value
+  if (!target) return
   if (!canAffordRemove.value) {
     toast.add({ title: `Il te manque des pièces (retrait : ${REMOVE_COST} 🪙).`, color: 'error' })
     return
   }
-  actionLoading.value = true
-  try {
-    await team.remove(removeTarget.value.teamEntryId)
-    toast.add({ title: `${removeTarget.value.name} a quitté l'équipe`, icon: 'i-lucide-user-minus' })
+  return run(async () => {
+    await team.remove(target.teamEntryId)
+    toast.add({ title: `${target.name} a quitté l'équipe`, icon: 'i-lucide-user-minus' })
     removeOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    actionLoading.value = false
-  }
+  })
 }
-async function confirmClear() {
-  actionLoading.value = true
-  try {
+function confirmClear() {
+  return run(async () => {
     await team.clear()
     reorganizing.value = false
     toast.add({ title: 'Équipe vidée', icon: 'i-lucide-trash-2' })
     clearOpen.value = false
-  } catch (err) {
-    toast.add({ title: humanizeError(err), color: 'error' })
-  } finally {
-    actionLoading.value = false
-  }
+  })
 }
 
 const canAffordRemove = computed(() => wallet.canAfford(REMOVE_COST))
