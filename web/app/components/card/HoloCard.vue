@@ -11,10 +11,12 @@ const props = withDefaults(defineProps<{
   isNew?: boolean
   interactive?: boolean // tilt/glare au pointeur
   holoStrength?: number // 0 → 1
+  ambient?: boolean // scintillement holo continu (couper dans les grilles denses)
 }>(), {
   size: 'md',
   interactive: true,
-  holoStrength: 1
+  holoStrength: 1,
+  ambient: true
 })
 
 const WIDTHS = { sm: 132, md: 208, lg: 280, xl: 360 }
@@ -34,8 +36,12 @@ const holoBase = computed(() => {
   const s = Math.max(0, Math.min(1, props.holoStrength))
   return +(((isShiny.value ? SHINY_HOLO : rarity.value.holo)) * s).toFixed(3)
 })
+// Scintillement continu : seulement si `ambient` (coupé dans la collection pour
+// éviter des dizaines d'animations mix-blend simultanées = lag). Au repos sans
+// ambient, la carte reste un foil STATIQUE (aucun coût par frame) ; le survol
+// réactive le holo via le pointeur.
 const holoAnimated = computed(() =>
-  motionOn.value && (isShiny.value || props.card.rarity === 'Épique' || props.card.rarity === 'Légendaire'))
+  motionOn.value && props.ambient && (isShiny.value || props.card.rarity === 'Épique' || props.card.rarity === 'Légendaire'))
 const frameColor = computed(() => (isShiny.value ? '#c9b3ff' : rarity.value.color))
 const shadow = computed(() => hexA(frameColor.value, 0.3))
 const gems = computed(() => Array.from({ length: rarity.value.gems }, (_, i) => i))
@@ -54,6 +60,7 @@ const rootStyle = computed(() => ({
 const root = ref<HTMLElement>()
 const holoEl = ref<HTMLElement>()
 const glareEl = ref<HTMLElement>()
+const foilEl = ref<HTMLElement>()
 
 function onMove(e: PointerEvent) {
   if (!props.interactive || !motionOn.value || !root.value) return
@@ -62,11 +69,15 @@ function onMove(e: PointerEvent) {
   const py = (e.clientY - r.top) / r.height
   const rx = (0.5 - py) * 14
   const ry = (px - 0.5) * 14
+  // `will-change` activé UNIQUEMENT pendant l'interaction (pas en permanence sur
+  // 150 cartes → évite autant de couches de composition inutiles).
+  root.value.style.willChange = 'transform'
   root.value.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.05)`
   if (holoEl.value) {
     holoEl.value.style.backgroundPosition = `${px * 100}% ${py * 100}%`
     holoEl.value.style.opacity = String(Math.min(1, holoBase.value + 0.4))
   }
+  if (foilEl.value) foilEl.value.style.backgroundPosition = `${px * 100}% ${py * 100}%`
   if (glareEl.value) {
     glareEl.value.style.opacity = '1'
     glareEl.value.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgba(255,255,255,.6), transparent 55%)`
@@ -75,7 +86,9 @@ function onMove(e: PointerEvent) {
 function onLeave() {
   if (!root.value) return
   root.value.style.transform = ''
+  root.value.style.willChange = 'auto'
   if (holoEl.value) holoEl.value.style.opacity = ''
+  if (foilEl.value) foilEl.value.style.backgroundPosition = ''
   if (glareEl.value) glareEl.value.style.opacity = '0'
 }
 </script>
@@ -106,13 +119,6 @@ function onLeave() {
       <!-- Fenêtre d'illustration -->
       <div class="holo__art">
         <div class="holo__art-bg" />
-        <!-- Foil « cosmos / galaxie » (shiny possédées) : galaxie étoilée irisée
-             sous le sprite. -->
-        <div
-          v-if="isShiny && owned"
-          class="holo__cosmos"
-          aria-hidden="true"
-        />
         <img
           :src="card.imageUrl"
           :alt="card.name"
@@ -170,6 +176,16 @@ function onLeave() {
         <span>{{ stage }}</span>
       </div>
 
+      <!-- Foil holographique pleine carte (shiny) : voile irisé arc-en-ciel qui
+           couvre toute la carte. Statique par défaut, animé si `ambient`. -->
+      <div
+        v-if="isShiny && owned"
+        ref="foilEl"
+        class="holo__foil"
+        :class="{ 'holo__foil--anim': holoAnimated }"
+        aria-hidden="true"
+      />
+
       <!-- reflet radial (glare) -->
       <div
         ref="glareEl"
@@ -187,7 +203,9 @@ function onLeave() {
   border-radius: calc(var(--w) * 0.075);
   transform-style: preserve-3d;
   transition: transform .3s cubic-bezier(.3, .9, .3, 1);
-  will-change: transform;
+  /* `will-change` n'est PAS déclaré ici : le poser en permanence créerait une
+     couche de composition par carte (≈150 dans la collection). Il est activé au
+     survol via onMove() et retiré au départ. */
   font-family: 'Nunito', system-ui, sans-serif;
 }
 .holo__face {
@@ -259,49 +277,6 @@ function onLeave() {
   background: radial-gradient(120% 90% at 50% 22%, rgba(255, 255, 255, .55), rgba(255, 255, 255, .12) 60%, rgba(255, 255, 255, 0));
 }
 
-/* ── Foil « cosmos / galaxie » (shiny) ── */
-.holo__cosmos {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  background:
-    radial-gradient(80% 60% at 26% 16%, #6b3fa0 0%, transparent 55%),
-    radial-gradient(70% 62% at 80% 84%, #2b5aa8 0%, transparent 55%),
-    radial-gradient(95% 95% at 50% 45%, #26184c 0%, #0b0720 100%);
-}
-/* champ d'étoiles (dérive lente + scintillement) */
-.holo__cosmos::before {
-  content: "";
-  position: absolute;
-  inset: -60%;
-  background-image:
-    radial-gradient(1.6px 1.6px at 15% 25%, #fff 50%, transparent 55%),
-    radial-gradient(1.2px 1.2px at 55% 65%, #d8f0ff 50%, transparent 55%),
-    radial-gradient(1.8px 1.8px at 82% 22%, #fff 50%, transparent 55%),
-    radial-gradient(1.1px 1.1px at 38% 82%, #ffe9c0 50%, transparent 55%),
-    radial-gradient(1.4px 1.4px at 70% 48%, #fff 50%, transparent 55%),
-    radial-gradient(1.1px 1.1px at 24% 58%, #cfeaff 50%, transparent 55%),
-    radial-gradient(1.5px 1.5px at 90% 72%, #fff 50%, transparent 55%);
-  background-repeat: repeat;
-  background-size: 130px 130px;
-  animation: cosmosDrift 26s linear infinite, cosmosTwinkle 4.5s ease-in-out infinite;
-}
-/* voile irisé (prisme) qui balaie la galaxie */
-.holo__cosmos::after {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 244, 205, .34) 42%, rgba(198, 240, 255, .4) 50%, rgba(255, 208, 240, .4) 58%, rgba(206, 255, 220, .3) 66%, transparent 78%);
-  background-size: 260% 260%;
-  mix-blend-mode: screen;
-  animation: holoShine 3.4s linear infinite;
-}
-@keyframes cosmosDrift { to { transform: translate(7%, -7%); } }
-@keyframes cosmosTwinkle { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .holo__cosmos::before, .holo__cosmos::after { animation: none; }
-}
 .holo__sprite {
   position: absolute;
   inset: 0;
@@ -312,10 +287,6 @@ function onLeave() {
   filter: drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(60, 40, 30, .25));
 }
 .holo__sprite--locked { filter: brightness(0) opacity(.28); }
-/* Sur le foil cosmos sombre, le sprite gagne un halo clair pour ressortir. */
-.holo--shiny .holo__sprite:not(.holo__sprite--locked) {
-  filter: drop-shadow(0 0 calc(var(--w) * 0.03) rgba(255, 255, 255, .55)) drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(0, 0, 0, .45));
-}
 
 .holo__sheen {
   position: absolute;
@@ -339,6 +310,40 @@ function onLeave() {
   border-radius: inherit;
   transition: opacity .3s ease;
 }
+
+/* Foil holographique pleine carte (shiny) : arc-en-ciel irisé qui couvre TOUTE
+   la carte. Deux couches : `color-dodge` (stries lumineuses saturées, le vrai
+   « holo ») + `overlay` (voile pastel doux via ::after). STATIQUE par défaut
+   (aucun coût par frame) ; animé seulement si `--anim` (révélation, scène). */
+.holo__foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  /* `color` : la carte prend la TEINTE arc-en-ciel du dégradé en gardant sa
+     luminosité → un vrai rainbow visible même sur une face claire (là où
+     overlay/color-dodge se délavaient). */
+  mix-blend-mode: color;
+  opacity: .72;
+  background: linear-gradient(115deg,
+    #ff5a3c 4%, #ffcf3c 18%, #8cff64 32%, #3cffd7 46%, #3c9cff 60%, #b45aff 74%, #ff5ad2 88%, #ff5a3c 98%);
+  background-size: 165% 165%;
+  background-position: 50% 50%;
+}
+/* Stries lumineuses (gloss) par-dessus la teinte → aspect « foil » brillant. */
+.holo__foil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  mix-blend-mode: screen;
+  opacity: .55;
+  background: linear-gradient(115deg,
+    transparent 26%, rgba(255, 255, 255, .38) 40%, rgba(255, 255, 255, .68) 50%, rgba(255, 255, 255, .38) 60%, transparent 74%);
+  background-size: 220% 220%;
+  background-position: 50% 50%;
+}
+.holo__foil--anim, .holo__foil--anim::after { animation: holoShine 3.6s linear infinite; }
 
 .holo__shiny-star {
   position: absolute;

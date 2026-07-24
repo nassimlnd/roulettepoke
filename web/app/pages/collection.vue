@@ -174,6 +174,7 @@ async function confirmMerge() {
           :card="card"
           size="sm"
           :quantity="card.quantity"
+          :ambient="false"
         />
         <span
           v-if="sortByPity && card.owned && !card.isShiny"
@@ -354,6 +355,10 @@ async function confirmMerge() {
   padding: 0;
   cursor: pointer;
   border-radius: 12px;
+  /* La grille peut afficher 150+ cartes : on saute le rendu/peinture des
+     cellules hors écran (taille réservée pour éviter les sauts de scroll). */
+  content-visibility: auto;
+  contain-intrinsic-size: 132px 184px;
 }
 .cell:disabled { cursor: default; }
 .cell:focus-visible {
