@@ -67,6 +67,14 @@ const BATCH_SIZE = 5
 const batchTiles = ref<BatchTile[] | null>(null)
 const batchCount = ref(0)
 
+// Un shiny déclenche une scène plein écran dédiée (ShinyReveal) plutôt que la
+// révélation standard.
+const shinyCard = ref<DomainCard | null>(null)
+function onShinyDone() {
+  shinyCard.value = null
+  finish()
+}
+
 const motionOn = computed(() => !prefs.effectiveReducedMotion)
 
 // Durée du tourbillon selon la préférence de révélation (le mouvement réduit
@@ -142,9 +150,18 @@ async function open() {
     outcome.value = o
     if (o.kind === 'card') {
       resolvedCard.value = { card: o.card, isNew: o.isNew, quantity: qtyFor(o.card, o.isNew) }
-      celebrate(tierFor(o.card))
       refreshCollection()
       if (boosted) auth.consumeCharmeRoll() // le backend ne décrémente que les tirages normaux
+      if (o.card.isShiny) {
+        // Scène plein écran dédiée : le fond reste l'écran d'accueil (pas la
+        // révélation standard). La scène joue sa propre fanfare.
+        shinyCard.value = o.card
+        phase.value = 'idle'
+        refreshBalance()
+        if (hadTicket) inventory.refresh().catch(() => {})
+        return
+      }
+      celebrate(tierFor(o.card))
     }
     phase.value = 'reveal'
     refreshBalance()
@@ -269,6 +286,7 @@ function finish() {
   resolvedCard.value = null
   batchTiles.value = null
   batchCount.value = 0
+  shinyCard.value = null
   errorMsg.value = ''
 }
 
@@ -499,6 +517,12 @@ onMounted(() => {
     <HubPanel v-if="phase === 'idle'" />
 
     <BagModal v-model:open="bagOpen" />
+
+    <ShinyReveal
+      v-if="shinyCard"
+      :card="shinyCard"
+      @done="onShinyDone"
+    />
   </div>
 </template>
 
