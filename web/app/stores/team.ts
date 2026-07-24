@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { TeamMember } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { teamRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 export const TEAM_MAX = 6
 export const REMOVE_COST = 10 // 🪙 — coût du retrait d'un membre (définitif)
 

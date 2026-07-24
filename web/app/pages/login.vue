@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { ROUTES } from '~/constants/routes'
 
 definePageMeta({ layout: 'auth', public: true })
 
@@ -22,7 +23,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   error.value = ''
   try {
     await auth.login(event.data.email, event.data.password)
-    const next = typeof route.query.next === 'string' ? route.query.next : '/play'
+    const next = typeof route.query.next === 'string' ? route.query.next : ROUTES.home
     await navigateTo(next)
   } catch (err) {
     error.value = humanizeError(err)

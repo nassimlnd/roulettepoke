@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia'
 // Import explicite : useStorage entre en collision avec le useStorage de Nitro.
 import { useStorage } from '@vueuse/core'
+import { STORAGE_KEYS } from '~/constants/storage-keys'
 
 export type RevealMode = 'visible' | 'smart' | 'hidden'
 
 // Préférences persistées (clés existantes réutilisées → migration douce).
 export const usePreferencesStore = defineStore('preferences', () => {
-  const revealMode = useStorage<RevealMode>('gacha_reveal_mode', 'visible')
-  const selectedBiome = useStorage<string>('gacha_selected_biome', '')
-  const replaySpeed = useStorage<1 | 2 | 4>('replay_speed', 1)
-  const volume = useStorage<number>('pkr_volume', 0.7)
-  const muted = useStorage<boolean>('pkr_muted', false)
-  const reducedMotionOverride = useStorage<'auto' | 'on' | 'off'>('pkr_reduced_motion', 'auto')
+  const revealMode = useStorage<RevealMode>(STORAGE_KEYS.revealMode, 'visible')
+  const selectedBiome = useStorage<string>(STORAGE_KEYS.selectedBiome, '')
+  const replaySpeed = useStorage<1 | 2 | 4>(STORAGE_KEYS.replaySpeed, 1)
+  const volume = useStorage<number>(STORAGE_KEYS.volume, 0.7)
+  const muted = useStorage<boolean>(STORAGE_KEYS.muted, false)
+  const reducedMotionOverride = useStorage<'auto' | 'on' | 'off'>(STORAGE_KEYS.reducedMotion, 'auto')
 
   const systemReducedMotion = usePreferredReducedMotion()
 

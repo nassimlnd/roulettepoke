@@ -4,6 +4,8 @@
 // victoire, et des SFX courts. Un seul AudioContext partagé (singleton module),
 // démarré au premier geste utilisateur (politique d'autoplay des navigateurs).
 
+import { STORAGE_KEYS } from '~/constants/storage-keys'
+
 type TrackName = 'adventure' | 'battle' | 'boss' | 'evolve'
 interface Voice { bass: number[], arp: number[], mel: number[], perc?: number[] }
 interface Track { bpm: number, steps: number, voice: Voice, perc?: boolean, soft?: boolean }
@@ -201,14 +203,14 @@ function resume() {
 }
 function setMuted(v: boolean) {
   muted.value = v
-  if (typeof localStorage !== 'undefined') localStorage.setItem('spin_muted', v ? '1' : '0')
+  if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEYS.spinMuted, v ? '1' : '0')
   if (master && ctx) master.gain.setTargetAtTime(v ? 0 : 0.5, ctx.currentTime, 0.02)
 }
 
 export function useSpinAudio() {
   if (!hydrated) {
     hydrated = true
-    if (typeof localStorage !== 'undefined') muted.value = localStorage.getItem('spin_muted') === '1'
+    if (typeof localStorage !== 'undefined') muted.value = localStorage.getItem(STORAGE_KEYS.spinMuted) === '1'
   }
   return {
     muted,

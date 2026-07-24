@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { LeaderboardData, LeaderboardRow, RecentShiny } from '~/types/domain'
 import { leaderboardRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 60_000
+const TTL = CACHE_TTL_SHORT
 
 // Barème du score de diversité (cf. Guide) — affiché à titre indicatif.
 export const SCORE_RULES = [

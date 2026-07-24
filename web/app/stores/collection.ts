@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_LONG } from '~/constants/cache'
 import type { DomainOwnedCard } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { collectionRepo, mergeRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
-const TTL = 5 * 60_000
+const TTL = CACHE_TTL_LONG
 const FUSION_THRESHOLD = 10
 
 export const useCollectionStore = defineStore('collection', {

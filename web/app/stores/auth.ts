@@ -4,6 +4,8 @@ import { defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
 import type { WireUser, CardChoice, UUID } from '~/types/api'
 import { authRepo } from '~/repositories'
+import { ROUTES } from '~/constants/routes'
+import { STORAGE_KEYS } from '~/constants/storage-keys'
 
 // Décode l'id utilisateur depuis le payload JWT (informatif pour l'UI ;
 // l'autorisation réelle reste vérifiée côté serveur).
@@ -25,7 +27,7 @@ let mePromise: Promise<void> | null = null
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     // Même clé que l'ancien front → session partagée pendant la migration.
-    token: useStorage<string | null>('gacha_token', null),
+    token: useStorage<string | null>(STORAGE_KEYS.token, null),
     user: null as WireUser | null,
     rewardClaimed: true,
     pendingChoice: null as CardChoice | null,
@@ -104,7 +106,7 @@ export const useAuthStore = defineStore('auth', {
       this.pendingChoice = null
       mePromise = null
       this.meLoaded = false
-      navigateTo('/login')
+      navigateTo(ROUTES.login)
     },
 
     // 401 centralisé (idempotent même si plusieurs requêtes échouent en rafale).

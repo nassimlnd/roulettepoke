@@ -1,4 +1,5 @@
 import { parisDayKey } from '~/utils/paris-time'
+import { STORAGE_KEYS } from '~/constants/storage-keys'
 
 // Après restauration du token (localStorage), hydrate l'utilisateur UNE fois.
 // C'est le seul endroit qui déclenche /auth/me (effet de bord : bonus quotidien).
@@ -14,8 +15,8 @@ export default defineNuxtPlugin(async () => {
   // juste crédité » (il reste à false à chaque appel), sinon le toast se
   // rejouait à chaque rechargement de page. On mémorise le dernier jour fêté.
   const today = parisDayKey()
-  if (localStorage.getItem('daily_bonus_seen') === today) return
-  localStorage.setItem('daily_bonus_seen', today)
+  if (localStorage.getItem(STORAGE_KEYS.dailyBonusSeen) === today) return
+  localStorage.setItem(STORAGE_KEYS.dailyBonusSeen, today)
 
   useToast().add({
     title: 'Bonus quotidien !',

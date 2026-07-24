@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { CACHE_TTL_LONG } from '~/constants/cache'
 import type { BiomeInfo, RollOutcome } from '~/types/domain'
 import { rollRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
@@ -14,7 +15,7 @@ export const useRollStore = defineStore('roll', {
 
   actions: {
     async ensureBiomes(force = false) {
-      if (!force && this.biomes.length && Date.now() - this.biomesFetchedAt < 5 * 60_000) return
+      if (!force && this.biomes.length && Date.now() - this.biomesFetchedAt < CACHE_TTL_LONG) return
       this.biomes = await dedupe('roll/biomes', () => rollRepo.biomes(useApi()))
       this.biomesFetchedAt = Date.now()
     },
