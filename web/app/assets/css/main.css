@@ -47,6 +47,11 @@
   --color-rarity-legendary: #e0a92e;
   --color-rarity-shiny: #c9b3ff;
 
+  /* Pièce (monnaie du jeu) — source unique de la pastille dorée */
+  --color-coin-light: #ffffff;
+  --color-coin: #f6c453;
+  --color-coin-deep: #e0a92e;
+
   /* Types Pokémon (16) — usages hors carte (la carte utilise cardTheme.ts) */
   --color-type-normal: #a8a77a;
   --color-type-feu: #ee8130;

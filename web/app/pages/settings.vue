@@ -178,18 +178,14 @@ function sendReset() {
         title="Apparence"
         description="Thème clair ou sombre de l'interface."
       >
-        <div class="seg">
-          <button
-            v-for="o in THEME_OPTS"
-            :key="o.value"
-            class="seg__btn"
-            :class="{ 'seg__btn--on': colorMode.preference === o.value }"
-            :title="o.hint"
-            @click="colorMode.preference = o.value"
-          >
-            {{ o.label }}
-          </button>
-        </div>
+        <PSegmented
+          v-model="colorMode.preference"
+          :options="THEME_OPTS"
+          size="sm"
+          tone="accent"
+          a11y="radio"
+          aria-label="Thème de l'interface"
+        />
       </SettingRow>
 
       <div class="sep" />
@@ -238,18 +234,14 @@ function sendReset() {
         title="Animations"
         description="Transitions, roulette et célébrations."
       >
-        <div class="seg">
-          <button
-            v-for="o in MOTION_OPTS"
-            :key="o.value"
-            class="seg__btn"
-            :class="{ 'seg__btn--on': prefs.reducedMotionOverride === o.value }"
-            :title="o.hint"
-            @click="prefs.reducedMotionOverride = o.value"
-          >
-            {{ o.label }}
-          </button>
-        </div>
+        <PSegmented
+          v-model="prefs.reducedMotionOverride"
+          :options="MOTION_OPTS"
+          size="sm"
+          tone="accent"
+          a11y="radio"
+          aria-label="Niveau d'animation"
+        />
       </SettingRow>
 
       <div class="sep" />
@@ -259,18 +251,14 @@ function sendReset() {
         title="Révélation des tirages"
         description="Rythme de l'ouverture des boosters."
       >
-        <div class="seg">
-          <button
-            v-for="o in REVEAL_OPTS"
-            :key="o.value"
-            class="seg__btn"
-            :class="{ 'seg__btn--on': prefs.revealMode === o.value }"
-            :title="o.hint"
-            @click="prefs.revealMode = o.value"
-          >
-            {{ o.label }}
-          </button>
-        </div>
+        <PSegmented
+          v-model="prefs.revealMode"
+          :options="REVEAL_OPTS"
+          size="sm"
+          tone="accent"
+          a11y="radio"
+          aria-label="Rythme de révélation"
+        />
       </SettingRow>
     </PPanel>
 
@@ -392,29 +380,4 @@ function sendReset() {
   accent-color: var(--color-poke-500);
   cursor: pointer;
 }
-
-.seg {
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
-}
-.seg__btn {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: .8rem;
-  color: var(--ui-text-muted);
-  padding: 6px 12px;
-  border-radius: 9px;
-  transition: color .15s ease, background .15s ease;
-}
-.seg__btn:hover { color: var(--ui-text); }
-.seg__btn--on {
-  color: #fff;
-  background: linear-gradient(150deg, #ee5a48, var(--color-poke-500));
-  box-shadow: 0 2px 0 var(--color-poke-700);
-}
-.seg__btn--on:hover { color: #fff; }
 </style>

@@ -437,7 +437,7 @@ onMounted(() => {
                   name="i-lucide-sparkles"
                   class="size-5"
                 />
-                Ouvrir — <span class="coin" />{{ currentCost }}
+                Ouvrir — <CoinChip />{{ currentCost }}
               </PButton>
               <PButton
                 v-if="!hasActiveTicket"
@@ -450,7 +450,7 @@ onMounted(() => {
                   name="i-lucide-layers"
                   class="size-5"
                 />
-                Ouvrir ×5 — <span class="coin" />{{ batchCost }}
+                Ouvrir ×5 — <CoinChip />{{ batchCost }}
               </PButton>
             </div>
             <p class="idle__solde">
@@ -672,16 +672,6 @@ onMounted(() => {
 
 .idle__cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .idle__btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.coin {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  margin: 0 2px 0 4px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, #f6c453 62%, #e0a92e);
-  box-shadow: 0 0 6px rgba(246, 196, 83, .8);
-  vertical-align: -2px;
-}
 .idle__solde { font-weight: 700; font-size: 0.85rem; color: var(--ui-text-muted); }
 .idle__solde b { color: var(--ui-text-highlighted); }
 .idle__short { color: var(--color-poke-600); margin-left: 4px; }

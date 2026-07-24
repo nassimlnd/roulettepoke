@@ -6,6 +6,11 @@ import { SHINY_PITY_DENOMINATOR, MERGE_COST } from '~/constants/game'
 const collection = useCollectionStore()
 const toast = useToast()
 
+const TABS = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'shiny', label: '✦ Shiny' }
+] as const
+
 const tab = ref<'standard' | 'shiny'>('standard')
 const sortByPity = ref(false)
 
@@ -98,20 +103,15 @@ function confirmMerge() {
 
     <!-- Onglets + tri -->
     <div class="col__controls">
-      <div class="pills">
-        <button
-          v-for="t in (['standard', 'shiny'] as const)"
-          :key="t"
-          class="pill"
-          :class="{ 'pill--on': tab === t }"
-          @click="tab = t"
-        >
-          {{ t === 'standard' ? 'Standard' : '✦ Shiny' }}
-        </button>
-      </div>
+      <PSegmented
+        v-model="tab"
+        :options="TABS"
+        aria-label="Filtrer la collection"
+      />
       <button
-        class="pill pill--solo"
-        :class="{ 'pill--on': sortByPity }"
+        class="toggle"
+        :class="{ 'toggle--on': sortByPity }"
+        :aria-pressed="sortByPity"
         @click="sortByPity = !sortByPity"
       >
         <UIcon
@@ -283,40 +283,24 @@ function confirmMerge() {
   gap: 12px;
   flex-wrap: wrap;
 }
-.pills {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 14px;
-  background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
-}
-.pill {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: .9rem;
-  border: none;
-  background: transparent;
-  color: var(--ui-text-muted);
-  padding: 7px 16px;
-  border-radius: 10px;
-  cursor: pointer;
+/* Bascule autonome « Chance shiny » (hors segmented control). */
+.toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: .9rem;
+  padding: 7px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
   transition: all .15s ease;
 }
-.pill--on {
-  background: var(--ui-bg-elevated);
-  color: var(--ui-text-highlighted);
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .1);
-}
-.pill:not(.pill--on):hover { color: var(--ui-text); }
-.pill--solo {
-  border: 1px solid var(--ui-border);
-  background: var(--ui-bg-elevated);
-}
-.pill--solo.pill--on {
+.toggle:not(.toggle--on):hover { color: var(--ui-text); }
+.toggle--on {
   background: var(--color-poke-500);
   color: #fff;
   border-color: transparent;
