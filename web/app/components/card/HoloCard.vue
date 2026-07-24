@@ -106,6 +106,13 @@ function onLeave() {
       <!-- Fenêtre d'illustration -->
       <div class="holo__art">
         <div class="holo__art-bg" />
+        <!-- Foil « cosmos / galaxie » (shiny possédées) : galaxie étoilée irisée
+             sous le sprite. -->
+        <div
+          v-if="isShiny && owned"
+          class="holo__cosmos"
+          aria-hidden="true"
+        />
         <img
           :src="card.imageUrl"
           :alt="card.name"
@@ -251,6 +258,50 @@ function onLeave() {
   inset: 0;
   background: radial-gradient(120% 90% at 50% 22%, rgba(255, 255, 255, .55), rgba(255, 255, 255, .12) 60%, rgba(255, 255, 255, 0));
 }
+
+/* ── Foil « cosmos / galaxie » (shiny) ── */
+.holo__cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(80% 60% at 26% 16%, #6b3fa0 0%, transparent 55%),
+    radial-gradient(70% 62% at 80% 84%, #2b5aa8 0%, transparent 55%),
+    radial-gradient(95% 95% at 50% 45%, #26184c 0%, #0b0720 100%);
+}
+/* champ d'étoiles (dérive lente + scintillement) */
+.holo__cosmos::before {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background-image:
+    radial-gradient(1.6px 1.6px at 15% 25%, #fff 50%, transparent 55%),
+    radial-gradient(1.2px 1.2px at 55% 65%, #d8f0ff 50%, transparent 55%),
+    radial-gradient(1.8px 1.8px at 82% 22%, #fff 50%, transparent 55%),
+    radial-gradient(1.1px 1.1px at 38% 82%, #ffe9c0 50%, transparent 55%),
+    radial-gradient(1.4px 1.4px at 70% 48%, #fff 50%, transparent 55%),
+    radial-gradient(1.1px 1.1px at 24% 58%, #cfeaff 50%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 90% 72%, #fff 50%, transparent 55%);
+  background-repeat: repeat;
+  background-size: 130px 130px;
+  animation: cosmosDrift 26s linear infinite, cosmosTwinkle 4.5s ease-in-out infinite;
+}
+/* voile irisé (prisme) qui balaie la galaxie */
+.holo__cosmos::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 244, 205, .34) 42%, rgba(198, 240, 255, .4) 50%, rgba(255, 208, 240, .4) 58%, rgba(206, 255, 220, .3) 66%, transparent 78%);
+  background-size: 260% 260%;
+  mix-blend-mode: screen;
+  animation: holoShine 3.4s linear infinite;
+}
+@keyframes cosmosDrift { to { transform: translate(7%, -7%); } }
+@keyframes cosmosTwinkle { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .holo__cosmos::before, .holo__cosmos::after { animation: none; }
+}
 .holo__sprite {
   position: absolute;
   inset: 0;
@@ -261,6 +312,10 @@ function onLeave() {
   filter: drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(60, 40, 30, .25));
 }
 .holo__sprite--locked { filter: brightness(0) opacity(.28); }
+/* Sur le foil cosmos sombre, le sprite gagne un halo clair pour ressortir. */
+.holo--shiny .holo__sprite:not(.holo__sprite--locked) {
+  filter: drop-shadow(0 0 calc(var(--w) * 0.03) rgba(255, 255, 255, .55)) drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(0, 0, 0, .45));
+}
 
 .holo__sheen {
   position: absolute;
