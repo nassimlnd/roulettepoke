@@ -7,19 +7,6 @@ import { authRepo } from '~/repositories'
 import { ROUTES } from '~/constants/routes'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
 
-// Décode l'id utilisateur depuis le payload JWT (informatif pour l'UI ;
-// l'autorisation réelle reste vérifiée côté serveur).
-function decodeUserId(token: string | null): UUID | null {
-  if (!token) return null
-  try {
-    const payload = token.split('.')[1]
-    if (!payload) return null
-    return JSON.parse(atob(payload)).id ?? null
-  } catch {
-    return null
-  }
-}
-
 // Promesse mémoïsée hors state réactif : un SEUL GET /auth/me par session app
 // (l'endpoint crédite le bonus quotidien par effet de bord).
 let mePromise: Promise<void> | null = null
@@ -36,7 +23,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: state => !!state.token,
-    userId: (state): UUID | null => decodeUserId(state.token)
+    userId: (state): UUID | null => decodeJwtUserId(state.token)
   },
 
   actions: {
