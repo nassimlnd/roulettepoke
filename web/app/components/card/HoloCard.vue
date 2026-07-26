@@ -12,13 +12,13 @@ const props = withDefaults(defineProps<{
   interactive?: boolean // tilt/glare au pointeur
   holoStrength?: number // 0 → 1
   ambient?: boolean // scintillement holo continu (couper dans les grilles denses)
-  animated?: boolean // sprite animé (détail au clic) au lieu du WebP statique
+  freeze?: boolean // fige le sprite (WebP animé) sur sa 1re frame — grilles denses
 }>(), {
   size: 'md',
   interactive: true,
   holoStrength: 1,
   ambient: true,
-  animated: false
+  freeze: false
 })
 
 const WIDTHS = { sm: 132, md: 208, lg: 280, xl: 360 }
@@ -59,41 +59,35 @@ const hp = computed(() => cosmeticHp(props.card.num, props.card.rarity))
 const setNo = computed(() => 'N°' + String(props.card.num).padStart(3, '0'))
 const stage = computed(() => STAGE_LABEL[props.card.level] ?? '')
 
-// ─── Sprite : statique (grilles) ou animé (détail au clic) ───
-// Le GIF animé vient d'un CDN externe. On ne l'affiche QU'APRÈS l'avoir
-// préchargé avec succès : on ne substitue jamais une image dont on ignore si
-// elle arrivera. Sans ce précaution, un CDN lent ou injoignable laisse la
-// fenêtre d'illustration VIDE (la requête pend, `error` ne se déclenche pas).
-// Ici, le WebP statique du backend reste affiché et l'animation ne fait que
-// s'y substituer si elle est prête — dégradation invisible.
-const ANIM_PRELOAD_TIMEOUT = 4000
-const animReady = ref(false)
+// ─── Sprite : animé par défaut, ou figé sur demande ───
+// Les sprites du backend sont des WebP ANIMÉS (23 à 90 frames selon le Pokémon).
+// Une grille de 150 cartes les anime donc tous en même temps : c'est le vrai
+// coût de la page collection. `freeze` peint la PREMIÈRE FRAME dans un <canvas>
+// — un seul rendu, plus aucune animation — sans changer de jeu de sprites (le
+// visuel reste rigoureusement identique à celui de la carte animée).
+const spriteCanvas = ref<HTMLCanvasElement>()
 
-watch(
-  () => [props.animated, props.card.id] as const,
-  () => {
-    animReady.value = false
-    if (!props.animated || !import.meta.client) return
-    const url = animatedSpriteUrl(props.card.num, isShiny.value)
-    if (!url) return
-    const img = new Image()
-    // Abandon au-delà du délai : on n'attend pas indéfiniment un CDN muet.
-    const timer = setTimeout(() => {
-      img.src = ''
-    }, ANIM_PRELOAD_TIMEOUT)
-    img.onload = () => {
-      clearTimeout(timer)
-      animReady.value = true
-    }
-    img.onerror = () => clearTimeout(timer)
-    img.src = url
-  },
-  { immediate: true }
-)
+function paintFrozenSprite() {
+  const cv = spriteCanvas.value
+  if (!cv) return
+  const img = new Image()
+  img.onload = () => {
+    // Le canvas garde la taille naturelle du sprite ; le CSS le met à l'échelle.
+    cv.width = img.naturalWidth
+    cv.height = img.naturalHeight
+    cv.getContext('2d')?.drawImage(img, 0, 0)
+  }
+  img.src = props.card.imageUrl
+}
 
-const spriteUrl = computed(() => (animReady.value
-  ? animatedSpriteUrl(props.card.num, isShiny.value)!
-  : props.card.imageUrl))
+onMounted(() => {
+  if (props.freeze) paintFrozenSprite()
+})
+watch(() => [props.freeze, props.card.imageUrl], async () => {
+  if (!props.freeze) return
+  await nextTick()
+  paintFrozenSprite()
+})
 
 const rootStyle = computed(() => ({
   '--w': WIDTHS[props.size] + 'px',
@@ -165,11 +159,22 @@ function onLeave() {
       <!-- Fenêtre d'illustration -->
       <div class="holo__art">
         <div class="holo__art-bg" />
+        <!-- Sprite figé (grilles) : 1re frame peinte dans un canvas, donc aucune
+             animation. Sinon <img>, et le WebP animé du backend joue seul. -->
+        <canvas
+          v-if="freeze"
+          ref="spriteCanvas"
+          class="holo__sprite"
+          :class="{ 'holo__sprite--locked': !owned }"
+          role="img"
+          :aria-label="card.name"
+        />
         <img
-          :src="spriteUrl"
+          v-else
+          :src="card.imageUrl"
           :alt="card.name"
           class="holo__sprite"
-          :class="{ 'holo__sprite--locked': !owned, 'holo__sprite--pixel': animReady }"
+          :class="{ 'holo__sprite--locked': !owned }"
           loading="lazy"
           decoding="async"
         >
@@ -337,9 +342,6 @@ function onLeave() {
   filter: drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(60, 40, 30, .25));
 }
 .holo__sprite--locked { filter: brightness(0) opacity(.28); }
-/* Les GIF animés Gen 5 sont de petits sprites (≈ 33×40) : agrandis, ils doivent
-   rester du pixel art net et non un flou interpolé. */
-.holo__sprite--pixel { image-rendering: pixelated; }
 
 .holo__sheen {
   position: absolute;
