@@ -45,6 +45,14 @@ export const RARITY_META: Record<RealRarity, RarityMeta> = {
 // Un shiny reçoit un cadre iridescent + holo maximal (par-dessus sa rareté).
 export const SHINY_HOLO = 0.85
 
+// Shiny NON obtenu : ni sprite ni couleurs révélés. Lui appliquer en plus le
+// dégradé de son type donnait 148 pastels différents dans l'onglet Shiny — un
+// mur illisible où les shiny possédés se noyaient. On unifie sur UNE teinte
+// irisée discrète : l'identité « shiny » reste, le bruit visuel disparaît.
+export const SHINY_LOCKED_BG = 'linear-gradient(162deg, #e8e4f6 0%, #dfe7f5 45%, #ecdff0 100%)'
+// Holo atténué sur ces mêmes cartes : à 0.85 le voile délavait tout.
+export const SHINY_LOCKED_HOLO = 0.3
+
 export function hexA(hex: string, a: number): string {
   const h = hex.replace('#', '')
   const n = parseInt(h, 16)

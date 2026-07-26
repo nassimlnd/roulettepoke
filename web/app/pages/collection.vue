@@ -11,13 +11,58 @@ const TABS = [
   { value: 'shiny', label: '✦ Shiny' }
 ] as const
 
+const OWNERSHIP = [
+  { value: 'all', label: 'Toutes' },
+  { value: 'owned', label: 'Obtenues' },
+  { value: 'missing', label: 'Manquantes' }
+] as const
+
 const tab = ref<'standard' | 'shiny'>('standard')
 const sortByPity = ref(false)
 
+// ─── Filtres ──────────────────────────────────────────────────────────────────
+// Sentinelle 'all' = aucun filtre. Elle ne peut PAS être la chaîne vide :
+// USelectMenu (Combobox) refuse un item de valeur vide — celle-ci est réservée
+// à « pas de sélection », et un tel item casse silencieusement toute la liste.
+const ALL = 'all'
+const fType = ref<string>(ALL)
+const fRarity = ref<string>(ALL)
+const fBiome = ref<string>(ALL)
+const fOwned = ref<'all' | 'owned' | 'missing'>('all')
+
 const { loading, errorMsg } = usePageData(() => collection.ensureFresh())
 
+// Cartes de l'onglet courant, AVANT filtres : sert de base à la progression
+// (« 40/151 obtenues » doit rester la progression réelle, pas celle du filtre).
+const tabCards = computed(() =>
+  collection.cards.filter(c => (tab.value === 'shiny' ? c.isShiny : !c.isShiny)))
+
+// Options dérivées des données réelles (et non d'une liste codée en dur) : ce
+// qui est proposé existe forcément dans la collection.
+function optionsOf(pick: (c: DomainOwnedCard) => string, label: string) {
+  const values = [...new Set(tabCards.value.map(pick))].sort((a, b) => a.localeCompare(b, 'fr'))
+  return [{ value: ALL, label }, ...values.map(v => ({ value: v, label: v }))]
+}
+const typeItems = computed(() => optionsOf(c => c.type, 'Tous les types'))
+const rarityItems = computed(() => optionsOf(c => c.rarity, 'Toutes raretés'))
+const biomeItems = computed(() => optionsOf(c => c.biome, 'Tous les biomes'))
+
+const filtersActive = computed(() =>
+  fType.value !== ALL || fRarity.value !== ALL || fBiome.value !== ALL || fOwned.value !== 'all')
+
+function resetFilters() {
+  fType.value = ALL
+  fRarity.value = ALL
+  fBiome.value = ALL
+  fOwned.value = 'all'
+}
+
 const cards = computed(() => {
-  const list = collection.cards.filter(c => (tab.value === 'shiny' ? c.isShiny : !c.isShiny))
+  const list = tabCards.value.filter(c =>
+    (fType.value === ALL || c.type === fType.value)
+    && (fRarity.value === ALL || c.rarity === fRarity.value)
+    && (fBiome.value === ALL || c.biome === fBiome.value)
+    && (fOwned.value === 'all' || (fOwned.value === 'owned' ? c.owned : !c.owned)))
   if (sortByPity.value) {
     // Tri par chance shiny estimée décroissante (les plus proches d'un shiny).
     return [...list].sort((a, b) => (b.quantity) - (a.quantity))
@@ -25,8 +70,8 @@ const cards = computed(() => {
   return [...list].sort((a, b) => a.num - b.num)
 })
 
-const ownedCount = computed(() => cards.value.filter(c => c.owned).length)
-const total = computed(() => cards.value.length)
+const ownedCount = computed(() => tabCards.value.filter(c => c.owned).length)
+const total = computed(() => tabCards.value.length)
 const progress = computed(() => (total.value ? Math.round((ownedCount.value / total.value) * 100) : 0))
 
 // ─── Détail / actions ─────────────────────────────────────────────────────────
@@ -122,6 +167,56 @@ function confirmMerge() {
       </button>
     </div>
 
+    <!-- Filtres cumulables (type / rareté / biome / possession) -->
+    <div class="filters">
+      <USelectMenu
+        v-model="fType"
+        :items="typeItems"
+        value-key="value"
+        icon="i-lucide-shapes"
+        aria-label="Filtrer par type"
+        class="filters__menu"
+      />
+      <USelectMenu
+        v-model="fRarity"
+        :items="rarityItems"
+        value-key="value"
+        icon="i-lucide-gem"
+        aria-label="Filtrer par rareté"
+        class="filters__menu"
+      />
+      <USelectMenu
+        v-model="fBiome"
+        :items="biomeItems"
+        value-key="value"
+        icon="i-lucide-map"
+        aria-label="Filtrer par biome"
+        class="filters__menu"
+      />
+      <PSegmented
+        v-model="fOwned"
+        :options="OWNERSHIP"
+        size="sm"
+        a11y="radio"
+        aria-label="Filtrer par possession"
+      />
+      <button
+        v-if="filtersActive"
+        class="filters__reset"
+        @click="resetFilters"
+      >
+        <UIcon
+          name="i-lucide-x"
+          class="size-4"
+        />
+        Réinitialiser
+      </button>
+      <span
+        v-if="filtersActive"
+        class="filters__count tabular"
+      >{{ cards.length }} carte{{ cards.length > 1 ? 's' : '' }}</span>
+    </div>
+
     <UAlert
       v-if="errorMsg"
       color="error"
@@ -140,6 +235,28 @@ function confirmMerge() {
         class="aspect-[63/88] w-[132px] rounded-2xl"
       />
     </div>
+    <!-- Aucun résultat : la combinaison de filtres ne correspond à rien -->
+    <PPanel
+      v-else-if="!cards.length"
+      class="empty"
+    >
+      <UIcon
+        name="i-lucide-search-x"
+        class="size-8"
+      />
+      <p class="empty__title font-display">
+        Aucune carte ne correspond
+      </p>
+      <p class="empty__sub">
+        Essaie d'assouplir un filtre.
+      </p>
+      <PButton
+        color="neutral"
+        @click="resetFilters"
+      >
+        Réinitialiser les filtres
+      </PButton>
+    </PPanel>
     <div
       v-else
       class="grid"
@@ -174,10 +291,12 @@ function confirmMerge() {
           v-if="selected"
           class="detail"
         >
+          <!-- `animated` : au clic seulement. La grille reste en WebP statique. -->
           <HoloCard
             :card="selected"
             size="lg"
             :quantity="selected.quantity"
+            animated
           />
           <div class="detail__info">
             <RarityBadge
@@ -306,6 +425,47 @@ function confirmMerge() {
   border-color: transparent;
   box-shadow: 0 3px 0 var(--color-poke-700);
 }
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filters__menu { min-width: 148px; }
+.filters__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color .15s ease, background .15s ease;
+}
+.filters__reset:hover {
+  color: var(--ui-text);
+  background: var(--ui-bg-muted);
+}
+.filters__count {
+  font-size: .84rem;
+  color: var(--ui-text-dimmed);
+  margin-left: auto;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 34px 18px;
+  text-align: center;
+  color: var(--ui-text-muted);
+}
+.empty__title { font-weight: 700; font-size: 1.05rem; color: var(--ui-text-highlighted); }
+.empty__sub { font-size: .88rem; margin-bottom: 6px; }
 
 .grid {
   display: grid;
