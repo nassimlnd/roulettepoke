@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DomainCard, DomainOwnedCard } from '~/types/domain'
-import { TYPE_GRADIENT, RARITY_META, SHINY_HOLO, hexA, cosmeticHp, STAGE_LABEL } from '~/utils/cardTheme'
+import { TYPE_GRADIENT, RARITY_META, SHINY_HOLO, SHINY_LOCKED_BG, SHINY_LOCKED_HOLO, hexA, cosmeticHp, STAGE_LABEL } from '~/utils/cardTheme'
 
 // Carte holographique — direction « Mochidex » adaptée à nos vraies données.
 // Dégradé de face par type, gemmes de rareté, holo + tilt/glare au pointeur.
@@ -12,11 +12,13 @@ const props = withDefaults(defineProps<{
   interactive?: boolean // tilt/glare au pointeur
   holoStrength?: number // 0 → 1
   ambient?: boolean // scintillement holo continu (couper dans les grilles denses)
+  animated?: boolean // sprite animé (détail au clic) au lieu du WebP statique
 }>(), {
   size: 'md',
   interactive: true,
   holoStrength: 1,
-  ambient: true
+  ambient: true,
+  animated: false
 })
 
 const WIDTHS = { sm: 132, md: 208, lg: 280, xl: 360 }
@@ -31,10 +33,18 @@ const grad = computed(() => TYPE_GRADIENT[props.card.type] ?? { c1: '#efe6d6', c
 const rarity = computed(() => RARITY_META[props.card.rarity])
 const isShiny = computed(() => props.card.isShiny)
 
-const cardBg = computed(() => `linear-gradient(162deg, ${grad.value.c1} 0%, ${grad.value.c2} 100%)`)
+// Un shiny verrouillé ne révèle ni son sprite ni ses couleurs : il prend une
+// teinte irisée UNIQUE plutôt que le dégradé de son type (cf. SHINY_LOCKED_BG).
+const shinyLocked = computed(() => isShiny.value && !owned.value)
+const cardBg = computed(() => (shinyLocked.value
+  ? SHINY_LOCKED_BG
+  : `linear-gradient(162deg, ${grad.value.c1} 0%, ${grad.value.c2} 100%)`))
 const holoBase = computed(() => {
   const s = Math.max(0, Math.min(1, props.holoStrength))
-  return +(((isShiny.value ? SHINY_HOLO : rarity.value.holo)) * s).toFixed(3)
+  const base = shinyLocked.value
+    ? SHINY_LOCKED_HOLO
+    : (isShiny.value ? SHINY_HOLO : rarity.value.holo)
+  return +(base * s).toFixed(3)
 })
 // Scintillement continu : seulement si `ambient` (coupé dans la collection pour
 // éviter des dizaines d'animations mix-blend simultanées = lag). Au repos sans
@@ -48,6 +58,42 @@ const gems = computed(() => Array.from({ length: rarity.value.gems }, (_, i) => 
 const hp = computed(() => cosmeticHp(props.card.num, props.card.rarity))
 const setNo = computed(() => 'N°' + String(props.card.num).padStart(3, '0'))
 const stage = computed(() => STAGE_LABEL[props.card.level] ?? '')
+
+// ─── Sprite : statique (grilles) ou animé (détail au clic) ───
+// Le GIF animé vient d'un CDN externe. On ne l'affiche QU'APRÈS l'avoir
+// préchargé avec succès : on ne substitue jamais une image dont on ignore si
+// elle arrivera. Sans ce précaution, un CDN lent ou injoignable laisse la
+// fenêtre d'illustration VIDE (la requête pend, `error` ne se déclenche pas).
+// Ici, le WebP statique du backend reste affiché et l'animation ne fait que
+// s'y substituer si elle est prête — dégradation invisible.
+const ANIM_PRELOAD_TIMEOUT = 4000
+const animReady = ref(false)
+
+watch(
+  () => [props.animated, props.card.id] as const,
+  () => {
+    animReady.value = false
+    if (!props.animated || !import.meta.client) return
+    const url = animatedSpriteUrl(props.card.num, isShiny.value)
+    if (!url) return
+    const img = new Image()
+    // Abandon au-delà du délai : on n'attend pas indéfiniment un CDN muet.
+    const timer = setTimeout(() => {
+      img.src = ''
+    }, ANIM_PRELOAD_TIMEOUT)
+    img.onload = () => {
+      clearTimeout(timer)
+      animReady.value = true
+    }
+    img.onerror = () => clearTimeout(timer)
+    img.src = url
+  },
+  { immediate: true }
+)
+
+const spriteUrl = computed(() => (animReady.value
+  ? animatedSpriteUrl(props.card.num, isShiny.value)!
+  : props.card.imageUrl))
 
 const rootStyle = computed(() => ({
   '--w': WIDTHS[props.size] + 'px',
@@ -120,10 +166,10 @@ function onLeave() {
       <div class="holo__art">
         <div class="holo__art-bg" />
         <img
-          :src="card.imageUrl"
+          :src="spriteUrl"
           :alt="card.name"
           class="holo__sprite"
-          :class="{ 'holo__sprite--locked': !owned }"
+          :class="{ 'holo__sprite--locked': !owned, 'holo__sprite--pixel': animReady }"
           loading="lazy"
           decoding="async"
         >
@@ -291,6 +337,9 @@ function onLeave() {
   filter: drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(60, 40, 30, .25));
 }
 .holo__sprite--locked { filter: brightness(0) opacity(.28); }
+/* Les GIF animés Gen 5 sont de petits sprites (≈ 33×40) : agrandis, ils doivent
+   rester du pixel art net et non un flou interpolé. */
+.holo__sprite--pixel { image-rendering: pixelated; }
 
 .holo__sheen {
   position: absolute;
