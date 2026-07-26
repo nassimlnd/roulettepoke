@@ -266,6 +266,10 @@ function onLeave() {
 /* Illustration */
 .holo__art {
   position: relative;
+  /* Au-dessus du foil shiny (z-index 1) : le sprite `_alt` porte DÉJÀ les vraies
+     couleurs du shiny, il ne doit pas être repeint par le voile arc-en-ciel.
+     Seul le cadre est irisé — principe d'une carte « reverse holo ». */
+  z-index: 2;
   flex: 1;
   border-radius: calc(var(--w) * 0.05);
   overflow: hidden;
@@ -304,6 +308,9 @@ function onLeave() {
 .holo__glare {
   position: absolute;
   inset: 0;
+  /* Au-dessus de l'illustration (z-index 2) : le reflet au pointeur doit
+     balayer TOUTE la carte, artwork compris. */
+  z-index: 3;
   pointer-events: none;
   mix-blend-mode: screen;
   opacity: 0;
@@ -318,16 +325,23 @@ function onLeave() {
 .holo__foil {
   position: absolute;
   inset: 0;
+  /* Sous la fenêtre d'illustration (z-index 2) : le foil habille le CADRE, pas
+     l'artwork. */
+  z-index: 1;
   pointer-events: none;
   border-radius: inherit;
-  /* `color` : la carte prend la TEINTE arc-en-ciel du dégradé en gardant sa
-     luminosité → un vrai rainbow visible même sur une face claire (là où
-     overlay/color-dodge se délavaient). */
+  /* `soft-light` TEINTE en préservant la teinte d'origine. (`color` remplaçait
+     la teinte de tout ce qui était dessous — le sprite shiny finissait coupé en
+     deux blocs violet/vert, cf. régression signalée.) */
   mix-blend-mode: color;
-  opacity: .72;
+  opacity: .6;
   background: linear-gradient(115deg,
     #ff5a3c 4%, #ffcf3c 18%, #8cff64 32%, #3cffd7 46%, #3c9cff 60%, #b45aff 74%, #ff5ad2 88%, #ff5a3c 98%);
-  background-size: 165% 165%;
+  /* SANS répétition : un dégradé incliné ne se raccorde jamais aux bords de
+     tuile → c'était la couture verticale nette au milieu de la carte. Une seule
+     tuile, plus large que la carte, que l'animation fait glisser. */
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
   background-position: 50% 50%;
 }
 /* Stries lumineuses (gloss) par-dessus la teinte → aspect « foil » brillant. */
@@ -337,13 +351,15 @@ function onLeave() {
   inset: 0;
   border-radius: inherit;
   mix-blend-mode: screen;
-  opacity: .55;
+  opacity: .5;
   background: linear-gradient(115deg,
     transparent 26%, rgba(255, 255, 255, .38) 40%, rgba(255, 255, 255, .68) 50%, rgba(255, 255, 255, .38) 60%, transparent 74%);
-  background-size: 220% 220%;
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
   background-position: 50% 50%;
 }
-.holo__foil--anim, .holo__foil--anim::after { animation: holoShine 3.6s linear infinite; }
+/* Course propre à `no-repeat` (0→100 %), contrairement à holoShine (tuilé). */
+.holo__foil--anim, .holo__foil--anim::after { animation: foilShine 4.2s linear infinite alternate; }
 
 .holo__shiny-star {
   position: absolute;
@@ -429,5 +445,12 @@ function onLeave() {
 @keyframes holoShine {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
+}
+
+/* Foil shiny : fond `no-repeat` de 300 % → la course utile va de 0 à 100 %
+   (au-delà, la tuile sortirait du cadre). `alternate` évite le saut de retour. */
+@keyframes foilShine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 </style>
