@@ -268,11 +268,14 @@ function confirmMerge() {
         :disabled="!card.owned"
         @click="openDetail(card)"
       >
+        <!-- `freeze` : les sprites du backend sont des WebP animés ; on les fige
+             dans la grille (150+ cartes) et ils s'animent dans la modale. -->
         <HoloCard
           :card="card"
           size="sm"
           :quantity="card.quantity"
           :ambient="false"
+          freeze
         />
         <span
           v-if="sortByPity && card.owned && !card.isShiny"
@@ -291,12 +294,11 @@ function confirmMerge() {
           v-if="selected"
           class="detail"
         >
-          <!-- `animated` : au clic seulement. La grille reste en WebP statique. -->
+          <!-- Pas de `freeze` ici : le sprite s'anime au clic. -->
           <HoloCard
             :card="selected"
             size="lg"
             :quantity="selected.quantity"
-            animated
           />
           <div class="detail__info">
             <RarityBadge
