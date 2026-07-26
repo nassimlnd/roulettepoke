@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   volume: 'pkr_volume',
   muted: 'pkr_muted',
   reducedMotion: 'pkr_reduced_motion',
+  spriteStyle: 'pkr_sprite_style',
   teamRollSkipConfirm: 'pkr_team_roll_skip_confirm',
   replaySpeed: 'replay_speed',
   spinMuted: 'spin_muted'

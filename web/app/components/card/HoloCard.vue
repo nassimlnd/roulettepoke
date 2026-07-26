@@ -67,6 +67,39 @@ const stage = computed(() => STAGE_LABEL[props.card.level] ?? '')
 // visuel reste rigoureusement identique à celui de la carte animée).
 const spriteCanvas = ref<HTMLCanvasElement>()
 
+// ─── Style de sprite choisi par le joueur (réglages) ───
+// Les jeux « génération » viennent d'un CDN externe : on ne les affiche
+// QU'APRÈS préchargement réussi. Sans ça, un CDN lent ou une image manquante
+// (shiny absent d'un jeu) laisserait la fenêtre d'illustration vide. Le sprite
+// du backend reste donc affiché et n'est remplacé que si l'autre est prêt.
+const prefs = usePreferencesStore()
+const styledReady = ref<string | null>(null)
+
+watch(
+  () => [prefs.spriteStyle, props.card.num, isShiny.value] as const,
+  ([styleKey, num, shiny]) => {
+    styledReady.value = null
+    if (!import.meta.client) return
+    const url = styledSpriteUrl(styleKey, num, shiny)
+    if (!url) return
+    const probe = new Image()
+    probe.onload = () => {
+      styledReady.value = url
+    }
+    probe.src = url
+  },
+  { immediate: true }
+)
+
+// Sprite effectif : le style choisi s'il a chargé, sinon celui du backend.
+const spriteUrl = computed(() => styledReady.value ?? props.card.imageUrl)
+
+// ─── Sprite : animé par défaut, ou figé sur demande ───
+// Les sprites du backend sont des WebP ANIMÉS (23 à 90 frames selon le Pokémon),
+// et certains styles le sont aussi (Gen 5 animé, Showdown). Une grille de 150
+// cartes les anime donc tous en même temps : c'est le vrai coût de la page
+// collection. `freeze` peint la PREMIÈRE FRAME dans un <canvas> — un seul
+// rendu, plus aucune animation — sans changer de sprite.
 function paintFrozenSprite() {
   const cv = spriteCanvas.value
   if (!cv) return
@@ -77,13 +110,14 @@ function paintFrozenSprite() {
     cv.height = img.naturalHeight
     cv.getContext('2d')?.drawImage(img, 0, 0)
   }
-  img.src = props.card.imageUrl
+  img.src = spriteUrl.value
 }
 
 onMounted(() => {
   if (props.freeze) paintFrozenSprite()
 })
-watch(() => [props.freeze, props.card.imageUrl], async () => {
+// Repeint si la carte change OU si le joueur change de style de sprite.
+watch(() => [props.freeze, spriteUrl.value], async () => {
   if (!props.freeze) return
   await nextTick()
   paintFrozenSprite()
@@ -171,7 +205,7 @@ function onLeave() {
         />
         <img
           v-else
-          :src="card.imageUrl"
+          :src="spriteUrl"
           :alt="card.name"
           class="holo__sprite"
           :class="{ 'holo__sprite--locked': !owned }"
