@@ -260,6 +260,31 @@ function sendReset() {
           aria-label="Rythme de révélation"
         />
       </SettingRow>
+
+      <div class="sep" />
+
+      <!-- Le sélecteur est large (une tuile d'aperçu par style) : il occupe sa
+           propre ligne au lieu d'être tassé à droite d'un SettingRow. -->
+      <div class="sprites">
+        <div class="sprites__head">
+          <span class="sprites__ico">
+            <UIcon
+              name="i-lucide-image"
+              class="size-4"
+            />
+          </span>
+          <div>
+            <p class="sprites__title">
+              Style des sprites
+            </p>
+            <p class="sprites__desc">
+              Le rendu des Pokémon sur tes cartes, d'une génération à l'autre.
+              Clique un aperçu pour l'adopter.
+            </p>
+          </div>
+        </div>
+        <SpriteStylePicker v-model="prefs.spriteStyle" />
+      </div>
     </PPanel>
 
     <!-- Compte -->
@@ -359,6 +384,21 @@ function sendReset() {
 /* Sections */
 .sect { font-weight: 700; font-size: 1.1rem; margin-bottom: 2px; }
 .sep { height: 1px; background: var(--ui-border); }
+
+.sprites { display: flex; flex-direction: column; gap: 12px; }
+.sprites__head { display: flex; align-items: flex-start; gap: 12px; }
+.sprites__ico {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: var(--color-poke-600);
+  background: var(--color-poke-50);
+}
+.sprites__title { font-weight: 700; font-size: .95rem; color: var(--ui-text-highlighted); }
+.sprites__desc { font-size: .84rem; color: var(--ui-text-muted); margin-top: 2px; }
 
 /* Contrôles */
 .ghost {

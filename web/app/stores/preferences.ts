@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 // Import explicite : useStorage entre en collision avec le useStorage de Nitro.
 import { useStorage } from '@vueuse/core'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
+import { DEFAULT_SPRITE_STYLE } from '~/constants/sprite-styles'
 
 export type RevealMode = 'visible' | 'smart' | 'hidden'
 
@@ -13,6 +14,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const volume = useStorage<number>(STORAGE_KEYS.volume, 0.7)
   const muted = useStorage<boolean>(STORAGE_KEYS.muted, false)
   const reducedMotionOverride = useStorage<'auto' | 'on' | 'off'>(STORAGE_KEYS.reducedMotion, 'auto')
+  // Style des sprites de carte (cf. constants/sprite-styles.ts).
+  const spriteStyle = useStorage<string>(STORAGE_KEYS.spriteStyle, DEFAULT_SPRITE_STYLE)
 
   const systemReducedMotion = usePreferredReducedMotion()
 
@@ -29,6 +32,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     volume,
     muted,
     reducedMotionOverride,
+    spriteStyle,
     effectiveReducedMotion
   }
 })
