@@ -183,7 +183,7 @@ onBeforeUnmount(() => chat.stop())
             class="panel__input"
             :maxlength="CHAT_MAX_LEN"
             rows="1"
-            placeholder="Votre message…"
+            placeholder="Ton message…"
             @input="autogrow"
             @keydown="onKeydown"
           />
