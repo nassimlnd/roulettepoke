@@ -11,9 +11,9 @@ Cet audit est **incomplet**, et il faut le savoir pour s'en servir correctement.
 
 | | |
 |---|---|
-| Axes couverts | 4 sur 8 : game design/rétention, onboarding, parcours & navigation, UI/finition |
-| Axes **manquants** | **accessibilité**, **mobile**, **performance perçue**, **contenu & wording** |
-| Vérification adverse | **n'a pas tourné** |
+| Axes couverts par les agents | 4 sur 8 : game design/rétention, onboarding, parcours & navigation, UI/finition |
+| Axes traités en passe manuelle | accessibilité, mobile, performance, contenu — voir la section dédiée |
+| Vérification adverse automatique | **n'a pas tourné** |
 | Cause | limite d'usage hebdomadaire atteinte : 9 des 13 agents ont échoué |
 
 
@@ -95,6 +95,60 @@ seul point de l'audit réellement bloqué par le backend figé.
 
 Bonus au passage : le hub appelait ce mode « Spin » alors que la navbar, la page
 et le Guide disent « Aventure » — corrigé (constat de vocabulaire n°51).
+
+## Les 4 axes manquants — passe manuelle
+
+Les agents étant indisponibles jusqu'à 23h UTC, j'ai traité moi-même les axes
+non couverts. Passe plus resserrée qu'un expert dédié : je liste ce que j'ai
+**mesuré**, et ce que je n'ai pas pu couvrir.
+
+### Accessibilité
+
+- 🔴 **Les 3 scènes plein écran ne gèrent pas le focus.** `BattleScene`,
+  `AdventureScene` et `ShinyReveal` n'ont ni `focus()` initial, ni `aria-modal`,
+  ni sortie clavier par Échap ; deux d'entre elles n'ont même pas de `role`.
+  Ces overlays prennent tout l'écran : au clavier, on tabule dans la page
+  restée derrière, sans pouvoir fermer. C'est le point a11y le plus grave.
+  *Frontend, effort M.*
+- 🟢 **Aucun élément cliquable non focalisable** : 0 occurrence de
+  `div`/`span`/`li` porteur d'un `@click` — tout passe par `<button>` ou
+  `<NuxtLink>`. C'est rare et c'est bien.
+- 🟢 18 déclarations de `:focus-visible`, dont celles ajoutées avec `PSegmented`.
+
+### Mobile
+
+- 🟠 **Les filtres de la collection ne sont pas collants.** Une seule règle
+  `position: sticky` dans toute l'app (sur la landing). Sur une grille qui
+  défile sur plus de 15 000 px, les filtres et l'onglet Standard/Shiny
+  disparaissent dès les premières lignes, et rien ne ramène en haut.
+  *Frontend, effort S — c'est le meilleur rapport effet/effort restant.*
+- 🟢 Les largeurs figées (420 à 900 px) existent, mais **tous** les fichiers
+  concernés portent aussi des media queries, et les 13 captures mobiles ne
+  montrent pas de débordement horizontal. Pas de constat.
+
+### Performance perçue
+
+- 🟢 Le point sensible connu est traité : la grille collection fige les WebP
+  animés dans un `<canvas>` et utilise `content-visibility: auto`.
+- 🟢 Un seul `will-change` permanent (`SlotMachine`, sur la bobine) — légitime,
+  c'est un élément unique en transformation continue.
+- 🟠 **Aucune virtualisation de liste.** Acceptable aujourd'hui (151 cellules
+  allégées par `content-visibility`), mais c'est la limite structurelle si le
+  Pokédex s'étend au-delà de Kanto. *À surveiller, pas à corriger maintenant.*
+
+### Contenu & wording
+
+- 🟢 **Un seul vouvoiement résiduel** dans toute l'application
+  (`ChatWidget.vue:186`, « Votre message… ») alors que le jeu tutoie partout
+  ailleurs. Corrigé. Le ton est autrement remarquablement homogène.
+- 🟢 Les messages d'erreur disent quoi faire (« Vérifie ton réseau puis
+  réessaie ») et non seulement ce qui a échoué.
+
+### Ce que cette passe n'a PAS couvert
+
+Contrastes mesurés au ratio WCAG, parcours réel au lecteur d'écran, profilage
+runtime (Lighthouse / trace de performance), et relecture éditoriale complète
+des textes longs (Guide, aventure). Un expert dédié reste utile sur ces points.
 
 ## Un enseignement inattendu : le backend n'est presque jamais le blocage
 
