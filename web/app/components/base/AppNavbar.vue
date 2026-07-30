@@ -16,6 +16,19 @@ const competitionActive = computed(() =>
 // Un échange en attente de réponse doit se voir depuis n'importe quelle page —
 // il était jusqu'ici signalé uniquement dans le menu mobile.
 const competitionBadge = computed(() => hub.tradeActionsRequired)
+
+// Items du menu déroulant. On passe par UDropdownMenu (et non un UPopover
+// maison) : il fournit la navigation aux flèches, la fermeture par Échap et le
+// déplacement du focus DANS le menu. Une version précédente ouvrait bien le
+// menu au focus, mais Tab sautait par-dessus son contenu — les cinq
+// destinations restaient donc inatteignables au clavier.
+const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
+  label: l.to === '/trades' && competitionBadge.value
+    ? `${l.label} (${competitionBadge.value})`
+    : l.label,
+  icon: l.icon,
+  to: l.to
+})))
 </script>
 
 <template>
@@ -51,15 +64,15 @@ const competitionBadge = computed(() => hub.tradeActionsRequired)
         <!-- Compétition : regroupe Arènes, Ligue, Tournoi, Classement, Échanges.
              Ces trois dernières n'étaient atteignables par AUCUNE navigation
              desktop avant ce regroupement. -->
-        <UPopover
-          mode="hover"
+        <UDropdownMenu
+          :items="competitionItems"
           :content="{ align: 'center', sideOffset: 6 }"
+          :ui="{ content: 'min-w-48' }"
         >
           <button
             type="button"
             class="nav__link nav__group"
             :class="{ 'nav__link--on': competitionActive }"
-            aria-haspopup="menu"
           >
             <UIcon
               name="i-lucide-swords"
@@ -76,31 +89,7 @@ const competitionBadge = computed(() => hub.tradeActionsRequired)
               class="size-3 nav__caret"
             />
           </button>
-          <template #content>
-            <nav
-              class="grp"
-              aria-label="Compétition"
-            >
-              <NuxtLink
-                v-for="l in COMPETITION_LINKS"
-                :key="l.to"
-                :to="l.to"
-                class="grp__link"
-                active-class="grp__link--on"
-              >
-                <UIcon
-                  :name="l.icon"
-                  class="size-4"
-                />
-                {{ l.label }}
-                <span
-                  v-if="l.to === '/trades' && competitionBadge"
-                  class="grp__badge tabular"
-                >{{ competitionBadge }}</span>
-              </NuxtLink>
-            </nav>
-          </template>
-        </UPopover>
+        </UDropdownMenu>
 
         <NuxtLink
           v-for="l in SECONDARY_LINKS"
@@ -236,29 +225,8 @@ const competitionBadge = computed(() => hub.tradeActionsRequired)
 }
 .nav__link--on .nav__dot { background: #fff; }
 
-.grp { display: flex; flex-direction: column; padding: 6px; min-width: 190px; }
-.grp__link {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
-  border-radius: 9px;
-  font-weight: 600;
-  font-size: .88rem;
-  color: var(--ui-text-toned);
-  transition: color .15s ease, background .15s ease;
-}
-.grp__link:hover { color: var(--ui-text-highlighted); background: var(--ui-bg-muted); }
-.grp__link--on { color: var(--color-poke-600); background: var(--color-poke-50); }
-.grp__badge {
-  margin-left: auto;
-  font-size: .7rem;
-  font-weight: 800;
-  color: #fff;
-  background: var(--color-poke-500);
-  border-radius: 99px;
-  padding: 1px 6px;
-}
+/* Le contenu du menu est rendu par UDropdownMenu : plus de styles maison à
+   maintenir ici (l'ancien bloc .grp* dupliquait ce que le DS fournit). */
 
 .navbar__right {
   margin-left: auto;

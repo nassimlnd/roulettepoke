@@ -114,6 +114,16 @@ non couverts. Passe plus resserrée qu'un expert dédié : je liste ce que j'ai
   `div`/`span`/`li` porteur d'un `@click` — tout passe par `<button>` ou
   `<NuxtLink>`. C'est rare et c'est bien.
 - 🟢 18 déclarations de `:focus-visible`, dont celles ajoutées avec `PSegmented`.
+- ⚠️ **Défaut introduit par la vague 1, puis corrigé.** Le menu « Compétition »
+  avait d'abord été bâti sur un `UPopover mode="hover"` maison. Il s'ouvrait
+  bien au focus et se fermait par Échap, mais **Tab sautait par-dessus son
+  contenu** et les flèches ne faisaient rien : les cinq destinations restaient
+  inatteignables au clavier — le bug même que la vague 1 devait corriger.
+  Le déclencheur annonçait en outre `aria-haspopup="menu"` sans jamais
+  d'`aria-expanded`. Remplacé par `UDropdownMenu` (Nuxt UI), qui apporte le
+  déplacement du focus dans le menu, la navigation aux flèches et l'`aria-expanded`.
+  **Leçon : préférer le composant du design system à un assemblage maison dès
+  qu'un motif d'interaction a une sémantique clavier attendue.**
 
 ### Mobile
 
