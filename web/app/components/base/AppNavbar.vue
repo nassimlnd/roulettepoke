@@ -195,6 +195,13 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
   font-size: .84rem;
   color: var(--ui-text-muted);
   white-space: nowrap;
+  /* Neutralise le fond et la bordure que le navigateur impose au <button> du
+     regroupement « Compétition ». C'est déclaré ICI, sur la base commune, et
+     non dans une règle plus tardive : sinon un `background: none` postérieur
+     écraserait le dégradé de .nav__link--on (à spécificité égale, le dernier
+     gagne) et la pilule active devenait un texte blanc sur fond blanc. */
+  background: none;
+  border: none;
   transition: color .15s ease, background .15s ease;
 }
 /* 1024-1279 (iPad paysage, laptops étroits) : icônes seules pour tout faire tenir. */
@@ -214,7 +221,14 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
 .nav__link--on:hover { color: #fff; background: linear-gradient(150deg, #ee5a48, var(--color-poke-500)); }
 
 /* Regroupement « Compétition » : même pilule que les liens, plus un chevron. */
-.nav__group { border: none; cursor: pointer; font: inherit; }
+/* Ne reste ici que ce qui est propre au déclencheur. Surtout : PAS de
+   `font: inherit`. Ce raccourci réinitialise famille, taille ET graisse, et
+   écrasait les déclarations de .nav__link — le bouton s'affichait en
+   Nunito 16px/400 au lieu de Fredoka 14px/600, et 3 px plus haut. */
+.nav__group {
+  cursor: pointer;
+  line-height: inherit;
+}
 .nav__caret { opacity: .6; margin-left: -2px; }
 .nav__dot {
   width: 7px;
