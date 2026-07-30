@@ -30,7 +30,7 @@ const collectionCards = collectionSamples.map(toCard)
 
 const chips = [
   { label: 'Boosters par biome', c: 'var(--color-poke-500)' },
-  { label: 'Pity garanti', c: '#eeb43e' },
+  { label: 'Chance shiny cumulative', c: '#eeb43e' },
   { label: 'Shiny & raretés', c: '#5cb6ba' },
   { label: 'Fusion de cartes', c: '#8f6fd0' },
   { label: '8 Arènes', c: '#57ba7f' },
@@ -152,7 +152,8 @@ const chips = [
           </h2>
           <p>
             Choisis ta région, lance le tourbillon et découvre ta carte. Chaque
-            biome a son pool — et le compteur de <b>pity</b> t'évite les séries noires.
+            biome a son pool — et chaque doublon rapproche ce Pokémon de sa
+            version <b>shiny</b>.
           </p>
           <ul class="lp-list">
             <li>
@@ -165,7 +166,8 @@ const chips = [
               <UIcon
                 name="i-lucide-check"
                 class="lp-tick"
-              /><span><b>Pity garanti</b> vers les raretés supérieures.</span>
+              /><span><b>Aucun doublon perdu</b> : chaque exemplaire en double
+                augmente la chance shiny de ce Pokémon.</span>
             </li>
             <li>
               <UIcon
