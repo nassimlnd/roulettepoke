@@ -34,7 +34,10 @@ onMounted(() => {
               class="size-4 shrink-0"
               :class="t.available ? 'text-primary' : 'text-dimmed'"
             />
-            <span class="flex-1 text-sm font-medium">{{ t.label }}</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-medium">{{ t.label }}</span>
+              <span class="block truncate text-xs text-muted">{{ t.reward }}</span>
+            </span>
             <span
               v-if="t.available"
               class="text-xs font-semibold text-primary"
@@ -72,7 +75,10 @@ onMounted(() => {
               class="size-4 shrink-0"
               :class="t.available ? 'text-primary' : 'text-dimmed'"
             />
-            <span class="flex-1 text-sm font-medium">{{ t.label }}</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-medium">{{ t.label }}</span>
+              <span class="block truncate text-xs text-muted">{{ t.reward }}</span>
+            </span>
             <span
               v-if="t.available"
               class="text-xs font-semibold text-primary"

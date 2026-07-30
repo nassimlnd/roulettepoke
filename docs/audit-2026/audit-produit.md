@@ -68,6 +68,34 @@ passe adverse manquante n'était pas une formalité. Traiter la liste comme des
   réel avant toute action.
 
 
+## Vague 2 — instruite puis livrée (lisibilité)
+
+Sur 6 pistes de la vague 2, **2 étaient fausses** et une n'est pas réalisable
+côté front. Détail, pour que la trace serve :
+
+| Piste | Verdict | Suite |
+|---|---|---|
+| Landing : « Pity garanti vers les raretés supérieures » | ✅ **confirmé** — le pity ne concerne que le shiny (`rules.vue:38`) | corrigé (3 endroits) |
+| Guide : documente un réglage de tirage inexistant | ✅ **confirmé** — « Visibles / Si possédée / Masquées » alors que les réglages disent « Complète / Rapide / Directe » | corrigé |
+| Fusion non découvrable dans la collection | ✅ **confirmé** — le bouton n'existait que dans la modale de détail | badge « Fusion » dans la grille |
+| Le hub ne dit jamais ce qu'on gagne | ✅ **confirmé** — les tuiles n'avaient que libellé + échéance | gain affiché sur les 7 tuiles |
+| Trois taux de shiny contradictoires (Guide vs Stats) | ❌ **réfuté** — Stats étiquette « Taux de shiny **observé** », le Guide donne le 1/500 théorique. Deux grandeurs différentes, correctement nommées | rien à faire |
+| Le doublon ne rapporte rien à la révélation | ❌ **réfuté** — `BoosterReveal.vue:43` affiche « Doublon ×N · chance shiny estimée ~X % » | rien à faire |
+| Le bonus quotidien n'annonce pas son montant | ⚠️ **confirmé mais NON corrigé** | voir ci-dessous |
+
+**Pourquoi le montant du bonus quotidien n'a pas été corrigé.** Le constat est
+juste : le toast dit « Ta récompense de connexion a été créditée » sans chiffre.
+Mais l'API ne renvoie **pas** le montant crédité — `/auth/me` le crédite par
+effet de bord et ne retourne que le solde final, sans le solde antérieur. Le
+déduire exigerait de mémoriser le dernier solde connu côté client et d'en faire
+une différence, ce qui donnerait un chiffre **faux** dès qu'une autre source
+modifie le solde entre deux sessions. Afficher un mauvais montant sur l'écran
+qui doit donner envie de revenir est pire que n'en afficher aucun. C'est le
+seul point de l'audit réellement bloqué par le backend figé.
+
+Bonus au passage : le hub appelait ce mode « Spin » alors que la navbar, la page
+et le Guide disent « Aventure » — corrigé (constat de vocabulaire n°51).
+
 ## Un enseignement inattendu : le backend n'est presque jamais le blocage
 
 Sur les 56 constats, **aucun** n'est classé « impossible sans le backend ».

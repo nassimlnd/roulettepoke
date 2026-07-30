@@ -23,7 +23,10 @@ const sections = [
     title: 'Tirages',
     items: [
       `Chaque tirage standard coûte ${BASE_ROLL_COST} coins ; les résultats sont pondérés par rareté.`,
-      '3 modes d\'affichage : Visibles (tout révélé), Si possédée (masque les nouvelles), Masquées (révélation après le lancer).',
+      // Doit rester aligné sur REVEAL_OPTS (pages/settings.vue) : le Guide
+      // documentait encore trois modes disparus (« Visibles / Si possédée /
+      // Masquées ») qui ne correspondaient à aucun réglage réel.
+      'Rythme de révélation réglable dans Réglages : Complète (animation entière), Rapide (accélérée) ou Directe (résultat immédiat).',
       'Filtrer par biome cible les cartes d\'une région — le coût dépend du biome (voir la table ci-dessous).',
       'Événements spéciaux (1 %) sur les tirages sans filtre : bonus de coins, Charme Chroma, ou choix entre deux cartes.'
     ]

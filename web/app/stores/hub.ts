@@ -21,6 +21,9 @@ export interface QuotaTile {
   available: boolean
   nextResetAt: Date | null
   to: string
+  // Ce que le rendez-vous rapporte. Le tableau annonçait des échéances sans
+  // jamais dire l'enjeu : « Disponible » n'incite à rien si on ignore le gain.
+  reward: string
 }
 
 export const useHubStore = defineStore('hub', {
@@ -60,14 +63,16 @@ export const useHubStore = defineStore('hub', {
           label: 'Entraînement',
           available: !!state.training?.canFightToday,
           nextResetAt: daily,
-          to: '/gyms'
+          to: '/gyms',
+          reward: '+5 🪙 · +2 % de bonus d\'arène'
         },
         {
           key: 'jackpot',
           label: 'Jackpot',
           available: !!state.slot?.canSpin,
           nextResetAt: daily,
-          to: '/slot-machine'
+          to: '/slot-machine',
+          reward: 'Pièces, tickets, Charme ou légendaire'
         }
       ]
     },
@@ -83,14 +88,20 @@ export const useHubStore = defineStore('hub', {
           label: gym ? gym.name : 'Arènes',
           available: !!gym?.canAttempt,
           nextResetAt: monday,
-          to: '/gyms'
+          to: '/gyms',
+          // `badgeName` contient déjà le mot « Badge » (ex. « Badge Roche ») :
+          // le préfixer produisait « Badge Badge Roche ».
+          reward: gym?.badgeName ?? 'Badge d\'arène'
         },
         {
           key: 'tournament',
           label: 'Tournoi',
           available: state.tournament?.status === 'registration_open' && !state.tournament?.isRegistered,
           nextResetAt: thursday,
-          to: '/tournament'
+          to: '/tournament',
+          reward: state.tournament?.prizePool
+            ? `Part d'une cagnotte de ${state.tournament.prizePool} 🪙`
+            : 'Part de la cagnotte'
         }
       ]
       if (this.leagueUnlocked) {
@@ -99,7 +110,8 @@ export const useHubStore = defineStore('hub', {
           label: 'Ligue des 4',
           available: !!state.league?.eligible && !state.league?.alreadyAttempted,
           nextResetAt: thursday,
-          to: '/league'
+          to: '/league',
+          reward: 'Pièces ou capture d\'un légendaire'
         })
       }
       tiles.push({
@@ -107,15 +119,19 @@ export const useHubStore = defineStore('hub', {
         label: 'Échange',
         available: !!state.tradeEligibility?.eligible,
         nextResetAt: monday,
-        to: '/trades'
+        to: '/trades',
+        reward: 'Une carte manquante de même rareté'
       })
       if (state.spin?.hasStarters) {
         tiles.push({
           key: 'spin',
-          label: 'Spin',
+          // « Aventure » et non « Spin » : la navbar, la page et le Guide disent
+          // Aventure — le hub était le seul à employer le mot interne.
+          label: 'Aventure',
           available: !state.spin?.rewardedThisWeek,
           nextResetAt: monday,
-          to: '/spin'
+          to: '/spin',
+          reward: 'Récompense hebdo + tentative légendaire'
         })
       }
       return tiles

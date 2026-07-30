@@ -277,6 +277,20 @@ function confirmMerge() {
           :ambient="false"
           freeze
         />
+        <!-- Fusion disponible : signalée DANS la grille. Le bouton ne vivait que
+             dans la modale de détail, donc la seule boucle qui recycle les
+             doublons ne se découvrait qu'en ouvrant les cartes une par une. -->
+        <span
+          v-if="canMerge(card)"
+          class="mergeable"
+          :title="`Fusion possible : ${MERGE_COST} exemplaires disponibles`"
+        >
+          <UIcon
+            name="i-lucide-arrow-up-circle"
+            class="size-3.5"
+          />
+          Fusion
+        </span>
         <span
           v-if="sortByPity && card.owned && !card.isShiny"
           class="pity"
@@ -492,6 +506,24 @@ function confirmMerge() {
   outline: 2px solid var(--color-poke-400);
   outline-offset: 3px;
 }
+.mergeable {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: .58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #fff;
+  background: #8f6fd0;
+  border-radius: 6px;
+  padding: 2px 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .28);
+}
+
 .pity {
   position: absolute;
   inset-inline: 7px;
