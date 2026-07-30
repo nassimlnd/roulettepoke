@@ -64,7 +64,7 @@ function confirmRegister() {
   })
 }
 
-const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
+const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
 </script>
 
 <template>
@@ -91,11 +91,11 @@ const { loading, errorMsg } = usePageData(() => tourney.ensureFresh())
       <USkeleton class="h-64 w-full rounded-2xl" />
     </div>
 
-    <UAlert
+    <PageError
       v-else-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <!-- Aucun tournoi -->

@@ -94,7 +94,7 @@ const confirmTrade = (t: DomainTrade) => run(() => trades.confirm(t.id, true), '
 const rejectTrade = (t: DomainTrade) => run(() => trades.confirm(t.id, false), 'Échange refusé')
 const cancelTrade = (t: DomainTrade) => run(() => trades.cancel(t.id), 'Échange annulé')
 
-const { loading, errorMsg } = usePageData(async () => {
+const { loading, errorMsg, retry } = usePageData(async () => {
   await trades.ensureFresh()
   collection.ensureFresh().catch(() => {})
   if (canBrowse.value) trades.loadPlayers()
@@ -122,11 +122,11 @@ const { loading, errorMsg } = usePageData(async () => {
       <USkeleton class="h-32 w-full rounded-2xl" />
     </div>
 
-    <UAlert
+    <PageError
       v-else-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <template v-else>

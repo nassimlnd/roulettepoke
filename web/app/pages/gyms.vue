@@ -11,7 +11,7 @@ const gym = useGymStore()
 const battle = useBattleStore()
 const toast = useToast()
 
-const { loading, errorMsg } = usePageData(() => gym.ensureFresh())
+const { loading, errorMsg, retry } = usePageData(() => gym.ensureFresh())
 const trainingLoading = ref(false)
 
 const training = computed(() => gym.training)
@@ -54,9 +54,22 @@ async function openDetail(g: DomainGym) {
   }
 }
 
+// Confirmation du combat : on rappelle l'enjeu (1 tentative par semaine) et on
+// reprend l'estimation déjà calculée pour que le joueur décide en connaissance.
+const fightConfirmOpen = ref(false)
+const fightWarning = computed(() => {
+  const g = selectedGym.value
+  const odds = estimate.value
+    ? ` Tes chances estimées sont de ${estimate.value.winProbability} %.`
+    : ''
+  return `Tu n'as qu'UNE tentative par semaine contre ${g?.name ?? 'cette arène'} :`
+    + ` en cas de défaite, il faudra attendre la semaine prochaine.${odds}`
+})
+
 async function fight() {
   const g = selectedGym.value
   if (!g || fighting.value) return
+  fightConfirmOpen.value = false
   fighting.value = true
   const themeColor = detail.value?.typeColor
   try {
@@ -169,11 +182,11 @@ async function train() {
       </div>
     </PPanel>
 
-    <UAlert
+    <PageError
       v-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <!-- Grille des arènes -->
@@ -360,7 +373,7 @@ async function train() {
             v-else
             :loading="fighting"
             :disabled="fighting"
-            @click="fight"
+            @click="fightConfirmOpen = true"
           >
             <UIcon
               name="i-lucide-swords"
@@ -371,6 +384,18 @@ async function train() {
         </template>
       </template>
     </UModal>
+
+    <!-- Le combat d'arène est limité à UNE tentative par semaine et son issue
+         est définitive : il ne doit pas pouvoir partir sur un clic accidentel. -->
+    <ConfirmDialog
+      v-model:open="fightConfirmOpen"
+      title="Lancer le combat d'arène ?"
+      :message="fightWarning"
+      confirm-label="Combattre"
+      danger
+      :loading="fighting"
+      @confirm="fight"
+    />
   </div>
 </template>
 

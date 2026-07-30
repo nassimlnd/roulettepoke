@@ -28,14 +28,30 @@ passe adverse manquante n'était pas une formalité. Traiter la liste comme des
 
 **Confirmés (vus à l'écran) :**
 
-- La page **Échanges** affiche « Connexion impossible. Vérifie ton réseau puis
-  réessaie. » sur une page vide — alors que le vrai motif est que le compte n'a
-  pas atteint le seuil de cartes. Aucun bouton de réessai, aucune jauge de
-  progression. Preuve : `artifacts/audit-2026/desktop-trades.png`.
-
 - La **navbar desktop** ne contient ni Ligue des 4, ni Tournoi, ni Échanges,
   alors que les trois pages existent et que le menu mobile les expose.
-  Preuve : même capture.
+  Preuve : `artifacts/audit-2026/desktop-trades.png` (navbar visible).
+  → **corrigé** (vague 1) : regroupement « Compétition » + source unique de
+  navigation `app/config/navigation.ts` + test anti-régression.
+
+- **Une page en échec de chargement était un cul-de-sac** : l'erreur s'affichait
+  dans une alerte, sans aucun moyen de réessayer, dans les 8 pages concernées.
+  → **corrigé** (vague 1) : `usePageData` expose `retry`, et le composant
+  `PageError` l'affiche partout.
+
+**Réfutés :**
+
+- ⚠️ **CORRECTION D'UNE ERREUR DE MA PART.** J'avais d'abord classé « la page
+  Échanges n'affiche jamais son écran de verrouillage » comme *confirmé*, en me
+  fiant à une capture montrant « Connexion impossible ». C'était faux : ce
+  message est celui d'une **absence de réponse**, pas d'un refus métier. Les
+  endpoints renvoient bien `200` avec
+  `{uniqueStandardCount: 46, minRequired: 120, eligible: false}`, et la page
+  affiche correctement « Échanges verrouillés — Il te faut 120 cartes standards
+  uniques (tu en as 46) » **avec la jauge 46/120**
+  (`artifacts/audit-2026/trades-verrou-reel.png`). La capture d'origine avait
+  été prise pendant un hoquet du serveur de développement. **L'écran de
+  verrouillage existe et il est bien fait.**
 
 
 **Réfutés :**

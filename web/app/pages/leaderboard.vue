@@ -45,7 +45,7 @@ async function switchTab(t: 'main' | 'cheaters') {
   }
 }
 
-const { loading, errorMsg } = usePageData(() => lb.ensureFresh())
+const { loading, errorMsg, retry } = usePageData(() => lb.ensureFresh())
 </script>
 
 <template>
@@ -88,11 +88,11 @@ const { loading, errorMsg } = usePageData(() => lb.ensureFresh())
       @update:model-value="switchTab"
     />
 
-    <UAlert
+    <PageError
       v-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <div class="lb__grid">

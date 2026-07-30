@@ -1,20 +1,21 @@
 <script setup lang="ts">
 // Navbar desktop : lit les stores, ne fetch jamais (résout C4). Style « jeu » :
 // marque Poké Ball, navigation en pilules (actif rouge), solde + cloche.
+import { PRIMARY_LINKS, COMPETITION_LINKS, SECONDARY_LINKS } from '~/config/navigation'
+
 const auth = useAuthStore()
 const hub = useHubStore()
 
-const links = [
-  { label: 'Jouer', to: '/play', icon: 'i-lucide-dices' },
-  { label: 'Collection', to: '/collection', icon: 'i-lucide-layout-grid' },
-  { label: 'Équipe', to: '/team', icon: 'i-lucide-users' },
-  { label: 'Arènes', to: '/gyms', icon: 'i-lucide-swords' },
-  { label: 'Aventure', to: '/spin', icon: 'i-lucide-compass' },
-  { label: 'Jackpot', to: '/slot-machine', icon: 'i-lucide-cherry' },
-  { label: 'Classement', to: '/leaderboard', icon: 'i-lucide-trophy' },
-  { label: 'Stats', to: '/stats', icon: 'i-lucide-chart-column' },
-  { label: 'Guide', to: '/rules', icon: 'i-lucide-book-open' }
-]
+const route = useRoute()
+
+// « Compétition » est un regroupement, pas une page : il s'allume dès qu'on est
+// sur l'une de ses destinations, sinon le joueur perd tout repère de position.
+const competitionActive = computed(() =>
+  COMPETITION_LINKS.some(l => route.path.startsWith(l.to)))
+
+// Un échange en attente de réponse doit se voir depuis n'importe quelle page —
+// il était jusqu'ici signalé uniquement dans le menu mobile.
+const competitionBadge = computed(() => hub.tradeActionsRequired)
 </script>
 
 <template>
@@ -33,12 +34,80 @@ const links = [
         aria-label="Navigation principale"
       >
         <NuxtLink
-          v-for="l in links"
+          v-for="l in PRIMARY_LINKS"
           :key="l.to"
           :to="l.to"
           class="nav__link"
           active-class="nav__link--on"
-          :aria-label="l.label"
+          :title="l.label"
+        >
+          <UIcon
+            :name="l.icon"
+            class="size-4"
+          />
+          <span class="nav__label">{{ l.label }}</span>
+        </NuxtLink>
+
+        <!-- Compétition : regroupe Arènes, Ligue, Tournoi, Classement, Échanges.
+             Ces trois dernières n'étaient atteignables par AUCUNE navigation
+             desktop avant ce regroupement. -->
+        <UPopover
+          mode="hover"
+          :content="{ align: 'center', sideOffset: 6 }"
+        >
+          <button
+            type="button"
+            class="nav__link nav__group"
+            :class="{ 'nav__link--on': competitionActive }"
+            aria-haspopup="menu"
+          >
+            <UIcon
+              name="i-lucide-swords"
+              class="size-4"
+            />
+            <span class="nav__label">Compétition</span>
+            <span
+              v-if="competitionBadge"
+              class="nav__dot"
+              :title="`${competitionBadge} échange(s) à traiter`"
+            />
+            <UIcon
+              name="i-lucide-chevron-down"
+              class="size-3 nav__caret"
+            />
+          </button>
+          <template #content>
+            <nav
+              class="grp"
+              aria-label="Compétition"
+            >
+              <NuxtLink
+                v-for="l in COMPETITION_LINKS"
+                :key="l.to"
+                :to="l.to"
+                class="grp__link"
+                active-class="grp__link--on"
+              >
+                <UIcon
+                  :name="l.icon"
+                  class="size-4"
+                />
+                {{ l.label }}
+                <span
+                  v-if="l.to === '/trades' && competitionBadge"
+                  class="grp__badge tabular"
+                >{{ competitionBadge }}</span>
+              </NuxtLink>
+            </nav>
+          </template>
+        </UPopover>
+
+        <NuxtLink
+          v-for="l in SECONDARY_LINKS"
+          :key="l.to"
+          :to="l.to"
+          class="nav__link"
+          active-class="nav__link--on"
           :title="l.label"
         >
           <UIcon
@@ -154,6 +223,42 @@ const links = [
   box-shadow: 0 2px 0 var(--color-poke-700);
 }
 .nav__link--on:hover { color: #fff; background: linear-gradient(150deg, #ee5a48, var(--color-poke-500)); }
+
+/* Regroupement « Compétition » : même pilule que les liens, plus un chevron. */
+.nav__group { border: none; cursor: pointer; font: inherit; }
+.nav__caret { opacity: .6; margin-left: -2px; }
+.nav__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-poke-500);
+  flex: none;
+}
+.nav__link--on .nav__dot { background: #fff; }
+
+.grp { display: flex; flex-direction: column; padding: 6px; min-width: 190px; }
+.grp__link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: .88rem;
+  color: var(--ui-text-toned);
+  transition: color .15s ease, background .15s ease;
+}
+.grp__link:hover { color: var(--ui-text-highlighted); background: var(--ui-bg-muted); }
+.grp__link--on { color: var(--color-poke-600); background: var(--color-poke-50); }
+.grp__badge {
+  margin-left: auto;
+  font-size: .7rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--color-poke-500);
+  border-radius: 99px;
+  padding: 1px 6px;
+}
 
 .navbar__right {
   margin-left: auto;

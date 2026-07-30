@@ -30,7 +30,7 @@ const fRarity = ref<string>(ALL)
 const fBiome = ref<string>(ALL)
 const fOwned = ref<'all' | 'owned' | 'missing'>('all')
 
-const { loading, errorMsg } = usePageData(() => collection.ensureFresh())
+const { loading, errorMsg, retry } = usePageData(() => collection.ensureFresh())
 
 // Cartes de l'onglet courant, AVANT filtres : sert de base à la progression
 // (« 40/151 obtenues » doit rester la progression réelle, pas celle du filtre).
@@ -217,11 +217,11 @@ function confirmMerge() {
       >{{ cards.length }} carte{{ cards.length > 1 ? 's' : '' }}</span>
     </div>
 
-    <UAlert
+    <PageError
       v-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <!-- Grille (classeur) -->
