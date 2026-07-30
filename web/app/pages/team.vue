@@ -31,7 +31,7 @@ const activeTypeTicket = ref<string | null>(null)
 const activeTypeLabel = computed(() =>
   activeTypeTicket.value ? (TYPE_SLUG_TO_NAME[activeTypeTicket.value] ?? activeTypeTicket.value) : null)
 
-const { loading, errorMsg } = usePageData(async () => {
+const { loading, errorMsg, retry } = usePageData(async () => {
   await team.ensureFresh()
   collection.ensureFresh().catch(() => {})
   inventoryRepo.get(useApi())
@@ -167,11 +167,11 @@ const canAffordRemove = computed(() => wallet.canAfford(REMOVE_COST))
       <span>Ticket Type actif : <b>{{ activeTypeLabel }}</b> — ton prochain tirage d'équipe sera filtré.</span>
     </div>
 
-    <UAlert
+    <PageError
       v-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <!-- Bandeau de réorganisation -->

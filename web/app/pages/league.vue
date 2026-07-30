@@ -119,7 +119,7 @@ async function refreshBalance() {
   }
 }
 
-const { loading, errorMsg } = usePageData(async () => {
+const { loading, errorMsg, retry } = usePageData(async () => {
   await Promise.all([league.ensureFresh(), gyms.ensureFresh().catch(() => {})])
   if (phase.value === 'ready') league.loadEstimate().catch(() => {})
 })
@@ -144,11 +144,11 @@ const { loading, errorMsg } = usePageData(async () => {
       <USkeleton class="h-24 w-full rounded-2xl" />
     </div>
 
-    <UAlert
+    <PageError
       v-else-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <template v-else>

@@ -2,6 +2,9 @@
 // Menu de navigation mobile (tiroir plein écran) : donne accès à TOUTES les
 // sections du jeu — la barre du bas n'en expose que 4. Ouvert depuis l'onglet
 // « Menu » de la BottomTabBar. Se ferme à la navigation, au backdrop, à Échap.
+import type { NavLink } from '~/config/navigation'
+import { PRIMARY_LINKS, COMPETITION_LINKS, SECONDARY_LINKS } from '~/config/navigation'
+
 const open = defineModel<boolean>('open', { default: false })
 
 const auth = useAuthStore()
@@ -13,32 +16,30 @@ const coins = computed(() => wallet.balance ?? auth.user?.coins ?? 0)
 const isDark = computed(() => colorMode.value === 'dark')
 
 interface MenuLink { to: string, icon: string, label: string, badge?: number }
+
+// Les destinations viennent de la source unique (~/config/navigation) : c'est
+// leur duplication ici qui avait laissé trois pages hors de la navbar desktop.
+// Le tiroir ne garde que ce qui lui est propre — libellés plus explicites qu'en
+// navbar (« Ouvrir un booster »), le badge, et Réglages.
+const LABEL_OVERRIDES: Record<string, string> = {
+  '/play': 'Ouvrir un booster',
+  '/team': 'Mon équipe',
+  '/stats': 'Statistiques'
+}
+const decorate = (links: readonly NavLink[]): MenuLink[] => links.map(l => ({
+  to: l.to,
+  icon: l.icon,
+  label: LABEL_OVERRIDES[l.to] ?? l.label,
+  ...(l.to === '/trades' ? { badge: hub.tradeActionsRequired } : {})
+}))
+
 const groups = computed<{ title: string, links: MenuLink[] }[]>(() => [
-  {
-    title: 'Jouer',
-    links: [
-      { to: '/play', icon: 'i-lucide-dices', label: 'Ouvrir un booster' },
-      { to: '/collection', icon: 'i-lucide-layout-grid', label: 'Collection' },
-      { to: '/team', icon: 'i-lucide-users', label: 'Mon équipe' },
-      { to: '/spin', icon: 'i-lucide-compass', label: 'Aventure' },
-      { to: '/slot-machine', icon: 'i-lucide-cherry', label: 'Jackpot' }
-    ]
-  },
-  {
-    title: 'Compétition',
-    links: [
-      { to: '/gyms', icon: 'i-lucide-swords', label: 'Arènes' },
-      { to: '/league', icon: 'i-lucide-crown', label: 'Ligue des 4' },
-      { to: '/tournament', icon: 'i-lucide-trophy', label: 'Tournoi' },
-      { to: '/leaderboard', icon: 'i-lucide-medal', label: 'Classement' },
-      { to: '/trades', icon: 'i-lucide-arrow-left-right', label: 'Échanges', badge: hub.tradeActionsRequired }
-    ]
-  },
+  { title: 'Jouer', links: decorate(PRIMARY_LINKS) },
+  { title: 'Compétition', links: decorate(COMPETITION_LINKS) },
   {
     title: 'Plus',
     links: [
-      { to: '/stats', icon: 'i-lucide-chart-column', label: 'Statistiques' },
-      { to: '/rules', icon: 'i-lucide-book-open', label: 'Guide' },
+      ...decorate(SECONDARY_LINKS),
       { to: '/settings', icon: 'i-lucide-settings', label: 'Réglages' }
     ]
   }

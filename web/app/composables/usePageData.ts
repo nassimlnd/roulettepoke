@@ -7,10 +7,17 @@
 //
 // `errorMsg` est un ref inscriptible : une page peut le réutiliser pour ses
 // propres erreurs (ex. échec d'une action secondaire).
+//
+// `retry` rejoue le chargement. Sans lui, un échec réseau transformait la page
+// en cul-de-sac : le joueur n'avait que le rechargement complet du navigateur
+// pour s'en sortir. À exposer systématiquement via <PageError>.
 export function usePageData(loader: () => Promise<void>) {
   const loading = ref(true)
   const errorMsg = ref('')
-  onMounted(async () => {
+
+  async function run() {
+    loading.value = true
+    errorMsg.value = ''
     try {
       await loader()
     } catch (err) {
@@ -18,6 +25,8 @@ export function usePageData(loader: () => Promise<void>) {
     } finally {
       loading.value = false
     }
-  })
-  return { loading, errorMsg }
+  }
+
+  onMounted(run)
+  return { loading, errorMsg, retry: run }
 }

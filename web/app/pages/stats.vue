@@ -62,7 +62,7 @@ const anecdotes = computed<{ icon: string, label: string, name: string, detail: 
   ]
 })
 
-const { loading, errorMsg } = usePageData(async () => {
+const { loading, errorMsg, retry } = usePageData(async () => {
   await stats.ensureFresh()
   const me = auth.user?.username
   const list = data.value?.players ?? []
@@ -91,11 +91,11 @@ const { loading, errorMsg } = usePageData(async () => {
       <USkeleton class="h-40 w-full rounded-2xl" />
     </div>
 
-    <UAlert
+    <PageError
       v-else-if="errorMsg"
-      color="error"
-      variant="soft"
-      :title="errorMsg"
+      :message="errorMsg"
+      :pending="loading"
+      @retry="retry"
     />
 
     <template v-else-if="data">
