@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { DomainGym, TeamMember } from '~/types/domain'
 import type { UUID } from '~/types/api'
-import { useGymStore, TOTAL_GYMS } from '~/stores/gyms'
+import { useGymStore } from '~/stores/gyms'
 import { useBattleStore } from '~/stores/battle'
+import { generationRegion } from '~/constants/generation'
 
-// Page Arènes — 8 arènes, badges, estimation + combat hebdo (1/sem), et
-// entraînement quotidien (+2 % de bonus d'arène). Confirmations là où l'action
-// est limitée (combat 1/semaine).
+// Page Arènes — le parcours de la région active (8 arènes), badges, estimation
+// + combat hebdo (1/sem), et entraînement quotidien (+2 % de bonus d'arène).
+// Confirmations là où l'action est limitée (combat 1/semaine).
 const gym = useGymStore()
+const region = computed(() => generationRegion(gym.circuitGeneration))
 const battle = useBattleStore()
 const toast = useToast()
 
@@ -119,19 +121,19 @@ async function train() {
     <header class="gyms__head">
       <div class="gyms__title-wrap">
         <h1 class="gyms__title font-display">
-          Arènes
+          Arènes de {{ region }}
         </h1>
         <div class="gyms__progress">
           <div class="gbar">
-            <i :style="{ width: (gym.badgeCount / TOTAL_GYMS * 100) + '%' }" />
+            <i :style="{ width: (gym.totalGyms ? gym.badgeCount / gym.totalGyms * 100 : 0) + '%' }" />
           </div>
-          <span class="tabular">{{ gym.badgeCount }}/{{ TOTAL_GYMS }} badges</span>
+          <span class="tabular">{{ gym.badgeCount }}/{{ gym.totalGyms }} badges</span>
         </div>
       </div>
       <CoinBalance />
     </header>
 
-    <!-- Champion de Kanto -->
+    <!-- Champion du circuit en cours (Kanto ou Johto) -->
     <div
       v-if="gym.isChampion"
       class="champ"
@@ -139,10 +141,11 @@ async function train() {
       <span class="champ__emoji">🏆</span>
       <div>
         <p class="champ__title font-display">
-          Champion de Kanto !
+          Champion de {{ region }} !
         </p>
         <p class="champ__sub">
-          Les 8 badges sont à toi. Ton bonus de connexion est au maximum.
+          Les {{ gym.totalGyms }} badges sont à toi. Ton bonus de connexion
+          {{ region }} est au maximum.
         </p>
       </div>
     </div>
@@ -195,7 +198,7 @@ async function train() {
       class="grid"
     >
       <USkeleton
-        v-for="i in TOTAL_GYMS"
+        v-for="i in (gym.totalGyms || 8)"
         :key="i"
         class="h-52 rounded-2xl"
       />

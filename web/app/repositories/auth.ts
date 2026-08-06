@@ -4,7 +4,10 @@ import type { Api } from './_client'
 import { normalizeCard } from './normalize'
 
 export const authRepo = {
-  login: (api: Api, body: { email: string, password: string }) =>
+  // `identifier` accepte l'e-mail OU le pseudo. Le champ s'appelait `email`
+  // jusqu'en v3 ; l'envoyer sous cet ancien nom fait répondre au serveur
+  // « Identifiant et mot de passe requis » et la connexion échoue en entier.
+  login: (api: Api, body: { identifier: string, password: string }) =>
     api<AuthResponse>('/auth/login', { method: 'POST', body }),
   register: (api: Api, body: { username: string, email: string, password: string }) =>
     api<AuthResponse>('/auth/register', { method: 'POST', body }),
@@ -18,5 +21,8 @@ export const authRepo = {
     return cards.map(normalizeCard)
   },
   setAvatar: (api: Api, cardId: UUID) =>
-    api<{ avatar_url: string, avatar_is_alt: boolean }>('/auth/avatar', { method: 'PUT', body: { cardId } })
+    api<{ avatar_url: string, avatar_is_alt: boolean }>('/auth/avatar', { method: 'PUT', body: { cardId } }),
+  // Bascule Kanto ↔ Johto. PUT uniquement : GET et POST répondent 404.
+  setActiveGeneration: (api: Api, generation: number) =>
+    api<{ active_generation: number }>('/auth/active-generation', { method: 'PUT', body: { generation } })
 }

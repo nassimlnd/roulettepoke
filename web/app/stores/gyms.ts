@@ -2,11 +2,11 @@ import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome } from '~/types/domain'
 import type { TrainingStatus, UUID } from '~/types/api'
+import type { Generation } from '~/constants/generation'
 import { gymRepo, trainingRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
 const TTL = CACHE_TTL_SHORT
-export const TOTAL_GYMS = 8
 
 export const useGymStore = defineStore('gyms', {
   state: () => ({
@@ -18,11 +18,33 @@ export const useGymStore = defineStore('gyms', {
   }),
 
   getters: {
-    sorted: state => [...state.gyms].sort((a, b) => a.order - b.order),
-    badgeCount: state => state.gyms.filter(g => g.hasBadge).length,
+    // /gym renvoie les 16 arènes des deux régions d'un bloc. Le joueur n'en
+    // parcourt qu'une à la fois : celle de sa génération active. Tout ce qui
+    // suit — progression, badges, statut de champion — est donc borné au
+    // circuit courant, comme dans le jeu d'origine.
+    circuitGeneration: (): Generation => useWalletStore().activeGeneration,
+
+    sorted(): DomainGym[] {
+      return this.gyms
+        .filter(g => g.generation === this.circuitGeneration)
+        .sort((a, b) => a.order - b.order)
+    },
+
+    /** Nombre d'arènes du circuit courant (8, mais lu depuis l'API). */
+    totalGyms(): number {
+      return this.sorted.length
+    },
+
+    badgeCount(): number {
+      return this.sorted.filter(g => g.hasBadge).length
+    },
+
     isChampion(): boolean {
-      return this.gyms.length > 0 && this.gyms.every(g => g.hasBadge)
-    }
+      return this.sorted.length > 0 && this.sorted.every(g => g.hasBadge)
+    },
+
+    /** Johto n'existe que depuis la v4 : ne proposer la bascule que s'il est là. */
+    hasSecondCircuit: state => state.gyms.some(g => g.generation === 2)
   },
 
   actions: {
@@ -78,11 +100,8 @@ export const useGymStore = defineStore('gyms', {
       return res
     },
 
-    async refreshBalance() {
-      try {
-        const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-        if (user) useWalletStore().reconcile(user.coins, 'gym')
-      } catch { /* silencieux */ }
+    refreshBalance() {
+      return useWalletStore().refreshFromServer('gym')
     }
   }
 })

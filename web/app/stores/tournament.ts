@@ -41,11 +41,8 @@ export const useTournamentStore = defineStore('tournament', {
       await this.ensureFresh(true)
     },
 
-    async refreshBalance() {
-      try {
-        const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-        if (user) useWalletStore().reconcile(user.coins, 'tournament')
-      } catch { /* silencieux */ }
+    refreshBalance() {
+      return useWalletStore().refreshFromServer('tournament')
     }
   }
 })

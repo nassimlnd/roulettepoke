@@ -1,5 +1,5 @@
 // Tokens visuels de la carte, repris de la direction « Mochidex » (douce,
-// pastel, arrondie) et adaptés à nos 16 types Kanto + 4 raretés + shiny.
+// pastel, arrondie) et adaptés aux 18 types + 4 raretés + shiny.
 // Purement présentation : aucune donnée métier ici.
 
 import type { PokeType } from '~/types/api'
@@ -24,7 +24,11 @@ export const TYPE_GRADIENT: Record<PokeType, TypeGradient> = {
   Vol: { c1: '#d2e2f5', c2: '#9db9e0' },
   Dragon: { c1: '#c3b0f7', c2: '#8a6ce0' },
   Spectre: { c1: '#c6b6e2', c2: '#7d68a8' },
-  Fée: { c1: '#ffd4ea', c2: '#f09ac8' }
+  Fée: { c1: '#ffd4ea', c2: '#f09ac8' },
+  // Arrivés avec Johto. Acier reste froid et minéral sans virer au gris mort ;
+  // Ténèbres assombrit le brun de Sol pour s'en distinguer nettement.
+  Acier: { c1: '#dfe4ee', c2: '#9aa5bd' },
+  Ténèbres: { c1: '#b9a898', c2: '#7d6553' }
 }
 
 export interface RarityMeta {

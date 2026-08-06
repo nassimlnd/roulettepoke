@@ -20,7 +20,7 @@ const THEME_OPTS = [
 ] as const
 
 const user = computed(() => auth.user)
-const coins = computed(() => wallet.balance ?? user.value?.coins ?? 0)
+const coins = computed(() => wallet.balance ?? 0)
 const charme = computed(() => user.value?.charme_chroma_rolls ?? 0)
 
 // ─── Avatar ─────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BASE_ROLL_COST } from '~/stores/roll'
-import { DAILY_BONUS_BASE, DAILY_BONUS_PER_BADGE } from '~/constants/game'
+import { DAILY_BONUS_BASE, DAILY_BONUS_PER_BADGE, GYMS_PER_REGION } from '~/constants/game'
 
 // Le Guide est accessible sans connexion ; les coûts de biome sont lus en direct
 // depuis l'API quand on est connecté (résout C6 : plus de divergence Guide/app).
@@ -59,8 +59,8 @@ const sections = [
     title: 'Équipe & arènes',
     items: [
       'Constitue une équipe de 6 Pokémon via la roulette d\'équipe — la carte tirée quitte définitivement ta collection (confirmation demandée).',
-      '8 arènes à battre (1 tentative/semaine) pour collectionner les badges et booster ton bonus de connexion quotidien.',
-      `Bonus de connexion : ${DAILY_BONUS_BASE} 🪙 par jour, + ${DAILY_BONUS_PER_BADGE} 🪙 par badge d'arène — soit ${DAILY_BONUS_BASE + 8 * DAILY_BONUS_PER_BADGE} 🪙/jour avec les 8 badges.`,
+      'Deux parcours indépendants de 8 arènes, un par région (Kanto et Johto). Une tentative par semaine et par arène.',
+      `Bonus de connexion : ${DAILY_BONUS_BASE} 🪙 par jour, + ${DAILY_BONUS_PER_BADGE} 🪙 par badge de ta région active — soit ${DAILY_BONUS_BASE + GYMS_PER_REGION * DAILY_BONUS_PER_BADGE} 🪙/jour une fois les ${GYMS_PER_REGION} badges de la région obtenus.`,
       'Un entraînement quotidien gratuit augmente tes chances en arène.'
     ]
   }

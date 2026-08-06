@@ -7,11 +7,20 @@ import type {
   DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome
 } from '~/types/domain'
 import { normalizeBattleRound, normalizeChampionMon } from './battle'
+import { asGeneration } from '~/constants/generation'
+
+// Les arènes sont numérotées 1..16 en continu (Kanto 1-8, Johto 9-16). Le
+// joueur, lui, parcourt deux circuits de 8 : on ramène donc le rang dans son
+// propre circuit, sans quoi Johto s'afficherait « Arène 9 » à « Arène 16 ».
+const GYMS_PER_CIRCUIT = 8
 
 export function normalizeGym(g: WireGym): DomainGym {
+  const generation = asGeneration(g.generation)
   return {
     id: g.id,
     order: g.order_num,
+    generation,
+    orderInCircuit: g.order_num - (generation - 1) * GYMS_PER_CIRCUIT,
     name: g.name,
     type: g.type,
     badgeName: g.badge_name,

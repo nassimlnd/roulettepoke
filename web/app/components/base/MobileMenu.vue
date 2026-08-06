@@ -4,6 +4,7 @@
 // « Menu » de la BottomTabBar. Se ferme à la navigation, au backdrop, à Échap.
 import type { NavLink } from '~/config/navigation'
 import { PRIMARY_LINKS, COMPETITION_LINKS, SECONDARY_LINKS } from '~/config/navigation'
+import { generationRegion } from '~/constants/generation'
 
 const open = defineModel<boolean>('open', { default: false })
 
@@ -12,7 +13,8 @@ const wallet = useWalletStore()
 const hub = useHubStore()
 const colorMode = useColorMode()
 
-const coins = computed(() => wallet.balance ?? auth.user?.coins ?? 0)
+const coins = computed(() => wallet.balance ?? 0)
+const region = computed(() => generationRegion(wallet.activeGeneration))
 const isDark = computed(() => colorMode.value === 'dark')
 
 interface MenuLink { to: string, icon: string, label: string, badge?: number }
@@ -84,7 +86,7 @@ function onLogout() {
                 name="i-lucide-coins"
                 class="size-4"
               />
-              {{ coins.toLocaleString('fr-FR') }} pièces
+              {{ coins.toLocaleString('fr-FR') }} pièces · {{ region }}
             </p>
           </div>
           <UIcon
@@ -92,6 +94,12 @@ function onLogout() {
             class="mm__chev size-5"
           />
         </NuxtLink>
+
+        <!-- Sélecteur de région : hors du lien Profil, qui ne peut pas
+             contenir un contrôle interactif. -->
+        <div class="mm__gen">
+          <GenerationSwitch />
+        </div>
 
         <!-- Sections -->
         <nav class="mm__nav">
@@ -180,6 +188,7 @@ function onLogout() {
 .mm__profile:active { background: var(--ui-bg-accented); }
 .mm__id { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .mm__name { font-weight: 700; font-size: 1.05rem; color: var(--ui-text-highlighted); line-height: 1.1; }
+.mm__gen { display: flex; justify-content: center; padding: 4px 0 2px; }
 .mm__coins { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 700; color: var(--ui-text-muted); }
 .mm__coins :deep(svg) { color: #d69828; }
 .mm__chev { color: var(--ui-text-dimmed); flex: none; }

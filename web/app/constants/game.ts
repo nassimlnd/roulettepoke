@@ -15,5 +15,12 @@ export const DEFAULT_PREVIEW_COUNT = 19
 // L'API ne renvoie PAS le montant crédité (/auth/me crédite par effet de bord et
 // ne retourne que le solde final) — mais la formule est déterministe, donc le
 // front peut l'annoncer exactement à partir du nombre de badges.
+// La prime porte sur les badges de la RÉGION ACTIVE, pas sur le total des deux
+// parcours : le bonus plafonne donc à 100 + 8×10 dans chaque région.
 export const DAILY_BONUS_BASE = 100
 export const DAILY_BONUS_PER_BADGE = 10
+
+// Arènes par région. Le nombre réel affiché vient toujours de l'API (le store
+// compte le parcours reçu) ; cette constante ne sert qu'aux textes du Guide,
+// qui doivent rester lisibles hors connexion.
+export const GYMS_PER_REGION = 8

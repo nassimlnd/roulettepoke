@@ -64,11 +64,8 @@ export const useTeamStore = defineStore('team', {
       await this.ensureFresh(true)
     },
 
-    async refreshBalance() {
-      try {
-        const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-        if (user) useWalletStore().reconcile(user.coins, 'team')
-      } catch { /* silencieux */ }
+    refreshBalance() {
+      return useWalletStore().refreshFromServer('team')
     }
   }
 })
