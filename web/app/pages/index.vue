@@ -17,7 +17,8 @@ const loginTo = computed(() => (auth.isAuthenticated ? ROUTES.home : ROUTES.logi
 
 type Sample = Pick<DomainOwnedCard, 'num' | 'name' | 'type' | 'rarity' | 'isShiny' | 'biome' | 'level' | 'imageUrl' | 'owned' | 'quantity'>
 function toCard(c: Sample): DomainOwnedCard {
-  return { id: c.name + (c.isShiny ? '-s' : ''), parentCardId: '', standardId: null, obtainedAt: null, ...c }
+  // Échantillons de vitrine : tous issus de Kanto.
+  return { id: c.name + (c.isShiny ? '-s' : ''), generation: 1, parentCardId: '', standardId: null, obtainedAt: null, ...c }
 }
 
 const heroCard = toCard({ num: 144, name: 'Artikodin', type: 'Glace', rarity: 'Légendaire', isShiny: false, biome: 'Légendaire', level: 1, imageUrl: '/images/articuno.webp', owned: true, quantity: 1 })

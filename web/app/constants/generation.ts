@@ -24,6 +24,22 @@ export const GENERATIONS: readonly GenerationMeta[] = [
   { id: 2, region: 'Johto', dexFrom: 152, dexTo: 251, teamScope: 'gen2', icon: 'i-lucide-trees' }
 ]
 
+// Trois équipes indépendantes de 6 Pokémon, désignées par leur « portée ».
+// Valeurs vérifiées contre l'API : tout autre libellé (`kanto`, `johto`, `1`)
+// est rejeté par « Portée d'équipe invalide ».
+export type TeamScope = 'global' | 'gen1' | 'gen2'
+
+export const TEAM_SCOPES: readonly { value: TeamScope, label: string, hint: string }[] = [
+  { value: 'global', label: 'Tournoi', hint: 'Engagée au Tournoi et à la Ligue des 4.' },
+  { value: 'gen1', label: 'Kanto', hint: 'Engagée dans les arènes de Kanto.' },
+  { value: 'gen2', label: 'Johto', hint: 'Engagée dans les arènes de Johto.' }
+]
+
+/** Portée d'équipe correspondant à une région (les arènes de cette région). */
+export function teamScopeOf(g: Generation): TeamScope {
+  return generationMeta(g).teamScope
+}
+
 export function generationMeta(g: Generation): GenerationMeta {
   return GENERATIONS.find(x => x.id === g) ?? GENERATIONS[0]!
 }

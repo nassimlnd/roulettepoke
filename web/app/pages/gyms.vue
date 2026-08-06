@@ -288,6 +288,9 @@ async function train() {
               </ul>
             </details>
           </div>
+          <!-- Chaque région engage SA propre équipe : dire laquelle, sinon le
+               joueur qui a déjà une équipe de Tournoi ne comprend pas le
+               message. -->
           <p
             v-else-if="teamEmpty"
             class="detail__empty"
@@ -296,7 +299,14 @@ async function train() {
               name="i-lucide-triangle-alert"
               class="size-4"
             />
-            Compose une équipe pour estimer et défier cette arène.
+            <span>
+              Ton équipe de {{ region }} est vide. Compose-la pour estimer et
+              défier cette arène —
+              <NuxtLink
+                to="/team"
+                class="detail__link"
+              >aller à l'équipe</NuxtLink>.
+            </span>
           </p>
 
           <!-- Types recommandés -->
@@ -499,6 +509,7 @@ async function train() {
 }
 .detail__type-img { width: 30px; height: 20px; object-fit: contain; }
 .detail__type b { color: var(--tc); }
+.detail__link { text-decoration: underline; font-weight: 700; }
 .detail__empty {
   display: flex;
   align-items: center;

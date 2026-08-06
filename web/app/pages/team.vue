@@ -5,6 +5,7 @@ import { useTeamStore, TEAM_MAX, REMOVE_COST } from '~/stores/team'
 import { inventoryRepo } from '~/repositories'
 import { TYPE_SLUG_TO_NAME } from '~/utils/poke'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
+import { TEAM_SCOPES, type TeamScope } from '~/constants/generation'
 
 // Page Équipe — 6 slots. Ajout par « roulette d'équipe » (destructif : la carte
 // tirée quitte la collection), retrait à -10 🪙 (définitif), réorganisation par
@@ -133,6 +134,23 @@ function confirmClear() {
 }
 
 const canAffordRemove = computed(() => wallet.canAfford(REMOVE_COST))
+
+// ─── Portée (Tournoi / Kanto / Johto) ─────────────────────────────────────────
+const SCOPE_OPTIONS = TEAM_SCOPES.map(s => ({ value: s.value, label: s.label }))
+const scopeHint = computed(() =>
+  TEAM_SCOPES.find(s => s.value === team.scope)?.hint ?? '')
+
+async function onScopeChange(value: string | number) {
+  // Changer d'équipe annule une réorganisation en cours : les slots comparés
+  // n'appartiennent plus au même roster.
+  reorganizing.value = false
+  swapSel.value = null
+  try {
+    await team.setScope(value as TeamScope)
+  } catch (err) {
+    toast.add({ title: humanizeError(err), color: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -150,6 +168,20 @@ const canAffordRemove = computed(() => wallet.canAfford(REMOVE_COST))
       </div>
       <CoinBalance />
     </header>
+    <!-- Trois équipes indépendantes : l'onglet choisit celle qu'on compose. -->
+    <div class="team__scopes">
+      <PSegmented
+        :model-value="team.scope"
+        :options="SCOPE_OPTIONS"
+        a11y="radio"
+        aria-label="Choisir l'équipe à composer"
+        @update:model-value="onScopeChange"
+      />
+      <p class="team__hint">
+        {{ scopeHint }}
+      </p>
+    </div>
+
     <p class="team__lead">
       Compose ton équipe à la roulette. Chaque Pokémon tiré quitte
       définitivement ta collection — choisis-les avec soin.
@@ -454,6 +486,17 @@ const canAffordRemove = computed(() => wallet.canAfford(REMOVE_COST))
   background: linear-gradient(150deg, #8fd6a8, #5bbf82);
   border-color: transparent;
   box-shadow: 0 2px 0 #3f9e66;
+}
+.team__scopes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.team__hint {
+  font-size: .84rem;
+  color: var(--ui-text-dimmed);
+  margin: 0;
 }
 .team__lead {
   font-weight: 600;

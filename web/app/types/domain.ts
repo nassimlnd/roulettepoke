@@ -12,6 +12,7 @@ export type { RealRarity, TradeStatus, TournamentStatus }
 export interface DomainCard {
   id: UUID
   num: number
+  generation: Generation
   name: string
   imageUrl: string
   rarity: RealRarity

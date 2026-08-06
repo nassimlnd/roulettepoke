@@ -2,6 +2,7 @@
 import type { DomainOwnedCard } from '~/types/domain'
 import { SELL_PRICE } from '~/utils/poke'
 import { SHINY_PITY_DENOMINATOR, MERGE_COST } from '~/constants/game'
+import { GENERATIONS } from '~/constants/generation'
 
 const collection = useCollectionStore()
 const toast = useToast()
@@ -15,6 +16,15 @@ const OWNERSHIP = [
   { value: 'all', label: 'Toutes' },
   { value: 'owned', label: 'Obtenues' },
   { value: 'missing', label: 'Manquantes' }
+] as const
+
+// La région est un axe de premier plan (502 cartes réparties sur deux Pokédex),
+// pas un critère parmi quatre : elle mérite un segment visible plutôt qu'un
+// menu déroulant de plus. Construit depuis GENERATIONS pour suivre l'ajout
+// d'une future région sans retoucher la page.
+const REGIONS = [
+  { value: 'all', label: 'Toutes' },
+  ...GENERATIONS.map(g => ({ value: String(g.id), label: g.region }))
 ] as const
 
 const tab = ref<'standard' | 'shiny'>('standard')
@@ -32,10 +42,18 @@ const fOwned = ref<'all' | 'owned' | 'missing'>('all')
 
 const { loading, errorMsg, retry } = usePageData(() => collection.ensureFresh())
 
-// Cartes de l'onglet courant, AVANT filtres : sert de base à la progression
+// La région n'est pas un filtre mais une PORTÉE, au même titre que l'onglet :
+// le jeu compte deux Pokédex distincts (151 à Kanto, 100 à Johto) et c'est leur
+// complétion séparée qui débloque le bonus shiny permanent. Elle entre donc
+// dans le décompte de progression, là où type/rareté/biome n'y touchent pas.
+const fRegion = ref<string>('all')
+
+// Cartes de la portée courante, AVANT filtres : sert de base à la progression
 // (« 40/151 obtenues » doit rester la progression réelle, pas celle du filtre).
 const tabCards = computed(() =>
-  collection.cards.filter(c => (tab.value === 'shiny' ? c.isShiny : !c.isShiny)))
+  collection.cards.filter(c =>
+    (tab.value === 'shiny' ? c.isShiny : !c.isShiny)
+    && (fRegion.value === 'all' || String(c.generation) === fRegion.value)))
 
 // Options dérivées des données réelles (et non d'une liste codée en dur) : ce
 // qui est proposé existe forcément dans la collection.
@@ -68,6 +86,13 @@ const cards = computed(() => {
     return [...list].sort((a, b) => (b.quantity) - (a.quantity))
   }
   return [...list].sort((a, b) => a.num - b.num)
+})
+
+// Nommer la région dans le décompte : « 40 / 151 » seul ne dit pas de quel
+// Pokédex on parle quand il y en a deux.
+const scopeLabel = computed(() => {
+  const r = REGIONS.find(x => x.value === fRegion.value)
+  return r && r.value !== 'all' ? ` à ${r.label}` : ''
 })
 
 const ownedCount = computed(() => tabCards.value.filter(c => c.owned).length)
@@ -136,7 +161,7 @@ function confirmMerge() {
           Ma collection
         </h1>
         <div class="col__progress">
-          <span class="tabular">{{ ownedCount }} / {{ total }} obtenues</span>
+          <span class="tabular">{{ ownedCount }} / {{ total }} obtenues{{ scopeLabel }}</span>
           <div class="bar">
             <i :style="{ width: progress + '%' }" />
           </div>
@@ -152,6 +177,13 @@ function confirmMerge() {
         v-model="tab"
         :options="TABS"
         aria-label="Filtrer la collection"
+      />
+      <PSegmented
+        v-model="fRegion"
+        :options="REGIONS"
+        size="sm"
+        a11y="radio"
+        aria-label="Filtrer par région"
       />
       <button
         class="toggle"
