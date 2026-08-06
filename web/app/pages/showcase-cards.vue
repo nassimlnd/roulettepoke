@@ -8,7 +8,8 @@ definePageMeta({ public: true, layout: false })
 type Sample = Pick<DomainOwnedCard, 'num' | 'name' | 'type' | 'rarity' | 'isShiny' | 'biome' | 'level' | 'imageUrl' | 'owned' | 'quantity'>
 
 function toCard(c: Sample): DomainOwnedCard {
-  return { id: c.name, parentCardId: '', standardId: null, obtainedAt: null, ...c }
+  // Échantillons de vitrine : tous issus de Kanto.
+  return { id: c.name, generation: 1, parentCardId: '', standardId: null, obtainedAt: null, ...c }
 }
 
 const heroes: Sample[] = [

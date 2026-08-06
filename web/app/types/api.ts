@@ -37,6 +37,8 @@ export interface WireCard {
   is_alt: boolean
   biome: Biome
   type: PokeType
+  /** 1 (Kanto) ou 2 (Johto) — absent avant la v4. */
+  generation?: number
   base_weight?: number
   biome_id?: UUID
   standard_id?: UUID | null
