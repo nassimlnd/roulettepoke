@@ -52,7 +52,9 @@
   --color-coin: #f6c453;
   --color-coin-deep: #e0a92e;
 
-  /* Types Pokémon (16) — usages hors carte (la carte utilise cardTheme.ts) */
+  /* Types Pokémon (18) — usages hors carte (la carte utilise cardTheme.ts).
+     Acier et Ténèbres sont arrivés avec Johto (v4) : sans eux, les cartes
+     concernées retombaient sur le beige neutre du fallback. */
   --color-type-normal: #a8a77a;
   --color-type-feu: #ee8130;
   --color-type-eau: #6390f0;
@@ -69,6 +71,8 @@
   --color-type-spectre: #735797;
   --color-type-dragon: #6f35fc;
   --color-type-fee: #ee99ac;
+  --color-type-acier: #b7b7ce;
+  --color-type-tenebres: #705746;
 
   /* Biomes (9) */
   --color-biome-foret: #4caf50;

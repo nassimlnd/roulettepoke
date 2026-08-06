@@ -295,11 +295,8 @@ function refreshCollection() {
   collection.invalidate()
   collection.ensureFresh(true).catch(() => {})
 }
-async function refreshBalance() {
-  try {
-    const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-    if (user) wallet.reconcile(user.coins, 'roll-refresh')
-  } catch { /* silencieux */ }
+function refreshBalance() {
+  return wallet.refreshFromServer('roll-refresh')
 }
 
 onMounted(() => {

@@ -20,7 +20,8 @@ const status = computed(() => {
     :style="{ '--type': typeColor }"
   >
     <div class="tile__head">
-      <span class="tile__order">Arène {{ gym.order }}</span>
+      <!-- Rang dans SON circuit : Johto est numéroté 9-16 côté API. -->
+      <span class="tile__order">Arène {{ gym.orderInCircuit }}</span>
       <span class="tile__type">{{ gym.type }}</span>
     </div>
 

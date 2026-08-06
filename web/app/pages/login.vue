@@ -5,13 +5,15 @@ import { ROUTES } from '~/constants/routes'
 
 definePageMeta({ layout: 'auth', public: true })
 
+// Le serveur accepte l'e-mail OU le pseudo sur un unique champ `identifier` —
+// valider une adresse e-mail ici rejetterait les connexions par pseudo.
 const schema = z.object({
-  email: z.string().email('Adresse e-mail invalide'),
+  identifier: z.string().min(1, 'Identifiant requis'),
   password: z.string().min(1, 'Mot de passe requis')
 })
 type Schema = z.output<typeof schema>
 
-const state = reactive({ email: '', password: '' })
+const state = reactive({ identifier: '', password: '' })
 const loading = ref(false)
 const error = ref('')
 
@@ -22,7 +24,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   loading.value = true
   error.value = ''
   try {
-    await auth.login(event.data.email, event.data.password)
+    await auth.login(event.data.identifier, event.data.password)
     const next = typeof route.query.next === 'string' ? route.query.next : ROUTES.home
     await navigateTo(next)
   } catch (err) {
@@ -45,17 +47,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       @submit="onSubmit"
     >
       <UFormField
-        label="Adresse e-mail"
-        name="email"
+        label="E-mail ou nom d'utilisateur"
+        name="identifier"
       >
         <UInput
-          v-model="state.email"
-          type="email"
-          autocomplete="email"
-          icon="i-lucide-mail"
+          v-model="state.identifier"
+          type="text"
+          autocomplete="username"
+          icon="i-lucide-user"
           size="lg"
           class="w-full"
-          placeholder="toi@exemple.fr"
+          placeholder="toi@exemple.fr ou ton pseudo"
         />
       </UFormField>
       <UFormField

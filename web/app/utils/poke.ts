@@ -13,17 +13,25 @@ export const BIOME_SLUG_TO_NAME: Record<string, Biome> = {
   ville: 'Ville', plaines: 'Plaines', desert: 'Désert', cave: 'Cave', tundra: 'Tundra'
 }
 
-export const TYPE_SLUG_TO_NAME: Record<string, PokeType> = {
-  eau: 'Eau', normal: 'Normal', poison: 'Poison', feu: 'Feu', plante: 'Plante',
-  insecte: 'Insecte', electrik: 'Électrik', roche: 'Roche', psy: 'Psy', sol: 'Sol',
-  combat: 'Combat', vol: 'Vol', dragon: 'Dragon', spectre: 'Spectre', glace: 'Glace'
-}
-
 // Slug CSS d'un type (pour --color-type-*), sans accent ni majuscule.
 export function typeSlug(type: PokeType): string {
   return type.toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
+
+// Les 18 types du jeu. `satisfies` force l'exhaustivité : oublier un membre de
+// l'union PokeType ici devient une erreur de compilation.
+export const POKE_TYPES = [
+  'Acier', 'Combat', 'Dragon', 'Eau', 'Feu', 'Fée', 'Glace', 'Insecte',
+  'Normal', 'Plante', 'Poison', 'Psy', 'Roche', 'Sol', 'Spectre',
+  'Ténèbres', 'Vol', 'Électrik'
+] as const satisfies readonly PokeType[]
+
+// Dérivée de la liste ci-dessus plutôt qu'écrite à la main : la table
+// manuscrite avait silencieusement dérivé (ni « Fée », ni les deux types de
+// Johto), et les tickets de type concernés s'affichaient sous leur slug brut.
+export const TYPE_SLUG_TO_NAME: Record<string, PokeType>
+  = Object.fromEntries(POKE_TYPES.map(t => [typeSlug(t), t]))
 
 export function biomeSlug(biome: Biome): string {
   return BIOME_SLUGS[biome] ?? biome.toLowerCase()

@@ -10,11 +10,17 @@ export type { UUID, ISODate, Rarity, Biome, PokeType, SlotSymbol, SlotLine }
 
 export interface ApiError { error: string }
 
+// Depuis la v4 le porte-monnaie unique `coins` a disparu au profit d'une bourse
+// par génération, plus la génération active du joueur. Les endpoints de jeu
+// (`/roll`, `/training/status`, vente…) continuent, eux, de renvoyer un `coins`
+// scalaire : c'est le solde de la génération active.
 export interface WireUser {
   id: UUID
   username: string
   email: string
-  coins: number
+  coins_gen1: number
+  coins_gen2: number
+  active_generation: number
   avatar_url: string | null
   avatar_is_alt: boolean
   charme_chroma_rolls: number
@@ -94,12 +100,17 @@ export interface WireInventory {
 export interface WireTeamMember {
   team_entry_id: UUID
   position: number
-  id: UUID
+  /** v4 : la carte est désormais identifiée par `card_id` (auparavant `id`). */
+  card_id: UUID
   name: string
   type: PokeType
   rarity: Rarity
   image_url: string
   type_image_url?: string
+  generation?: number
+  level?: number
+  added_at?: ISODate
+  type_color?: string
 }
 
 export interface WireBadge {
@@ -112,7 +123,9 @@ export interface WireBadge {
 
 export interface WireGym {
   id: UUID
+  /** Numéro global 1..16 : Kanto occupe 1-8, Johto 9-16. */
   order_num: number
+  generation?: number
   name: string
   type: PokeType
   badge_name: string

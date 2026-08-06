@@ -35,9 +35,7 @@ export const useRollStore = defineStore('roll', {
         const outcome = await rollRepo.perform(useApi(), biome)
         // Un événement « coins » recrédite ; on confirme le débit dans tous les cas.
         wallet.confirm(ref)
-        if (outcome.kind === 'coins' && wallet.coins !== null) {
-          wallet.coins += outcome.amount
-        }
+        if (outcome.kind === 'coins') wallet.credit(outcome.amount, 'roll-event')
         return outcome
       } catch (err) {
         wallet.rollback(ref)
@@ -63,9 +61,7 @@ export const useRollStore = defineStore('roll', {
         try {
           const outcome = await rollRepo.perform(useApi(), biome)
           wallet.confirm(ref)
-          if (outcome.kind === 'coins' && wallet.coins !== null) {
-            wallet.coins += outcome.amount
-          }
+          if (outcome.kind === 'coins') wallet.credit(outcome.amount, 'roll-event')
           outcomes.push(outcome)
         } catch (err) {
           wallet.rollback(ref)

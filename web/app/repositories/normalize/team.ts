@@ -8,7 +8,7 @@ export function normalizeTeamMember(m: WireTeamMember): TeamMember {
   return {
     teamEntryId: m.team_entry_id,
     position: m.position,
-    cardId: m.id,
+    cardId: m.card_id,
     name: m.name,
     type: m.type,
     rarity: realRarity(m.rarity),

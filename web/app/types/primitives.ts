@@ -13,10 +13,11 @@ export type RealRarity = 'Commun' | 'Rare' | 'Épique' | 'Légendaire'
 export type Biome
   = | 'Lac' | 'Mer' | 'Forêt' | 'Montagnes' | 'Ville' | 'Plaines'
     | 'Désert' | 'Cave' | 'Tundra' | 'Légendaire'
+// 18 types depuis la v4 : Acier et Ténèbres accompagnent l'arrivée de Johto.
 export type PokeType
-  = | 'Combat' | 'Dragon' | 'Eau' | 'Feu' | 'Fée' | 'Glace' | 'Insecte'
-    | 'Normal' | 'Plante' | 'Poison' | 'Psy' | 'Roche' | 'Sol'
-    | 'Spectre' | 'Vol' | 'Électrik'
+  = | 'Acier' | 'Combat' | 'Dragon' | 'Eau' | 'Feu' | 'Fée' | 'Glace'
+    | 'Insecte' | 'Normal' | 'Plante' | 'Poison' | 'Psy' | 'Roche' | 'Sol'
+    | 'Spectre' | 'Ténèbres' | 'Vol' | 'Électrik'
 
 // Symboles et lignes de la machine à sous — partagés wire ↔ domaine.
 export type SlotSymbol = 'legendary' | 'charme' | 'biome_ticket' | 'type_ticket' | 'coins'

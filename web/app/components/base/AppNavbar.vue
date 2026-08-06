@@ -108,7 +108,10 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
       </nav>
 
       <div class="navbar__right">
-        <CoinBalance size="sm" />
+        <!-- Le solde EST le sélecteur de région : depuis la v4 chaque région a
+             sa propre bourse, les séparer ferait deux contrôles pour une seule
+             question. -->
+        <GenerationSwitch />
         <ThemeToggle />
         <UChip
           :show="hub.unreadNotifications > 0"

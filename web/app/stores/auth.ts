@@ -6,6 +6,7 @@ import type { WireUser, CardChoice, UUID } from '~/types/api'
 import { authRepo } from '~/repositories'
 import { ROUTES } from '~/constants/routes'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
+import { type Generation, asGeneration } from '~/constants/generation'
 
 // Promesse mémoïsée hors state réactif : un SEUL GET /auth/me par session app
 // (l'endpoint crédite le bonus quotidien par effet de bord).
@@ -23,22 +24,46 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: state => !!state.token,
-    userId: (state): UUID | null => decodeJwtUserId(state.token)
+    userId: (state): UUID | null => decodeJwtUserId(state.token),
+    // Génération en cours (Kanto/Johto). Le porte-monnaie en fait foi : c'est
+    // lui qui la reçoit à chaque réconciliation, y compris avant que /auth/me
+    // ait répondu.
+    activeGeneration: (): Generation => useWalletStore().activeGeneration
   },
 
   actions: {
-    async login(email: string, password: string) {
-      const { user, token } = await authRepo.login(useApi(), { email, password })
+    // `identifier` = e-mail OU pseudo (le serveur accepte les deux).
+    async login(identifier: string, password: string) {
+      const { user, token } = await authRepo.login(useApi(), { identifier, password })
       this.token = token
       this.user = user
-      useWalletStore().reconcile(user.coins, 'login')
+      useWalletStore().reconcileUser(user, 'login')
     },
 
     async register(username: string, email: string, password: string) {
       const { user, token } = await authRepo.register(useApi(), { username, email, password })
       this.token = token
       this.user = user
-      useWalletStore().reconcile(user.coins, 'register')
+      useWalletStore().reconcileUser(user, 'register')
+    },
+
+    // Bascule Kanto ↔ Johto : change la bourse dépensée, l'équipe d'arènes et
+    // le parcours de badges. Le serveur est la référence — on n'applique le
+    // changement localement qu'une fois qu'il a répondu.
+    async setActiveGeneration(generation: Generation) {
+      const res = await authRepo.setActiveGeneration(useApi(), generation)
+      const applied = asGeneration(res.active_generation)
+      if (this.user) this.user.active_generation = applied
+      useWalletStore().activeGeneration = applied
+
+      // Deux endpoints seulement répondent différemment selon la génération
+      // active — vérifié en comparant les réponses des deux côtés : le statut
+      // d'entraînement (bonus et solde) et les biomes (coût, cartes possédées).
+      // Le reste (/gym, /collection, /team sans portée) est identique, donc on
+      // ne le recharge pas.
+      useGymStore().refreshTraining()
+      useRollStore().ensureBiomes(true).catch(() => {})
+      return applied
     },
 
     // Appelé UNE fois par un plugin d'app après restauration du token.
@@ -55,7 +80,7 @@ export const useAuthStore = defineStore('auth', {
         this.rewardClaimed = rewardClaimed
         this.pendingChoice = pendingChoice
         this.meLoaded = true
-        useWalletStore().reconcile(user.coins, 'auth/me')
+        useWalletStore().reconcileUser(user, 'auth/me')
       } catch {
         // 401 déjà géré par le plugin (handleSessionExpired) ; sinon on ignore.
       }

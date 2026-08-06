@@ -4,6 +4,7 @@
 // `isShiny` + rareté réelle.
 
 import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine, RealRarity, TradeStatus, TournamentStatus } from './primitives'
+import type { Generation } from '~/constants/generation'
 
 // Ré-export pour préserver les imports existants depuis `~/types/domain`.
 export type { RealRarity, TradeStatus, TournamentStatus }
@@ -163,7 +164,11 @@ export interface RecentWin {
 // ─── Arènes ─────────────────────────────────────────────────────────────────────
 export interface DomainGym {
   id: UUID
+  /** Rang global 1..16. Le rang AU SEIN d'un parcours est `orderInCircuit`. */
   order: number
+  generation: Generation
+  /** 1..8 — position dans son propre parcours, celle affichée au joueur. */
+  orderInCircuit: number
   name: string
   type: PokeType
   badgeName: string

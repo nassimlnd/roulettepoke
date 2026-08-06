@@ -3,7 +3,7 @@ import type { LeagueLegendary, LeagueRun } from '~/types/domain'
 import type { PokeType } from '~/types/api'
 import { typeSlug } from '~/utils/poke'
 import { useLeagueStore, LEAGUE_COINS_REWARD } from '~/stores/league'
-import { useGymStore, TOTAL_GYMS } from '~/stores/gyms'
+import { useGymStore } from '~/stores/gyms'
 import { useBattleStore } from '~/stores/battle'
 
 // Ligue des 4 (Elite Four) — défi ultime hebdomadaire. États : verrouillé
@@ -110,13 +110,8 @@ function refreshCollection() {
   collection.invalidate()
   collection.ensureFresh(true).catch(() => {})
 }
-async function refreshBalance() {
-  try {
-    const { user } = await useApi()<{ user: { coins: number } }>('/auth/me')
-    if (user) wallet.reconcile(user.coins, 'league')
-  } catch {
-    // silencieux
-  }
+function refreshBalance() {
+  return wallet.refreshFromServer('league')
 }
 
 const { loading, errorMsg, retry } = usePageData(async () => {
@@ -398,9 +393,9 @@ const { loading, errorMsg, retry } = usePageData(async () => {
           </p>
           <div class="hero__gauge">
             <div class="hero__bar">
-              <i :style="{ width: (gyms.badgeCount / TOTAL_GYMS) * 100 + '%' }" />
+              <i :style="{ width: (gyms.totalGyms ? gyms.badgeCount / gyms.totalGyms * 100 : 0) + '%' }" />
             </div>
-            <span class="hero__count tabular">{{ gyms.badgeCount }}/{{ TOTAL_GYMS }} badges</span>
+            <span class="hero__count tabular">{{ gyms.badgeCount }}/{{ gyms.totalGyms }} badges</span>
           </div>
           <NuxtLink
             to="/gyms"
