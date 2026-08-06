@@ -3,6 +3,12 @@
 > Établi le 3 août 2026 par sondage direct de l'API de production et lecture du
 > code source du front original (`pokeroulette.poulineau.ovh/src/`). Chaque
 > chiffre ci-dessous a été **mesuré**, pas déduit.
+>
+> **Mise à jour du 6 août 2026 — vagues A et B livrées.** Le sondage de reprise
+> a révélé trois ruptures de contrat que le comparatif initial n'avait pas
+> vues, dont une bloquante : `POST /auth/login` attend `identifier` et non
+> `email`, si bien que **plus personne ne pouvait se connecter**. Le détail est
+> en fin de document.
 
 ## Ce qui a changé côté serveur
 
@@ -85,9 +91,59 @@ Suggestions/Roadmap, puis les notes de version, puis les historiques.
 
 ## Points à préciser avant d'attaquer la vague B
 
-- **Les valeurs de `scope`** autres que `global` : `kanto` et `johto` sont
-  refusées par l'API (« Portée d'équipe invalide »), et les pages du front
-  original que j'ai lues n'utilisent que `global`. Il faut lire
-  `components/teamRoulette.js` ou demander la liste au backend.
-- **`/auth/active-generation`** répond 404 en GET : méthode ou usage à
-  déterminer.
+*Résolus — voir la section suivante.*
+
+- ~~Les valeurs de `scope` autres que `global`~~ → `global`, `gen1`, `gen2`.
+- ~~`/auth/active-generation` répond 404 en GET~~ → c'est un **PUT**.
+
+---
+
+# Mise à jour du 6 août 2026 — ce qui a été livré
+
+## Trois ruptures de contrat que le comparatif avait manquées
+
+Le premier sondage avait interrogé l'API avec un jeton déjà obtenu ; il n'avait
+donc pas retesté la connexion elle-même, ni relu la forme de l'utilisateur.
+
+| Gravité | Constat | Preuve |
+|---|---|---|
+| 🔴🔴 | **`POST /auth/login` attend `identifier`** (e-mail *ou* pseudo), plus `email`. Le serveur répondait « Identifiant et mot de passe requis » : **la connexion était entièrement cassée**. | 4 formes de charge utile testées ; `src/pages/login.js` de l'original |
+| 🔴 | **`coins` a disparu de l'utilisateur**, remplacé par `coins_gen1`, `coins_gen2` et `active_generation`. `reconcile(user.coins)` passait `undefined` : le solde affichait « — ». | `/auth/me` réel |
+| 🟠 | **`PUT /auth/active-generation`** existe (GET/POST/PATCH → 404) et bascule la région active. | 4 méthodes testées |
+
+## Le modèle v4 tel que mesuré
+
+- **Deux bourses**, une par région, et une seule active à la fois. Les endpoints
+  de jeu (`/roll`, `/training/status`, vente) renvoient toujours un `coins`
+  scalaire : celui de la région active.
+- **Deux endpoints seulement** répondent différemment selon la région —
+  `/training/status` et `/roll/biomes`. `/gym`, `/collection` et `/team` sans
+  portée sont identiques des deux côtés (comparaison d'empreintes des réponses).
+  Ce sont donc les deux seuls rechargés à la bascule.
+- **Portées d'équipe** : `global`, `gen1`, `gen2`. `kanto`, `johto`, `1` et `2`
+  sont rejetés (« Portée d'équipe invalide »).
+- **Bonus quotidien par région** : `100 + badges_de_la_région_active × 10`, donc
+  plafonné à 180 dans chacune — et non 100 + 16 badges.
+- **502 cartes** : 302 en gen 1, 200 en gen 2, `num` de 1 à 251, 18 types.
+- **16 arènes**, `order_num` continu de 1 à 16 (Kanto 1-8, Johto 9-16) : le rang
+  affiché doit être ramené au circuit, sinon Johto s'annonce « Arène 9 ».
+
+## État des vagues
+
+- **Vague A — livrée** (`981f6ab`). Connexion rétablie, porte-monnaie par
+  région, Acier et Ténèbres déclarés sur les quatre couches, nombre d'arènes
+  dynamique, `card_id` corrigé. Deux garde-fous ajoutés : un test échoue si les
+  quatre couches d'un type divergent, un autre couvre les rangs de circuit.
+- **Vague B — livrée** (`a3442ba`). Filtre Génération dans la collection,
+  parcours d'arènes séparés, trois équipes.
+- **Vague C — à faire.** Motus + Zarbi (liés, vraies nouveautés de contenu),
+  puis Suggestions/Roadmap, notes de version, classements par génération,
+  historiques.
+
+## Reste à traiter, découvert en chemin
+
+- `/auth/me` renvoie `canCorrectDailyBonusGeneration` : le bonus quotidien est
+  crédité dans une région et peut être « corrigé » vers l'autre. Non implémenté.
+- Les échanges séparés par génération (`?generation=`) ne sont pas câblés.
+- Le solde répété dans l'en-tête de certaines pages (`CoinBalance`) n'indique
+  pas la région, contrairement à celui de la barre de navigation.
