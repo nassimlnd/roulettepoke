@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DomainCard } from '~/types/domain'
 import {
-  SPRITE_STYLES, SPRITE_FAMILY_LABEL, SPRITE_PREVIEW_MONS,
+  SPRITE_STYLES, SPRITE_FAMILY_LABEL, SPRITE_PREVIEW_MONS, PREVIEW_CHIP_STYLE,
   previewSpriteUrl, styleCovers, styleLimitation,
   type SpriteStyle, type SpriteFamily, type PreviewMon
 } from '~/constants/sprite-styles'
@@ -22,15 +22,18 @@ const model = defineModel<string>({ required: true })
 const mon = ref<PreviewMon>(SPRITE_PREVIEW_MONS[0]!)
 const shiny = ref(false)
 
-// Gen 1 n'a aucun shiny : proposer la bascule tout en sachant qu'elle forcera
-// un repli est honnête, à condition de le dire (cf. `fallbackNote`).
-const monOptions = computed(() =>
-  SPRITE_PREVIEW_MONS.map(m => ({ value: String(m.num), label: m.name })))
-
-function pickMon(num: string | number) {
-  const found = SPRITE_PREVIEW_MONS.find(m => m.num === Number(num))
-  if (found) mon.value = found
+// Le choix du Pokémon se fait sur des PASTILLES illustrées, pas sur des
+// libellés : six noms côte à côte débordaient d'un écran de téléphone (« Lugia »
+// se retrouvait coupé), et on reconnaît de toute façon un Pokémon plus vite à sa
+// silhouette qu'à son nom.
+function chipUrl(m: PreviewMon): string {
+  return styledSpriteUrl(PREVIEW_CHIP_STYLE, m.num) ?? previewSpriteUrl(m)
 }
+
+// La carte d'aperçu prend toute la largeur d'un téléphone en taille `md` et
+// repousse les vignettes hors de l'écran : on la réduit sous 640 px.
+const narrow = useMediaQuery('(max-width: 639px)')
+const cardSize = computed(() => (narrow.value ? 'sm' : 'md'))
 
 // Carte d'aperçu. Rareté et niveau sont FIXES à dessein : si le cadre changeait
 // d'un Pokémon à l'autre, on ne comparerait plus les styles entre eux.
@@ -104,7 +107,7 @@ const byFamily = computed(() => FAMILIES.map(f => ({
       <HoloCard
         :key="`${model}-${mon.num}-${shiny}`"
         :card="previewCard"
-        size="md"
+        :size="cardSize"
         :ambient="false"
       />
       <div class="ssp__controls">
@@ -112,22 +115,37 @@ const byFamily = computed(() => FAMILIES.map(f => ({
           <p class="ssp__ctl-label">
             Pokémon d'aperçu
           </p>
-          <PSegmented
-            :model-value="String(mon.num)"
-            :options="monOptions"
-            size="sm"
-            a11y="radio"
+          <div
+            class="ssp__mons"
+            role="radiogroup"
             aria-label="Choisir le Pokémon d'aperçu"
-            @update:model-value="pickMon"
-          />
+          >
+            <button
+              v-for="m in SPRITE_PREVIEW_MONS"
+              :key="m.num"
+              type="button"
+              class="ssp__mon"
+              :class="{ 'ssp__mon--on': m.num === mon.num }"
+              role="radio"
+              :aria-checked="m.num === mon.num"
+              :title="m.name"
+              @click="mon = m"
+            >
+              <img
+                :src="chipUrl(m)"
+                :alt="m.name"
+                decoding="async"
+              >
+            </button>
+          </div>
         </div>
         <label class="ssp__shiny">
           <USwitch v-model="shiny" />
           <span>Voir en shiny</span>
         </label>
         <p class="ssp__note">
-          Toutes les vignettes montrent le même Pokémon : la seule différence
-          est le style.
+          Toutes les vignettes montrent <b>{{ mon.name }}</b> : la seule
+          différence est le style.
         </p>
       </div>
     </div>
@@ -194,22 +212,59 @@ const byFamily = computed(() => FAMILIES.map(f => ({
 <style scoped>
 .ssp { display: flex; flex-direction: column; gap: 18px; width: 100%; }
 
+/* Pas de `flex-wrap` : sur un téléphone il faisait passer la carte en pleine
+   largeur, repoussant les contrôles sous une carte de 208 px de haut. La carte
+   rétrécit à la place (cf. `cardSize`), et les deux colonnes tiennent. */
 .ssp__preview {
   display: flex;
-  gap: 20px;
+  gap: 14px;
   align-items: flex-start;
-  flex-wrap: wrap;
-  padding: 16px;
+  padding: 12px;
   border-radius: 16px;
   background: var(--ui-bg-muted);
 }
+@media (min-width: 640px) { .ssp__preview { gap: 20px; padding: 16px; } }
 .ssp__controls {
   flex: 1;
-  min-width: 15rem;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
+
+/* Pastilles de choix du Pokémon : six silhouettes plutôt que six noms — les
+   libellés débordaient de l'écran, celles-ci s'enroulent. */
+.ssp__mons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ssp__mon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--ui-bg-elevated);
+  border: 1.5px solid var(--ui-border);
+  transition: border-color .15s ease, transform .12s var(--ease-pop);
+}
+.ssp__mon img {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.ssp__mon:hover { transform: translateY(-1px); }
+.ssp__mon--on {
+  border-color: var(--color-poke-500);
+  background: var(--color-poke-50);
+}
+.ssp__mon:focus-visible { outline: 2px solid var(--color-poke-400); outline-offset: 2px; }
 .ssp__ctl-label {
   font-size: .7rem;
   text-transform: uppercase;
@@ -245,8 +300,12 @@ const byFamily = computed(() => FAMILIES.map(f => ({
 }
 .ssp__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 10px;
+  /* 96 px sur mobile : trois colonnes tiennent sur un écran de 390 px. */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .ssp__grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
 }
 .ssp__tile {
   display: flex;

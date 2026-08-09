@@ -145,3 +145,12 @@ export const SPRITE_PREVIEW_NUM = SPRITE_PREVIEW_MONS[0]!.num
 export function previewSpriteUrl(mon: PreviewMon, shiny = false): string {
   return `/images/${mon.slug}${shiny ? '_alt' : ''}.webp`
 }
+
+/**
+ * Style employé par les pastilles de CHOIX du Pokémon d'aperçu. Fixe à dessein :
+ * ces pastilles servent à reconnaître un Pokémon, pas à juger un style. Gen 5
+ * est pris parce qu'il est embarqué, lisible en petit, et pèse moins d'un kilo-
+ * octet — là où le sprite du jeu monte à 222 Ko pour Lugia, soit près d'un
+ * mégaoctet rien que pour six pastilles.
+ */
+export const PREVIEW_CHIP_STYLE = 'gen5'
