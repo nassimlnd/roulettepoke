@@ -21,6 +21,9 @@ const typed = ref('')
 const submitting = ref(false)
 const guessError = ref('')
 const firstWinnerCoins = ref(0)
+// Ouverte sur la TRANSITION de victoire uniquement — pas au rechargement d'une
+// partie déjà gagnée : on célèbre une fois, ensuite le résumé de page suffit.
+const victoryOpen = ref(false)
 
 const { loading, errorMsg, retry } = usePageData(async () => {
   today.value = await motusRepo.today(useApi())
@@ -97,7 +100,10 @@ async function submitGuess() {
     }
     // La forme de Zarbi gagnée doit apparaître dans la collection au prochain
     // passage, sans attendre l'expiration du cache.
-    if (res.status === 'won') collection.invalidate()
+    if (res.status === 'won') {
+      collection.invalidate()
+      victoryOpen.value = true
+    }
     if (res.status !== 'in_progress') loadBoard()
   } catch (err) {
     // Mot hors dictionnaire, etc. — l'essai n'est PAS consommé, la saisie reste
@@ -262,6 +268,17 @@ const STATE_LABELS: Record<string, string> = {
         </PButton>
       </div>
 
+      <!-- Célébration de victoire (transition uniquement) -->
+      <MotusVictory
+        v-if="victoryOpen && today.status === 'won'"
+        :attempts="today.attempts.length"
+        :reward="today.rewardForm"
+        :first-winner-coins="firstWinnerCoins"
+        :word="today.word"
+        :definition-url="definitionUrl"
+        @close="victoryOpen = false"
+      />
+
       <!-- Fin de partie -->
       <PPanel
         v-else
@@ -280,15 +297,15 @@ const STATE_LABELS: Record<string, string> = {
               :alt="`Zarbi ${today.rewardForm.form}`"
               class="motus__reward-img"
             >
-            <p>
-              Tu remportes <b>Zarbi {{ today.rewardForm.form }}</b><template v-if="today.rewardForm.isAlt">
-                — version <b>✦ shiny</b> !
-              </template>
+            <div class="motus__reward-body">
+              <p class="motus__reward-line">
+                Tu remportes <b>Zarbi {{ today.rewardForm.form }}</b>{{ today.rewardForm.isAlt ? ' — version ✦ shiny' : '' }} !
+              </p>
               <NuxtLink
                 to="/collection"
                 class="motus__link"
               >Voir ma collection</NuxtLink>
-            </p>
+            </div>
           </div>
           <p
             v-if="firstWinnerCoins"
@@ -529,7 +546,10 @@ const STATE_LABELS: Record<string, string> = {
   justify-content: center;
   gap: 12px;
   margin: 8px 0;
+  text-align: left;
 }
+.motus__reward-body { display: flex; flex-direction: column; gap: 2px; }
+.motus__reward-line { margin: 0; font-size: .95rem; color: var(--ui-text-toned); }
 .motus__reward-img {
   width: 64px;
   height: 64px;
