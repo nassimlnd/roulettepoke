@@ -28,8 +28,6 @@ export interface WireUser {
   canCorrectDailyBonusGeneration?: boolean
 }
 
-// La prime de connexion est créditée dans UNE région. Si le joueur constate
-// qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
 // Zarbi est un cas à part dans le modèle : une seule carte du dex, déclinée en
 // 28 formes cosmétiques (! ? A-Z) gérées hors de `gacha_cards`. L'API les sert
 // donc par un endpoint dédié, et chaque forme existe en standard et en shiny —
@@ -43,12 +41,74 @@ export interface WireZarbiForm {
   quantity: number
 }
 
+// La prime de connexion est créditée dans UNE région. Si le joueur constate
+// qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
 export interface DailyBonusCorrection {
   /** Région finalement créditée. */
   generation: number
   amount?: number
   /** Montant par région après correction, quand le serveur le détaille. */
   amounts?: Record<string, number>
+}
+
+// ─── Motus — le mot du jour ──────────────────────────────────────────────────
+// Un mot de 6 à 8 lettres, partagé par tous les joueurs, 6 essais, première
+// lettre donnée. Victoire = une forme de Zarbi tirée parmi les lettres du mot
+// (shiny possible) ; le premier gagnant du jour touche aussi +10 🪙.
+// Ces réponses sont déjà en camelCase (comme /trades/eligibility) : consommées
+// telles quelles, sans couche de normalisation. Formes relevées sur l'API le
+// 9 août 2026, essai réel compris.
+export type MotusCellState = 'correct' | 'present' | 'absent'
+export type MotusStatus = 'in_progress' | 'won' | 'lost'
+
+export interface MotusCell {
+  letter: string
+  state: MotusCellState
+}
+
+export interface MotusAttempt {
+  guess: string
+  result: MotusCell[]
+}
+
+/** Zarbi gagné à la victoire — une forme tirée parmi les lettres du mot. */
+export interface MotusRewardForm {
+  form: string
+  imageUrl: string
+  isAlt: boolean
+}
+
+export interface MotusToday {
+  wordDate: string
+  wordLength: number
+  maxAttempts: number
+  firstLetter: string | null
+  attempts: MotusAttempt[]
+  status: MotusStatus
+  /** Révélé seulement une fois la partie finie. */
+  word: string | null
+  rewardForm: MotusRewardForm | null
+}
+
+export interface MotusGuessResult {
+  guess: string
+  result: MotusCell[]
+  status: MotusStatus
+  attemptsUsed: number
+  maxAttempts: number
+  won: boolean
+  word: string | null
+  rewardForm: MotusRewardForm | null
+  firstWinnerBonus: boolean
+  firstWinnerBonusCoins: number
+}
+
+export interface MotusLeaderboardRow {
+  rank: number
+  username: string
+  attemptsUsed: number
+  firstWinner: boolean
+  completedAt: ISODate
 }
 
 export interface WireCard {
