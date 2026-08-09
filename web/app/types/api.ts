@@ -111,6 +111,50 @@ export interface MotusLeaderboardRow {
   completedAt: ISODate
 }
 
+// ─── Idées & sondages (la voix des joueurs) ──────────────────────────────────
+// Formes relevées sur l'API le 9 août 2026. Particularité vérifiée par l'essai :
+// revoter la MÊME valeur sur une suggestion retire le vote (toggle) — l'UI peut
+// donc proposer l'annulation. Les statuts observés en production couvrent
+// proposed/planned/archived ; le reste vient du front d'origine (STATUS_META).
+export type SuggestionStatus
+  = 'proposed' | 'planned' | 'in_progress' | 'done' | 'rejected' | 'archived'
+export type VoteValue = 1 | -1
+
+export interface WireSuggestion {
+  id: UUID
+  /** Non nul = entrée officielle de la roadmap (posée par l'équipe). */
+  title: string | null
+  text: string
+  status: SuggestionStatus
+  admin_note: string | null
+  note_voting_enabled: boolean
+  created_at: ISODate
+  username: string
+  author_is_admin: boolean
+  sugg_up: number
+  sugg_down: number
+  note_up: number
+  note_down: number
+  my_suggestion_vote: VoteValue | null
+  my_note_vote: VoteValue | null
+}
+
+export interface WirePollOption {
+  id: UUID
+  label: string
+  votes: number
+}
+
+export interface WirePoll {
+  id: UUID
+  question: string
+  status: 'open' | 'closed'
+  created_at: ISODate
+  closed_at: ISODate | null
+  my_option_id: UUID | null
+  options: WirePollOption[]
+}
+
 export interface WireCard {
   id: UUID
   num: number

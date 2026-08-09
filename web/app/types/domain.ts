@@ -4,6 +4,7 @@
 // `isShiny` + rareté réelle.
 
 import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine, RealRarity, TradeStatus, TournamentStatus } from './primitives'
+import type { SuggestionStatus, VoteValue } from './api'
 import type { Generation } from '~/constants/generation'
 
 // Ré-export pour préserver les imports existants depuis `~/types/domain`.
@@ -28,6 +29,43 @@ export interface DomainOwnedCard extends DomainCard {
   quantity: number
   owned: boolean
   obtainedAt: ISODate | null
+}
+
+// ─── Idées & sondages ────────────────────────────────────────────────────────
+export interface DomainSuggestion {
+  id: UUID
+  /** Non nul = entrée officielle de la roadmap. */
+  title: string | null
+  text: string
+  status: SuggestionStatus
+  adminNote: string | null
+  noteVotingEnabled: boolean
+  createdAt: ISODate
+  username: string
+  authorIsAdmin: boolean
+  upVotes: number
+  downVotes: number
+  noteUpVotes: number
+  noteDownVotes: number
+  myVote: VoteValue | null
+  myNoteVote: VoteValue | null
+  official: boolean
+}
+
+export interface PollOption {
+  id: UUID
+  label: string
+  votes: number
+}
+
+export interface DomainPoll {
+  id: UUID
+  question: string
+  open: boolean
+  createdAt: ISODate
+  myOptionId: UUID | null
+  options: PollOption[]
+  totalVotes: number
 }
 
 /** Une des 28 formes de Zarbi, en version standard ou shiny. */
