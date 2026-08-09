@@ -2,12 +2,12 @@ import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT, CACHE_TTL_LONG } from '~/constants/cache'
 import type {
   TrainingStatus, SlotStatus, SpinStatus,
-  TradeEligibility, NotificationsResponse
+  TradeEligibility, NotificationsResponse, MotusToday
 } from '~/types/api'
 import type { DomainGym, DomainTournament, DomainTrade, DomainLeagueStatus } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
-  tradesRepo, gymRepo, notificationsRepo
+  tradesRepo, gymRepo, notificationsRepo, motusRepo
 } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 import { nextDailyReset, nextWeekly } from '~/utils/paris-time'
@@ -36,6 +36,7 @@ export const useHubStore = defineStore('hub', {
     trades: [] as DomainTrade[],
     tradeEligibility: null as TradeEligibility | null,
     gyms: [] as DomainGym[],
+    motus: null as MotusToday | null,
     notifications: null as NotificationsResponse | null,
     shortFetchedAt: 0,
     longFetchedAt: 0
@@ -73,6 +74,14 @@ export const useHubStore = defineStore('hub', {
           nextResetAt: daily,
           to: '/slot-machine',
           reward: 'Pièces, tickets, Charme ou légendaire'
+        },
+        {
+          key: 'motus',
+          label: 'Motus — mot du jour',
+          available: state.motus?.status === 'in_progress',
+          nextResetAt: daily,
+          to: '/motus',
+          reward: 'Une forme de Zarbi · +10 🪙 au 1ᵉʳ'
         }
       ]
     },
@@ -163,18 +172,20 @@ export const useHubStore = defineStore('hub', {
       // L'éligibilité aux échanges dépend de la région : 120 cartes uniques à
       // Kanto, 80 à Johto.
       const gen = useWalletStore().activeGeneration
-      const [training, slot, spin, gyms, eligibility] = await Promise.all([
+      const [training, slot, spin, gyms, eligibility, motus] = await Promise.all([
         dedupe('training/status', () => trainingRepo.status(api)).catch(() => null),
         dedupe('slot/status', () => slotRepo.status(api)).catch(() => null),
         dedupe('spin/status', () => spinRepo.status(api)).catch(() => null),
         dedupe('gym', () => gymRepo.getAll(api)).catch(() => [] as DomainGym[]),
-        dedupe(`trades/eligibility/${gen}`, () => tradesRepo.eligibility(api, gen)).catch(() => null)
+        dedupe(`trades/eligibility/${gen}`, () => tradesRepo.eligibility(api, gen)).catch(() => null),
+        dedupe('motus/today', () => motusRepo.today(api)).catch(() => null)
       ])
       this.training = training
       this.slot = slot
       this.spin = spin
       this.gyms = gyms
       this.tradeEligibility = eligibility
+      this.motus = motus
       this.longFetchedAt = Date.now()
     },
 

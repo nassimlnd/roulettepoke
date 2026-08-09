@@ -17,7 +17,8 @@ export const PRIMARY_LINKS: readonly NavLink[] = [
   { to: '/collection', label: 'Collection', icon: 'i-lucide-layout-grid' },
   { to: '/team', label: 'Équipe', icon: 'i-lucide-users' },
   { to: '/spin', label: 'Aventure', icon: 'i-lucide-compass' },
-  { to: '/slot-machine', label: 'Jackpot', icon: 'i-lucide-cherry' }
+  { to: '/slot-machine', label: 'Jackpot', icon: 'i-lucide-cherry' },
+  { to: '/motus', label: 'Motus', icon: 'i-lucide-whole-word' }
 ]
 
 // Compétition — regroupée : à 12 entrées de premier niveau la navbar déborde en

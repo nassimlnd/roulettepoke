@@ -136,9 +136,14 @@ donc pas retesté la connexion elle-même, ni relu la forme de l'utilisateur.
   quatre couches d'un type divergent, un autre couvre les rangs de circuit.
 - **Vague B — livrée** (`a3442ba`). Filtre Génération dans la collection,
   parcours d'arènes séparés, trois équipes.
-- **Vague C — à faire.** Motus + Zarbi (liés, vraies nouveautés de contenu),
-  puis Suggestions/Roadmap, notes de version, classements par génération,
-  historiques.
+- **Vague C — aux trois quarts.** C1 livrée (`a5e172b`) : classements par
+  région (l'onglet « Tricheurs » appelait une route supprimée), seuil d'échange
+  régional (120 Kanto / 80 Johto), prime du jour déplaçable. C2 livrée
+  (`79dffb0`) : les 28 formes de Zarbi. C4 livrée : Motus — grille, clavier
+  virtuel AZERTY, récompense Zarbi, classement du jour, tuile quotidienne du
+  hub. Reste **C3** (sondages `/polls` + suggestions `/suggestions`).
+  Retirés de la vague après vérification : les notes de version (aucune API,
+  page en dur chez eux) et `/suggestions/roadmap` (404 même pour l'original).
 
 ## Reste à traiter, découvert en chemin
 
