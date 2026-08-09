@@ -141,7 +141,10 @@ donc pas retesté la connexion elle-même, ni relu la forme de l'utilisateur.
   régional (120 Kanto / 80 Johto), prime du jour déplaçable. C2 livrée
   (`79dffb0`) : les 28 formes de Zarbi. C4 livrée : Motus — grille, clavier
   virtuel AZERTY, récompense Zarbi, classement du jour, tuile quotidienne du
-  hub. Reste **C3** (sondages `/polls` + suggestions `/suggestions`).
+  hub. C3 livrée : Idées & sondages — sondages avec vote et changement
+  d'option, dépôt d'idée, tableau d'avancement par statut, votes 👍/👎
+  annulables (toggle vérifié contre l'API), remarques d'équipe votables.
+  **La vague C est close.**
   Retirés de la vague après vérification : les notes de version (aucune API,
   page en dur chez eux) et `/suggestions/roadmap` (404 même pour l'original).
 

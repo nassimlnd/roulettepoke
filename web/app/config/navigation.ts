@@ -31,9 +31,10 @@ export const COMPETITION_LINKS: readonly NavLink[] = [
   { to: '/trades', label: 'Échanges', icon: 'i-lucide-arrow-left-right' }
 ]
 
-// Consultation.
+// Consultation & communauté.
 export const SECONDARY_LINKS: readonly NavLink[] = [
   { to: '/stats', label: 'Stats', icon: 'i-lucide-chart-column' },
+  { to: '/suggestions', label: 'Idées', icon: 'i-lucide-lightbulb' },
   { to: '/rules', label: 'Guide', icon: 'i-lucide-book-open' }
 ]
 
