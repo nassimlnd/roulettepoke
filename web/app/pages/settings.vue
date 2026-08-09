@@ -278,10 +278,8 @@ function sendReset() {
               Style des sprites
             </p>
             <p class="sprites__desc">
-              Le rendu des Pokémon sur tes cartes, d'une génération à l'autre.
-              Choisis un Pokémon d'aperçu, compare, puis clique le style qui te
-              plaît. Tous les styles sont embarqués dans le jeu : le changement
-              est immédiat et fonctionne hors-ligne.
+              Le rendu des Pokémon sur tes cartes. Compare, puis clique le style
+              qui te plaît — tous sont embarqués dans le jeu.
             </p>
           </div>
         </div>

@@ -179,6 +179,13 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
   color: var(--ui-text-highlighted);
   letter-spacing: -.02em;
 }
+/* Sous 420 px, le sélecteur de région, le thème, la cloche et l'avatar ne
+   tiennent plus à côté du mot « PokéRoulette » : la barre débordait de 11 px et
+   entraînait toute la page en défilement horizontal. La Poké Ball suffit à
+   identifier l'application à cette taille. */
+@media (max-width: 420px) {
+  .brand__name { display: none; }
+}
 .brand__accent { color: var(--color-poke-500); }
 
 .nav {
