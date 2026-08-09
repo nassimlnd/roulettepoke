@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GENERATIONS, type Generation } from '~/constants/generation'
+import { GENERATIONS, generationRegion, asGeneration, type Generation } from '~/constants/generation'
 
 // Bascule Kanto ↔ Johto. Depuis la v4 la génération active détermine la bourse
 // dépensée, le parcours d'arènes et l'équipe engagée : c'est un sélecteur
@@ -16,6 +16,31 @@ const activeMeta = computed(() =>
 function purse(g: Generation): string {
   const v = wallet.purses[g]
   return v === null ? '—' : v.toLocaleString('fr-FR')
+}
+
+// ─── Prime du jour créditée dans la mauvaise région ───────────────────────────
+const canCorrect = computed(() => auth.user?.canCorrectDailyBonusGeneration === true)
+const correcting = ref(false)
+
+async function correctBonus() {
+  if (correcting.value) return
+  correcting.value = true
+  try {
+    const res = await auth.correctDailyBonusGeneration()
+    // Le serveur détaille soit un montant par région, soit un seul montant.
+    const parts = Object.entries(res.amounts ?? { [res.generation]: res.amount ?? 0 })
+      .map(([g, amount]) => `${amount} 🪙 ${generationRegion(asGeneration(Number(g)))}`)
+    toast.add({
+      title: 'Prime du jour déplacée',
+      description: parts.join(' · '),
+      color: 'success',
+      icon: 'i-lucide-rotate-ccw'
+    })
+  } catch (err) {
+    toast.add({ title: humanizeError(err), color: 'error' })
+  } finally {
+    correcting.value = false
+  }
 }
 
 const switching = ref(false)
@@ -91,6 +116,24 @@ async function pick(g: Generation) {
             class="size-4 pick__check"
           />
         </button>
+        <!-- La prime du jour est créditée dans UNE région. Le serveur ouvre le
+             droit de la déplacer une fois par jour ; on n'affiche le bouton que
+             tant qu'il est ouvert. -->
+        <button
+          v-if="canCorrect"
+          type="button"
+          class="pick__fix"
+          :disabled="correcting"
+          @click="correctBonus"
+        >
+          <UIcon
+            :name="correcting ? 'i-lucide-loader-circle' : 'i-lucide-rotate-ccw'"
+            class="size-4"
+            :class="{ 'animate-spin': correcting }"
+          />
+          Déplacer la prime du jour ici
+        </button>
+
         <p class="pick__note">
           Chaque région a sa propre bourse, ses arènes et son équipe.
         </p>
@@ -180,6 +223,24 @@ async function pick(g: Generation) {
 }
 :global(.dark) .pick__coins { color: #e8c274; }
 .pick__check { color: var(--color-poke-500); flex: none; }
+.pick__fix {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--color-poke-600);
+  background: var(--color-poke-50);
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.pick__fix:hover:not(:disabled) { background: var(--color-poke-100); }
+.pick__fix:disabled { opacity: .6; cursor: progress; }
 .pick__note {
   font-size: .72rem;
   color: var(--ui-text-dimmed);

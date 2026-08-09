@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import type { LeaderboardRow } from '~/types/domain'
+import type { BoardScope } from '~/repositories/leaderboard'
 import { useLeaderboardStore, SCORE_RULES } from '~/stores/leaderboard'
+import { GENERATIONS } from '~/constants/generation'
 
 // Page Classement — score de diversité, podium top 3 + liste, « ta position »
-// hors top 10, feed des derniers shiny/légendaires, et board des tricheurs
-// (onglet secondaire, pas au même niveau que le contenu principal — cf. m7).
+// hors top 10, feed des derniers shiny/légendaires.
+//
+// Les onglets étaient « Classement » et « Tricheurs ». Ce second appelait
+// /leaderboard/cheaters, route SUPPRIMÉE du serveur : l'onglet menait à une
+// erreur. Il laisse place aux deux classements régionaux, qui existent bel et
+// bien et rendent exactement la même chose — d'où un seul rendu pour trois
+// sources, là où le board des tricheurs dupliquait la liste.
 const lb = useLeaderboardStore()
 const auth = useAuthStore()
 
 const TABS = [
-  { value: 'main', label: 'Classement', icon: 'i-lucide-trophy' },
-  { value: 'cheaters', label: 'Tricheurs', icon: 'i-lucide-shield-alert' }
+  { value: 'global', label: 'Général', icon: 'i-lucide-trophy' },
+  ...GENERATIONS.map(g => ({ value: g.boardScope, label: g.region, icon: g.icon }))
 ] as const
-
-const tab = ref<'main' | 'cheaters'>('main')
 
 const me = computed(() => auth.user?.username)
 const top = computed(() => lb.data?.top ?? [])
@@ -34,14 +39,16 @@ function isYou(row: LeaderboardRow): boolean {
   return !!me.value && row.username === me.value
 }
 
-async function switchTab(t: 'main' | 'cheaters') {
-  tab.value = t
-  if (t === 'cheaters' && !lb.cheatersFetched) {
-    try {
-      await lb.ensureCheaters()
-    } catch (err) {
-      errorMsg.value = humanizeError(err)
-    }
+const switching = ref(false)
+async function switchTab(t: BoardScope) {
+  if (t === lb.scope || switching.value) return
+  switching.value = true
+  try {
+    await lb.setScope(t)
+  } catch (err) {
+    errorMsg.value = humanizeError(err)
+  } finally {
+    switching.value = false
   }
 }
 
@@ -82,7 +89,7 @@ const { loading, errorMsg, retry } = usePageData(() => lb.ensureFresh())
     <!-- Onglets -->
     <PSegmented
       class="tabs"
-      :model-value="tab"
+      :model-value="lb.scope"
       :options="TABS"
       aria-label="Vue du classement"
       @update:model-value="switchTab"
@@ -107,8 +114,8 @@ const { loading, errorMsg, retry } = usePageData(() => lb.ensureFresh())
           />
         </template>
 
-        <!-- Onglet Classement -->
-        <template v-else-if="tab === 'main'">
+        <!-- Classement (identique pour les trois portées) -->
+        <template v-else>
           <!-- Podium -->
           <div
             v-if="podiumOrder.length"
@@ -171,33 +178,6 @@ const { loading, errorMsg, retry } = usePageData(() => lb.ensureFresh())
             class="empty"
           >
             Classement indisponible pour le moment.
-          </p>
-        </template>
-
-        <!-- Onglet Tricheurs -->
-        <template v-else>
-          <div
-            v-if="lb.cheaters.length"
-            class="list"
-          >
-            <p class="cheat-note">
-              <UIcon
-                name="i-lucide-shield-alert"
-                class="size-4"
-              />
-              Joueurs ayant exploité des failles — hors classement officiel.
-            </p>
-            <LeaderRow
-              v-for="row in lb.cheaters"
-              :key="row.rank"
-              :row="row"
-            />
-          </div>
-          <p
-            v-else
-            class="empty"
-          >
-            Aucun tricheur épinglé — fair-play ! 🎉
           </p>
         </template>
       </div>
@@ -377,15 +357,6 @@ const { loading, errorMsg, retry } = usePageData(() => lb.ensureFresh())
   color: var(--ui-text-dimmed);
 }
 
-.cheat-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .82rem;
-  font-weight: 600;
-  color: var(--ui-text-muted);
-  padding: 4px 2px 6px;
-}
 .empty { text-align: center; color: var(--ui-text-dimmed); font-size: .9rem; padding: 30px 0; }
 
 /* Feed */

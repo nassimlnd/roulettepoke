@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 // Import explicite : useStorage entre en collision avec le useStorage de Nitro
 // (stockage serveur) dans les auto-imports.
 import { useStorage } from '@vueuse/core'
-import type { WireUser, CardChoice, UUID } from '~/types/api'
+import type { WireUser, CardChoice, UUID, DailyBonusCorrection } from '~/types/api'
 import { authRepo } from '~/repositories'
 import { ROUTES } from '~/constants/routes'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
@@ -64,6 +64,16 @@ export const useAuthStore = defineStore('auth', {
       useGymStore().refreshTraining()
       useRollStore().ensureBiomes(true).catch(() => {})
       return applied
+    },
+
+    // Déplace la prime du jour vers la région active. Le droit se consomme :
+    // on éteint le drapeau localement pour que le bouton disparaisse aussitôt,
+    // et on resynchronise les deux bourses depuis le serveur.
+    async correctDailyBonusGeneration(): Promise<DailyBonusCorrection> {
+      const res = await authRepo.correctDailyBonusGeneration(useApi())
+      if (this.user) this.user.canCorrectDailyBonusGeneration = false
+      await useWalletStore().refreshFromServer('daily-bonus-correction')
+      return res
     },
 
     // Appelé UNE fois par un plugin d'app après restauration du token.

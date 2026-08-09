@@ -1,4 +1,4 @@
-import type { AuthResponse, MeResponse, WireCard, UUID } from '~/types/api'
+import type { AuthResponse, MeResponse, WireCard, UUID, DailyBonusCorrection } from '~/types/api'
 import type { DomainCard } from '~/types/domain'
 import type { Api } from './_client'
 import { normalizeCard } from './normalize'
@@ -24,5 +24,8 @@ export const authRepo = {
     api<{ avatar_url: string, avatar_is_alt: boolean }>('/auth/avatar', { method: 'PUT', body: { cardId } }),
   // Bascule Kanto ↔ Johto. PUT uniquement : GET et POST répondent 404.
   setActiveGeneration: (api: Api, generation: number) =>
-    api<{ active_generation: number }>('/auth/active-generation', { method: 'PUT', body: { generation } })
+    api<{ active_generation: number }>('/auth/active-generation', { method: 'PUT', body: { generation } }),
+  // Déplace la prime du jour vers la région active (1×/jour). Sans corps.
+  correctDailyBonusGeneration: (api: Api) =>
+    api<DailyBonusCorrection>('/auth/correct-daily-bonus-generation', { method: 'POST' })
 }

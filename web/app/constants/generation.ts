@@ -19,12 +19,18 @@ export interface GenerationMeta {
   dexTo: number
   /** Portée d'équipe correspondante côté API (`/team?scope=`). */
   teamScope: 'gen1' | 'gen2'
+  /**
+   * Segment d'URL du classement régional (`/leaderboard/kanto`). L'API emploie
+   * deux vocabulaires pour la même notion — `gen1` pour les équipes, `kanto`
+   * pour les classements — d'où ces deux champs plutôt qu'une dérivation.
+   */
+  boardScope: 'kanto' | 'johto'
   icon: string
 }
 
 export const GENERATIONS: readonly GenerationMeta[] = [
-  { id: 1, region: 'Kanto', dexFrom: 1, dexTo: 151, teamScope: 'gen1', icon: 'i-lucide-mountain' },
-  { id: 2, region: 'Johto', dexFrom: 152, dexTo: 251, teamScope: 'gen2', icon: 'i-lucide-trees' }
+  { id: 1, region: 'Kanto', dexFrom: 1, dexTo: 151, teamScope: 'gen1', boardScope: 'kanto', icon: 'i-lucide-mountain' },
+  { id: 2, region: 'Johto', dexFrom: 152, dexTo: 251, teamScope: 'gen2', boardScope: 'johto', icon: 'i-lucide-trees' }
 ]
 
 // Trois équipes indépendantes de 6 Pokémon, désignées par leur « portée ».
