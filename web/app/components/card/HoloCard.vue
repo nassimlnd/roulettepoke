@@ -14,12 +14,21 @@ const props = withDefaults(defineProps<{
   holoStrength?: number // 0 → 1
   ambient?: boolean // scintillement holo continu (couper dans les grilles denses)
   freeze?: boolean // fige le sprite (WebP animé) sur sa 1re frame — grilles denses
+  /**
+   * La carte remplit son conteneur au lieu d'une largeur fixe. Toutes les
+   * métriques internes (bordures, coins, ombres) dérivent de `--w` : en fluide,
+   * `--w` devient `100cqw` pour qu'elles suivent la largeur réelle. Le parent
+   * DOIT déclarer `container-type: inline-size`, sans quoi `cqw` retombe sur la
+   * largeur du viewport et la carte devient géante.
+   */
+  fluid?: boolean
 }>(), {
   size: 'md',
   interactive: true,
   holoStrength: 1,
   ambient: true,
-  freeze: false
+  freeze: false,
+  fluid: false
 })
 
 const WIDTHS = { sm: 132, md: 208, lg: 280, xl: 360 }
@@ -150,7 +159,7 @@ watch(() => [props.freeze, spriteUrl.value], async () => {
 })
 
 const rootStyle = computed(() => ({
-  '--w': WIDTHS[props.size] + 'px',
+  '--w': props.fluid ? '100cqw' : WIDTHS[props.size] + 'px',
   '--frame': frameColor.value,
   '--shadow': shadow.value,
   '--type-c2': grad.value.c2

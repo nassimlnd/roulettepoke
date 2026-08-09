@@ -284,7 +284,7 @@ function confirmMerge() {
       <USkeleton
         v-for="i in 18"
         :key="i"
-        class="aspect-[63/88] w-[132px] rounded-2xl"
+        class="aspect-[63/88] w-full rounded-2xl"
       />
     </div>
     <!-- Aucun résultat : la combinaison de filtres ne correspond à rien -->
@@ -324,7 +324,7 @@ function confirmMerge() {
              dans la grille (150+ cartes) et ils s'animent dans la modale. -->
         <HoloCard
           :card="card"
-          size="sm"
+          fluid
           :quantity="card.quantity"
           :ambient="false"
           freeze
@@ -535,11 +535,15 @@ function confirmMerge() {
 .empty__title { font-weight: 700; font-size: 1.05rem; color: var(--ui-text-highlighted); }
 .empty__sub { font-size: .88rem; margin-bottom: 6px; }
 
+/* Colonnes fluides à partir de 132 px, SANS centrage : les colonnes fixes
+   centrées laissaient ~80 px de marges vides de chaque côté sur un téléphone,
+   pendant que le panneau Zarbi au-dessus occupait toute la largeur — les deux
+   blocs n'avaient visiblement pas le même gabarit. Les cartes s'étirent pour
+   remplir le rang (≈174 px à deux colonnes sur 393 px). */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 132px);
-  justify-content: center;
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
 }
 .cell {
   position: relative;
@@ -548,10 +552,15 @@ function confirmMerge() {
   padding: 0;
   cursor: pointer;
   border-radius: 12px;
+  /* Référence des unités `cqw` de la carte fluide : sans cette déclaration,
+     `--w: 100cqw` retomberait sur la largeur du viewport. */
+  container-type: inline-size;
   /* La grille peut afficher 150+ cartes : on saute le rendu/peinture des
-     cellules hors écran (taille réservée pour éviter les sauts de scroll). */
+     cellules hors écran. `auto` mémorise la taille réellement rendue — la
+     réserve fixe 132×184 datait des colonnes fixes et fausserait le défilement
+     maintenant que la largeur varie. */
   content-visibility: auto;
-  contain-intrinsic-size: 132px 184px;
+  contain-intrinsic-size: auto 132px auto 184px;
 }
 .cell:disabled { cursor: default; }
 .cell:focus-visible {
