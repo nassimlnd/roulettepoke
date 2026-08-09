@@ -30,6 +30,19 @@ export interface WireUser {
 
 // La prime de connexion est créditée dans UNE région. Si le joueur constate
 // qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
+// Zarbi est un cas à part dans le modèle : une seule carte du dex, déclinée en
+// 28 formes cosmétiques (! ? A-Z) gérées hors de `gacha_cards`. L'API les sert
+// donc par un endpoint dédié, et chaque forme existe en standard et en shiny —
+// 56 entrées au total.
+export interface WireZarbiForm {
+  id: UUID
+  /** Le glyphe : « ! », « ? » ou une lettre de A à Z. */
+  form: string
+  image_url: string
+  is_alt: boolean
+  quantity: number
+}
+
 export interface DailyBonusCorrection {
   /** Région finalement créditée. */
   generation: number

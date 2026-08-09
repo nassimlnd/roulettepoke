@@ -40,13 +40,26 @@ const fRarity = ref<string>(ALL)
 const fBiome = ref<string>(ALL)
 const fOwned = ref<'all' | 'owned' | 'missing'>('all')
 
-const { loading, errorMsg, retry } = usePageData(() => collection.ensureFresh())
-
 // La région n'est pas un filtre mais une PORTÉE, au même titre que l'onglet :
 // le jeu compte deux Pokédex distincts (151 à Kanto, 100 à Johto) et c'est leur
 // complétion séparée qui débloque le bonus shiny permanent. Elle entre donc
 // dans le décompte de progression, là où type/rareté/biome n'y touchent pas.
 const fRegion = ref<string>('all')
+
+// Zarbi appartient à Johto : on ne le montre pas quand le joueur a restreint sa
+// vue à Kanto. Le chargement suit l'affichage — inutile d'appeler l'endpoint
+// pour un joueur qui ne regarde que le dex de Kanto.
+const showZarbi = computed(() => fRegion.value !== '1')
+const zarbiOpen = ref(false)
+
+const { loading, errorMsg, retry } = usePageData(async () => {
+  await collection.ensureFresh()
+  if (showZarbi.value) collection.ensureZarbi().catch(() => {})
+})
+
+watch(showZarbi, (v) => {
+  if (v) collection.ensureZarbi().catch(() => {})
+})
 
 // Cartes de la portée courante, AVANT filtres : sert de base à la progression
 // (« 40/151 obtenues » doit rester la progression réelle, pas celle du filtre).
@@ -248,6 +261,13 @@ function confirmMerge() {
         class="filters__count tabular"
       >{{ cards.length }} carte{{ cards.length > 1 ? 's' : '' }}</span>
     </div>
+
+    <!-- Zarbi : contenu de Johto, masqué quand on ne regarde que Kanto. -->
+    <ZarbiPanel
+      v-if="showZarbi"
+      v-model:open="zarbiOpen"
+      :shiny="tab === 'shiny'"
+    />
 
     <PageError
       v-if="errorMsg"

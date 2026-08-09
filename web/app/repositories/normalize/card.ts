@@ -1,7 +1,7 @@
 // Normalisation des cartes — cœur du modèle. Réconcilie la rareté 'Alt'
 // (shiny dans /collection) en `isShiny` + rareté réelle.
-import type { WireCard, WireOwnedCard, Rarity } from '~/types/api'
-import type { DomainCard, DomainOwnedCard, RealRarity } from '~/types/domain'
+import type { WireCard, WireOwnedCard, WireZarbiForm, Rarity } from '~/types/api'
+import type { DomainCard, DomainOwnedCard, ZarbiForm, RealRarity } from '~/types/domain'
 import { asGeneration } from '~/constants/generation'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
@@ -31,6 +31,18 @@ export function normalizeCard(c: WireCard): DomainCard {
     type: c.type,
     parentCardId: c.parent_card_id,
     standardId: c.standard_id ?? null
+  }
+}
+
+export function normalizeZarbiForm(f: WireZarbiForm): ZarbiForm {
+  const quantity = f.quantity ?? 0
+  return {
+    id: f.id,
+    form: f.form,
+    imageUrl: f.image_url,
+    isShiny: f.is_alt,
+    quantity,
+    owned: quantity > 0
   }
 }
 
