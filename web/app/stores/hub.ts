@@ -160,12 +160,15 @@ export const useHubStore = defineStore('hub', {
     async ensureLong(force = false) {
       if (!force && this.longFetchedAt && Date.now() - this.longFetchedAt < TTL_LONG) return
       const api = useApi()
+      // L'éligibilité aux échanges dépend de la région : 120 cartes uniques à
+      // Kanto, 80 à Johto.
+      const gen = useWalletStore().activeGeneration
       const [training, slot, spin, gyms, eligibility] = await Promise.all([
         dedupe('training/status', () => trainingRepo.status(api)).catch(() => null),
         dedupe('slot/status', () => slotRepo.status(api)).catch(() => null),
         dedupe('spin/status', () => spinRepo.status(api)).catch(() => null),
         dedupe('gym', () => gymRepo.getAll(api)).catch(() => [] as DomainGym[]),
-        dedupe('trades/eligibility', () => tradesRepo.eligibility(api)).catch(() => null)
+        dedupe(`trades/eligibility/${gen}`, () => tradesRepo.eligibility(api, gen)).catch(() => null)
       ])
       this.training = training
       this.slot = slot

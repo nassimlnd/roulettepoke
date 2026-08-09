@@ -24,6 +24,18 @@ export interface WireUser {
   avatar_url: string | null
   avatar_is_alt: boolean
   charme_chroma_rolls: number
+  /** Le droit de déplacer la prime du jour d'une région à l'autre est-il ouvert ? */
+  canCorrectDailyBonusGeneration?: boolean
+}
+
+// La prime de connexion est créditée dans UNE région. Si le joueur constate
+// qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
+export interface DailyBonusCorrection {
+  /** Région finalement créditée. */
+  generation: number
+  amount?: number
+  /** Montant par région après correction, quand le serveur le détaille. */
+  amounts?: Record<string, number>
 }
 
 export interface WireCard {
