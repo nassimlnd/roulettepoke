@@ -7,6 +7,9 @@ export type Generation = 1 | 2
 
 export const DEFAULT_GENERATION: Generation = 1
 
+/** Dernier n° national couvert par le jeu (Kanto 1-151 + Johto 152-251). */
+export const DEX_MAX = 251
+
 export interface GenerationMeta {
   id: Generation
   /** Nom de la région, tel qu'affiché au joueur. */
