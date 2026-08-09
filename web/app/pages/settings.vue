@@ -279,7 +279,9 @@ function sendReset() {
             </p>
             <p class="sprites__desc">
               Le rendu des Pokémon sur tes cartes, d'une génération à l'autre.
-              Clique un aperçu pour l'adopter.
+              Choisis un Pokémon d'aperçu, compare, puis clique le style qui te
+              plaît. Tous les styles sont embarqués dans le jeu : le changement
+              est immédiat et fonctionne hors-ligne.
             </p>
           </div>
         </div>

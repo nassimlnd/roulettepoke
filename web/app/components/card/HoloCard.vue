@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DomainCard, DomainOwnedCard } from '~/types/domain'
 import { TYPE_GRADIENT, RARITY_META, SHINY_HOLO, SHINY_LOCKED_BG, SHINY_LOCKED_HOLO, hexA, cosmeticHp, STAGE_LABEL } from '~/utils/cardTheme'
+import { spriteStyleByKey } from '~/constants/sprite-styles'
 
 // Carte holographique — direction « Mochidex » adaptée à nos vraies données.
 // Dégradé de face par type, gemmes de rareté, holo + tilt/glare au pointeur.
@@ -68,31 +69,56 @@ const stage = computed(() => STAGE_LABEL[props.card.level] ?? '')
 const spriteCanvas = ref<HTMLCanvasElement>()
 
 // ─── Style de sprite choisi par le joueur (réglages) ───
-// Les jeux « génération » viennent d'un CDN externe : on ne les affiche
-// QU'APRÈS préchargement réussi. Sans ça, un CDN lent ou une image manquante
-// (shiny absent d'un jeu) laisserait la fenêtre d'illustration vide. Le sprite
-// du backend reste donc affiché et n'est remplacé que si l'autre est prêt.
+// Les jeux « génération » sont désormais SERVIS PAR NOS ASSETS
+// (public/sprites/) : même origine, donc pas de latence réseau et pas de
+// requête qui pend. On peut les afficher directement, et se contenter de
+// `@error` pour revenir au sprite du jeu si un fichier manquait.
+//
+// Le préchargement n'est conservé que pour le seul style resté distant (Gen 5
+// animé, 18 Mo de GIF). C'était le contournement nécessaire quand TOUT venait
+// de raw.githubusercontent : là-bas une requête PEND au lieu d'échouer,
+// l'événement `error` ne se déclenche jamais et la fenêtre d'illustration
+// serait restée vide.
 const prefs = usePreferencesStore()
-const styledReady = ref<string | null>(null)
+const styleMeta = computed(() => spriteStyleByKey(prefs.spriteStyle))
+const styledUrl = computed(() =>
+  styledSpriteUrl(prefs.spriteStyle, props.card.num, isShiny.value))
+
+// Repli déclenché par @error sur un sprite local absent. Réarmé à chaque
+// changement de style ou de carte.
+const localFailed = ref(false)
+const remoteReady = ref<string | null>(null)
 
 watch(
   () => [prefs.spriteStyle, props.card.num, isShiny.value] as const,
-  ([styleKey, num, shiny]) => {
-    styledReady.value = null
+  () => {
+    localFailed.value = false
+    remoteReady.value = null
     if (!import.meta.client) return
-    const url = styledSpriteUrl(styleKey, num, shiny)
-    if (!url) return
+    const url = styledUrl.value
+    if (!url || styleMeta.value.local) return
     const probe = new Image()
     probe.onload = () => {
-      styledReady.value = url
+      remoteReady.value = url
     }
     probe.src = url
   },
   { immediate: true }
 )
 
-// Sprite effectif : le style choisi s'il a chargé, sinon celui du backend.
-const spriteUrl = computed(() => styledReady.value ?? props.card.imageUrl)
+// Sprite effectif : le style choisi si utilisable, sinon celui du jeu.
+const spriteUrl = computed(() => {
+  const url = styledUrl.value
+  if (!url) return props.card.imageUrl
+  if (styleMeta.value.local) return localFailed.value ? props.card.imageUrl : url
+  return remoteReady.value ?? props.card.imageUrl
+})
+
+// Le pixel art doit rester net : agrandi de 40-96 px à la taille de la carte,
+// le lissage par défaut du navigateur en fait une bouillie et lui retire
+// justement ce qui le caractérise.
+const pixelated = computed(() =>
+  styleMeta.value.family === 'pixel' && spriteUrl.value === styledUrl.value)
 
 // ─── Sprite : animé par défaut, ou figé sur demande ───
 // Les sprites du backend sont des WebP ANIMÉS (23 à 90 frames selon le Pokémon),
@@ -199,7 +225,7 @@ function onLeave() {
           v-if="freeze"
           ref="spriteCanvas"
           class="holo__sprite"
-          :class="{ 'holo__sprite--locked': !owned }"
+          :class="{ 'holo__sprite--locked': !owned, 'holo__sprite--pixel': pixelated }"
           role="img"
           :aria-label="card.name"
         />
@@ -208,9 +234,10 @@ function onLeave() {
           :src="spriteUrl"
           :alt="card.name"
           class="holo__sprite"
-          :class="{ 'holo__sprite--locked': !owned }"
+          :class="{ 'holo__sprite--locked': !owned, 'holo__sprite--pixel': pixelated }"
           loading="lazy"
           decoding="async"
+          @error="localFailed = true"
         >
         <!-- couche holographique (mobile au pointeur) -->
         <div
@@ -376,6 +403,8 @@ function onLeave() {
   filter: drop-shadow(0 calc(var(--w) * 0.02) calc(var(--w) * 0.02) rgba(60, 40, 30, .25));
 }
 .holo__sprite--locked { filter: brightness(0) opacity(.28); }
+/* Pixel art : agrandissement au plus proche voisin, sinon le sprite est flou. */
+.holo__sprite--pixel { image-rendering: pixelated; }
 
 .holo__sheen {
   position: absolute;
