@@ -30,6 +30,16 @@ export interface DomainOwnedCard extends DomainCard {
   obtainedAt: ISODate | null
 }
 
+/** Une des 28 formes de Zarbi, en version standard ou shiny. */
+export interface ZarbiForm {
+  id: UUID
+  form: string
+  imageUrl: string
+  isShiny: boolean
+  quantity: number
+  owned: boolean
+}
+
 // Résultat normalisé d'un tirage (union discriminée par `kind`)
 export type RollOutcome
   = | { kind: 'card', card: DomainCard, isNew: boolean, rollCost: number }

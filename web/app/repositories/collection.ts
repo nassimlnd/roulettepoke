@@ -1,7 +1,7 @@
-import type { WireCard, WireOwnedCard, SellResult, UUID } from '~/types/api'
-import type { DomainCard, DomainOwnedCard } from '~/types/domain'
+import type { WireCard, WireOwnedCard, WireZarbiForm, SellResult, UUID } from '~/types/api'
+import type { DomainCard, DomainOwnedCard, ZarbiForm } from '~/types/domain'
 import type { Api } from './_client'
-import { normalizeCard, normalizeOwnedCard } from './normalize'
+import { normalizeCard, normalizeOwnedCard, normalizeZarbiForm } from './normalize'
 
 export const collectionRepo = {
   mine: async (api: Api): Promise<DomainOwnedCard[]> => {
@@ -13,7 +13,15 @@ export const collectionRepo = {
     return cards.map(normalizeOwnedCard)
   },
   sell: (api: Api, cardId: UUID) =>
-    api<SellResult>('/collection/sell', { method: 'POST', body: { cardId } })
+    api<SellResult>('/collection/sell', { method: 'POST', body: { cardId } }),
+  // Les 28 formes de Zarbi vivent hors du dex standard : endpoint dédié, et une
+  // vente qui prend l'identifiant de FORME et non de carte.
+  zarbiForms: async (api: Api): Promise<ZarbiForm[]> => {
+    const { forms } = await api<{ forms: WireZarbiForm[] }>('/collection/zarbi')
+    return forms.map(normalizeZarbiForm)
+  },
+  sellZarbi: (api: Api, formId: UUID) =>
+    api<SellResult>('/collection/zarbi/sell', { method: 'POST', body: { formId } })
 }
 
 export const mergeRepo = {
