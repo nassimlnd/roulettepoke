@@ -216,8 +216,14 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
 }
 /* 1024-1279 (iPad paysage, laptops étroits) : icônes seules pour tout faire tenir. */
 .nav__label { display: none; }
-/* Dès qu'on a la place (≥ 1280) : libellés + un peu plus d'air. */
-@media (min-width: 1280px) {
+/* Dès qu'on a la place : libellés + un peu plus d'air. Le seuil était 1280,
+   mais l'arrivée de Motus et d'Idées porte la barre à ~1520 px de contenu en
+   mode libellés — à 1440 elle débordait de 79 px et toute la page défilait
+   latéralement (mesuré). Sous 1536, les icônes seules suffisent (title). */
+@media (min-width: 1536px) {
+  /* Le conteneur s'élargit avec les libellés : plafonné à 80 rem, il ne peut
+     pas contenir les ~1440 px du mode libellés — la nav débordait de sa boîte. */
+  .navbar__inner { max-width: 96rem; }
   .nav { gap: 3px; }
   .nav__link { gap: 6px; padding: 7px 12px; font-size: .88rem; }
   .nav__label { display: inline; }

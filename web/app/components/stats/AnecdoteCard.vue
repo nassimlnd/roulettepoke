@@ -1,19 +1,22 @@
 <script setup lang="ts">
 // Carte « anecdote » : petit intitulé + vedette (nom) + détail, pastille d'icône
-// teintée selon le ton (bon / mauvais / neutre / doré).
+// teintée selon le ton (bon / mauvais / neutre / doré). `hint` explique ce que
+// mesure la récompense — au survol, comme dans le jeu d'origine.
 withDefaults(defineProps<{
   icon: string
   label: string
   name: string
   detail: string
   tone?: 'good' | 'bad' | 'gold' | 'neutral'
-}>(), { tone: 'neutral' })
+  hint?: string
+}>(), { tone: 'neutral', hint: undefined })
 </script>
 
 <template>
   <div
     class="anec"
     :class="`anec--${tone}`"
+    :title="hint"
   >
     <span class="anec__ico">
       <UIcon
