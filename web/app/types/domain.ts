@@ -326,20 +326,10 @@ export interface TeamMember {
 }
 
 // ─── Statistiques (forme normalisée de WireStats) ─────────────────────────────
-export interface StatsGlobal {
-  totalRolls: number
-  shinyObtained: number
-  shinyRate: number
-  legendaryRate: number
-}
-
-export interface StatGym {
-  name: string
-  type: PokeType
-  badgeName: string
-  badgeImageUrl: string
-  orderNum: number
-  holders: number
+// Duels de tournoi d'un joueur : qui le bat le plus / qui il bat le plus.
+export interface StatDuel {
+  opponents: string[]
+  count: number
 }
 
 export interface StatPlayer {
@@ -351,41 +341,39 @@ export interface StatPlayer {
   ownedShiny: number
   spinRuns: number
   spinTransfers: number
+  nemesis: StatDuel | null
+  victim: StatDuel | null
 }
 
-export type OddsKey = 'commun' | 'rare' | 'epic' | 'shiny' | 'legendary'
-
-// Probabilité par tirage d'une rareté, calculée depuis le pool
-// (count × weight / total_weight).
-export interface RarityOdds {
-  key: OddsKey
+// Une récompense du palmarès, prête à afficher : la normalisation résout
+// libellé, ton et phrase chiffrée pour que la page reste bête. `names` vide =
+// pas encore de données, `detail` porte alors le message d'attente.
+export interface StatAward {
+  key: string
+  icon: string
   label: string
-  color: string
-  count: number
-  probability: number
+  tone: 'good' | 'bad' | 'gold' | 'neutral'
+  names: string[]
+  detail: string
+  /** Ce que mesure la récompense — infobulle, repris du jeu d'origine. */
+  hint: string
 }
 
-export interface SpinAnecdote { names: string[], attempts: number, transfers: number }
-
-export interface DomainAnecdotes {
-  mostShinyDupes: { names: string[], dupes: number, shinyTotal: number }
-  unluckiest: { names: string[], lossHigh: number }
-  luckiest: { names: string[], winLow: number }
-  mostOwnedCards: { name: string, totalQty: number }[]
-  leastOwnedCards: { name: string, totalQty: number }[]
-  spinLucky: SpinAnecdote
-  spinUnlucky: SpinAnecdote
-  spinDetermined: SpinAnecdote
+export interface StatAwardGroup {
+  key: string
+  label: string
+  icon: string
+  awards: StatAward[]
 }
 
 export interface DomainStats {
-  global: StatsGlobal
-  gyms: StatGym[]
+  roulette: { totalRolls: number, shinyObtained: number, shinyRate: number, legendaryRate: number }
+  jackpot: { totalSpins: number, totalCoins: number, totalItems: number, totalLegendaries: number }
+  spin: { totalRuns: number, totalTransfers: number, avgRunsForReward: number, avgRunsForLegendary: number }
+  motus: { totalGames: number, totalWins: number }
   players: StatPlayer[]
-  odds: RarityOdds[]
-  pool: { totalStd: number, totalLeg: number, totalShiny: number }
-  anecdotes: DomainAnecdotes
-  spin: { totalRuns: number, totalTransfers: number }
+  pool: { totalStd: number, totalShiny: number }
+  awardGroups: StatAwardGroup[]
 }
 
 // ─── Tchat ────────────────────────────────────────────────────────────────────

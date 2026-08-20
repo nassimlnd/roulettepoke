@@ -587,20 +587,16 @@ export interface WireRecentShiny {
 }
 
 // ─── Statistiques (GET /stats — gros payload agrégé, une requête) ──────────────
-export interface WireStatsGlobal {
-  total_rolls: number
-  shiny_obtained: number
-  shiny_rate: number
-  legendary_rate: number
-}
+// ─── Statistiques (GET /stats) — restructurées par la v4 ─────────────────────
+// Le payload a changé de fond en comble : `global` est décliné PAR JEU
+// (roulette, jackpot, aventure, motus), `gyms` et `pool.rarities` ont disparu,
+// chaque joueur porte ses duels de tournoi (némésis / souffre-douleur), et les
+// anecdotes deviennent un palmarès de 5 familles × 4 récompenses. Formes
+// relevées sur l'API le 10 août 2026.
 
-export interface WireStatsGym {
-  name: string
-  type: PokeType
-  badge_name: string
-  badge_image_url: string
-  order_num: number
-  badge_holders: number
+export interface WireStatsDuel {
+  opponents: string[]
+  count: number
 }
 
 export interface WireStatsPlayer {
@@ -612,45 +608,55 @@ export interface WireStatsPlayer {
   owned_shiny: number
   spin_runs: number
   spin_transfers: number
+  nemesis?: WireStatsDuel | null
+  victim?: WireStatsDuel | null
 }
 
-export interface WireStatsRarity { weight: number, count: number }
-
-export interface WireStatsPool {
-  total_weight: number
-  total_std: number
-  total_leg: number
-  total_shiny: number
-  rarities: {
-    commun: WireStatsRarity
-    rare: WireStatsRarity
-    epic: WireStatsRarity
-    legendary: WireStatsRarity
-    shiny: WireStatsRarity
+// Chaque récompense peut manquer (pas encore de données) : tout est nullable,
+// c'est le comportement du front d'origine (`if (!data) …`).
+export interface WireStatsAnecdotes {
+  roulette?: {
+    most_shiny_dupes?: { players: string[], dupes: number, shiny_total: number } | null
+    specialist?: { entries: { username: string, card_name: string, quantity: number }[] } | null
+    precious?: { entries: { username: string, card_name: string, quantity: number }[] } | null
+    shiny_hunter?: { players: string[], count: number } | null
+  }
+  jackpot?: {
+    ka_tching?: { players: string[], total_won: number } | null
+    big_winner?: { players: string[], wins: number } | null
+    banqueroute?: { players: string[], total_lost: number } | null
+    legendary_hunter?: { players: string[], leg_wins: number } | null
+  }
+  spin?: {
+    lucky?: { players: string[], attempts_count: number, transfers_count: number } | null
+    unlucky?: { players: string[], attempts_count: number, transfers_count: number } | null
+    determined?: { players: string[], attempts_count: number, transfers_count: number } | null
+    egg_master?: { players: string[], eggs: number } | null
+  }
+  motus?: {
+    bernard_pivot?: { players: string[], wins: number } | null
+    rap_god?: { players: string[], forms_owned: number } | null
+    encore?: { players: string[], dupes: number } | null
+    on_te_voit?: { players: string[], one_shots: number } | null
+  }
+  tournoi?: {
+    most_wins?: { players: string[], wins: number } | null
+    lucky?: { players: string[], win_low: number } | null
+    unlucky?: { players: string[], loss_high: number } | null
+    tyran_victime?: { entries: { tyran: string, victime: string, wins: number }[] } | null
   }
 }
 
-export interface WireStatsCardQty { name: string, total_qty: number }
-export interface WireStatsSpinAnec { players: string[], attempts_count: number, transfers_count: number }
-
-export interface WireStatsAnecdotes {
-  most_shiny_dupes: { players: string[], dupes: number, shiny_total: number }
-  unluckiest: { players: string[], loss_high: number }
-  luckiest: { players: string[], win_low: number }
-  most_owned_cards: WireStatsCardQty[]
-  least_owned_cards: WireStatsCardQty[]
-  spin_lucky: WireStatsSpinAnec
-  spin_unlucky: WireStatsSpinAnec
-  spin_determined: WireStatsSpinAnec
-}
-
 export interface WireStats {
-  global: WireStatsGlobal
-  gyms: WireStatsGym[]
+  global: {
+    roulette: { total_rolls: number, shiny_obtained: number, shiny_rate: number, legendary_rate: number }
+    jackpot: { total_spins: number, total_coins: number, total_items: number, total_legendaries: number }
+    spin: { total_runs: number, total_transfers: number, avg_runs_for_reward: number, avg_runs_for_legendary: number }
+    motus: { total_games: number, total_wins: number }
+  }
   players: WireStatsPlayer[]
-  pool: WireStatsPool
-  anecdotes: WireStatsAnecdotes
-  spin: { total_runs: number, total_transfers: number }
+  pool: { total_std: number, total_shiny: number }
+  anecdotes?: WireStatsAnecdotes
 }
 
 // ─── Tchat (GET /chat/history + WebSocket /api/ws/chat) ────────────────────────
