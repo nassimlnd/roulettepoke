@@ -50,7 +50,8 @@ const sections = [
     items: [
       'Accumule 10 exemplaires identiques pour débloquer la fusion → tu obtiens la version évoluée.',
       'La fusion demande désormais une confirmation (elle consomme 10 cartes, elle est définitive).',
-      'Vente à l\'unité : Commun 1 · Rare 5 · Épique 10 · Légendaire 25 coins.'
+      'Vente à l\'unité : Commun 1 · Rare 5 · Épique 10 · Légendaire 25 coins.',
+      'Vente intelligente (dans la collection) : revend en une fois les doublons devenus inutiles — shiny déjà obtenue, doublons shiny (→ Charmes) — sans jamais toucher au dernier exemplaire ni aux réserves de fusion.'
     ]
   },
   {

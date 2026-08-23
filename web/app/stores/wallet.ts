@@ -38,6 +38,20 @@ export const useWalletStore = defineStore('wallet', {
       this.lastSync = { source, at: Date.now() }
     },
 
+    // Exception à la règle « le montant reçu concerne la génération active » :
+    // la VENTE crédite la bourse de la génération de la CARTE, et sa réponse
+    // porte le solde de CETTE bourse (mesuré : vendre une carte de Kanto en
+    // étant sur Johto crédite bien Kanto, Johto ne bouge pas). Passer ce
+    // montant à reconcile() écraserait la bourse active avec le solde de
+    // l'autre région à la première vente croisée.
+    reconcileGeneration(generation: Generation, coins: number, source: string) {
+      // Les débits optimistes portent sur la bourse active : on ne les purge
+      // que si c'est elle qu'on vient de resynchroniser.
+      if (generation === this.activeGeneration) this.pendingDebits = []
+      this.purses[generation] = coins
+      this.lastSync = { source, at: Date.now() }
+    },
+
     // Réconciliation depuis l'objet utilisateur : lui seul porte les DEUX
     // bourses et la génération active. C'est le point d'entrée à privilégier
     // (login, /auth/me, après un achat) ; il ne peut pas se désynchroniser.

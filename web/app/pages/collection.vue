@@ -51,6 +51,7 @@ const fRegion = ref<string>('all')
 // pour un joueur qui ne regarde que le dex de Kanto.
 const showZarbi = computed(() => fRegion.value !== '1')
 const zarbiOpen = ref(false)
+const smartSellOpen = ref(false)
 
 const { loading, errorMsg, retry } = usePageData(async () => {
   await collection.ensureFresh()
@@ -143,7 +144,7 @@ function confirmSell() {
   return run(async () => {
     const res = await collection.sell(selected.value!.id)
     toast.add({
-      title: res.charmeObtained ? 'Charme Chroma obtenu !' : `+${res.sellPrice} coins`,
+      title: res.charmeObtained ? 'Charme Chroma obtenu !' : `+${res.sellPrice ?? 0} coins`,
       color: 'success',
       icon: res.charmeObtained ? 'i-lucide-sparkles' : 'i-lucide-coins'
     })
@@ -209,6 +210,19 @@ function confirmMerge() {
           class="size-4"
         />
         Chance shiny
+      </button>
+      <!-- Vente en lot pilotée par règles : les doublons devenus inutiles se
+           revendent en une fois au lieu de carte par carte dans la modale. -->
+      <button
+        class="toggle"
+        :disabled="loading"
+        @click="smartSellOpen = true"
+      >
+        <UIcon
+          name="i-lucide-hand-coins"
+          class="size-4"
+        />
+        Vente intelligente
       </button>
     </div>
 
@@ -411,6 +425,9 @@ function confirmMerge() {
       @confirm="confirmSell"
     />
 
+    <!-- Vente intelligente : règles + aperçu + exécution en lot. -->
+    <SmartSellModal v-model:open="smartSellOpen" />
+
     <!-- Confirmation fusion (résout C5 : plus de fusion sans confirmation) -->
     <ConfirmDialog
       v-model:open="mergeOpen"
@@ -487,6 +504,7 @@ function confirmMerge() {
   transition: all .15s ease;
 }
 .toggle:not(.toggle--on):hover { color: var(--ui-text); }
+.toggle:disabled { opacity: .55; cursor: default; }
 .toggle--on {
   background: var(--color-poke-500);
   color: #fff;

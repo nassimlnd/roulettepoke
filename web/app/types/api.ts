@@ -216,9 +216,17 @@ export interface WireBiome {
   owned_count: number
 }
 
+// Réponse mesurée : { success, sellPrice, newQuantity, newCoins, generation }.
+// `newCoins` est le solde de la bourse de `generation` — la génération de la
+// CARTE vendue, pas la région active (vendre une carte de Kanto en étant sur
+// Johto crédite Kanto : vérifié en croisé). Tous les champs sont optionnels :
+// la vente d'un shiny troque les coins contre `charmeObtained`.
 export interface SellResult {
-  sellPrice: number
-  newCoins: number
+  success?: boolean
+  sellPrice?: number
+  newQuantity?: number
+  newCoins?: number
+  generation?: number
   charmeObtained?: boolean
 }
 
