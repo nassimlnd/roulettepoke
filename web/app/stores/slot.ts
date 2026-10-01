@@ -15,7 +15,14 @@ export const useSlotStore = defineStore('slot', {
   }),
 
   getters: {
-    canSpin: state => !!state.status?.canSpin
+    canSpin: state => !!state.status?.canSpin,
+    // « Jackpot en folie » (v5.1) : deux tirages le jour de l'événement. Les
+    // champs sont absents des anciennes réponses → 1 tirage, comme avant.
+    spinsAllowed: state => state.status?.spinsAllowed ?? 1,
+    spinsLeft(): number {
+      const today = this.status?.spinsToday ?? (this.canSpin ? 0 : 1)
+      return Math.max(0, this.spinsAllowed - today)
+    }
   },
 
   actions: {
@@ -32,12 +39,17 @@ export const useSlotStore = defineStore('slot', {
       } catch { /* silencieux */ }
     },
 
-    // 1 partie/jour. mode 1 = 1 ligne (gratuit), 2 = 3 lignes (5 🪙), 3 = 3+diag (10 🪙).
+    // 1 partie/jour (2 en folie). mode 1 = 1 ligne (gratuit), 2 = 3 lignes
+    // (5 🪙), 3 = 3+diag (10 🪙). Le droit de rejouer et la bourse créditée
+    // (celle de la génération active côté serveur) sont relus depuis le
+    // serveur plutôt que devinés.
     async spin(mode: 1 | 2 | 3): Promise<SpinResult> {
       const res = await slotRepo.spin(useApi(), mode)
       if (this.status) this.status.canSpin = false
-      useWalletStore().reconcile(res.newCoins, 'slot')
-      this.loadRecentWins()
+      await Promise.all([
+        useWalletStore().refreshFromServer('slot'),
+        this.ensureFresh(true).catch(() => {})
+      ])
       return res
     }
   }

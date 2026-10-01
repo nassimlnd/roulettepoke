@@ -2,7 +2,7 @@ import { parisDayKey } from '~/utils/paris-time'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
 import { DAILY_BONUS_BASE, DAILY_BONUS_PER_BADGE } from '~/constants/game'
 import { gymRepo } from '~/repositories'
-import { generationRegion } from '~/constants/generation'
+import { generationRegion, asGeneration } from '~/constants/generation'
 
 // Après restauration du token (localStorage), hydrate l'utilisateur UNE fois.
 // C'est le seul endroit qui déclenche /auth/me (effet de bord : bonus quotidien).
@@ -27,13 +27,14 @@ export default defineNuxtPlugin(async () => {
   // plus une fois par jour, pas à chaque démarrage. Si elle échoue, on annonce
   // la règle sans chiffre plutôt qu'un montant faux.
   //
-  // Le bonus se compte par RÉGION : seuls les badges du parcours actif comptent
-  // (le jeu d'origine calcule `100 + badgesDeLaGénérationActive * 10`). On lit
-  // donc /gym, qui porte le champ `generation`, plutôt que /gym/badges qui
-  // mélange les deux parcours.
+  // Le bonus se compte par RÉGION : seuls les badges de la région qui reçoit
+  // la prime comptent (`100 + badges × 10`). Depuis la v5 le serveur dit
+  // laquelle (`dailyBonusGeneration`) — après un passage au bureau de change,
+  // ce n'est plus forcément la région active. On lit /gym, qui porte le champ
+  // `generation`, plutôt que /gym/badges qui mélange les parcours.
   let description = `Ta récompense de connexion a été créditée (${DAILY_BONUS_BASE} 🪙 + ${DAILY_BONUS_PER_BADGE} par badge d'arène).`
   try {
-    const gen = useWalletStore().activeGeneration
+    const gen = asGeneration(auth.user?.dailyBonusGeneration ?? useWalletStore().activeGeneration)
     const region = generationRegion(gen)
     const count = (await gymRepo.getAll(useApi()))
       .filter(g => g.generation === gen && g.hasBadge).length

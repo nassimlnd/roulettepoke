@@ -19,6 +19,12 @@ const error = ref('')
 
 const auth = useAuthStore()
 const route = useRoute()
+const toast = useToast()
+
+// Depuis la 4.1.0 un compte neuf doit confirmer son e-mail avant de se
+// connecter ; le serveur le dit dans son message d'erreur. On propose alors
+// de renvoyer le lien plutôt que de laisser le joueur devant un mur.
+const unverified = computed(() => /non v[ée]rifi/i.test(error.value))
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   loading.value = true
@@ -31,6 +37,20 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     error.value = humanizeError(err)
   } finally {
     loading.value = false
+  }
+}
+
+const resending = ref(false)
+async function resend() {
+  if (resending.value || !state.identifier) return
+  resending.value = true
+  try {
+    const { message } = await auth.resendVerification(state.identifier)
+    toast.add({ title: message || 'E-mail de vérification renvoyé.', color: 'success', icon: 'i-lucide-mail-check' })
+  } catch (err) {
+    toast.add({ title: humanizeError(err), color: 'error' })
+  } finally {
+    resending.value = false
   }
 }
 </script>
@@ -82,6 +102,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :title="error"
         icon="i-lucide-triangle-alert"
       />
+      <PButton
+        v-if="unverified"
+        color="neutral"
+        block
+        icon="i-lucide-refresh-cw"
+        :loading="resending"
+        class="w-full"
+        @click="resend"
+      >
+        Renvoyer l'e-mail de vérification
+      </PButton>
 
       <PButton
         type="submit"

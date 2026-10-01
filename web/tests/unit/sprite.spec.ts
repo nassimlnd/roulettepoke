@@ -46,6 +46,15 @@ describe('styledSpriteUrl', () => {
     }
   })
 
+  it('Gen 2 et Gen 7 s\'arrêtent à Johto ; les autres couvrent Hoenn', () => {
+    expect(styledSpriteUrl('gen2', 384)).toBeNull() // Rayquaza : hors Cristal
+    expect(styledSpriteUrl('gen7', 384)).toBeNull() // PokeAPI s'arrête à 251 pour ce jeu
+    for (const s of SPRITE_STYLES.filter(x => x.path && !['gen1', 'gen2', 'gen7'].includes(x.key))) {
+      expect(styledSpriteUrl(s.key, 384), s.key).not.toBeNull()
+      expect(styledSpriteUrl(s.key, 384, true), s.key).not.toBeNull()
+    }
+  })
+
   it('n° invalide ou hors Pokédex → null', () => {
     expect(styledSpriteUrl('gen4', 0)).toBeNull()
     expect(styledSpriteUrl('gen4', 1.5)).toBeNull()
@@ -69,6 +78,7 @@ describe('catalogue des styles', () => {
 
   it('annonce en clair ce qu\'un style ne sait pas rendre', () => {
     expect(styleLimitation(spriteStyleByKey('gen1'))).toBe('Kanto seulement, sans shiny')
+    expect(styleLimitation(spriteStyleByKey('gen2'))).toBe('Kanto et Johto seulement')
     expect(styleLimitation(spriteStyleByKey('gen4'))).toBeNull()
   })
 

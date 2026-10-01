@@ -4,10 +4,10 @@ import type { TeamMember } from '~/types/domain'
 import type { Api } from './_client'
 import { normalizeTeamMember } from './normalize'
 
-// Le joueur entretient TROIS équipes indépendantes de 6 Pokémon, désignées par
-// une « portée » : `global` sert le Tournoi et la Ligue des 4, `gen1` et `gen2`
-// les arènes de Kanto et de Johto. Les valeurs sont vérifiées contre l'API :
-// `kanto`/`johto` sont refusés (« Portée d'équipe invalide »).
+// Le joueur entretient une équipe de 6 Pokémon PAR PORTÉE : `global` sert le
+// Tournoi et la Ligue des 4, `gen1`, `gen2`, `gen3` les arènes de chaque
+// région. Les valeurs sont vérifiées contre l'API : `kanto`/`johto` sont
+// refusés (« Portée d'équipe invalide »).
 //
 // Seules la lecture, le tirage et la vidange prennent la portée ; l'échange et
 // le retrait s'appuient sur l'identifiant d'entrée, qui est déjà unique.

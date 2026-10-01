@@ -2,7 +2,7 @@
 // (shiny dans /collection) en `isShiny` + rareté réelle.
 import type { WireCard, WireOwnedCard, WireZarbiForm, Rarity } from '~/types/api'
 import type { DomainCard, DomainOwnedCard, ZarbiForm, RealRarity } from '~/types/domain'
-import { asGeneration } from '~/constants/generation'
+import { asGeneration, generationOfNum } from '~/constants/generation'
 
 // La rareté réelle d'une carte, en réconciliant 'Alt'. Un shiny garde la
 // rareté de sa version standard (Commun par défaut si non déductible).
@@ -18,10 +18,10 @@ export function normalizeCard(c: WireCard): DomainCard {
   return {
     id: c.id,
     num: c.num,
-    // L'API porte la génération sur chaque carte. On préfère ce champ à une
-    // déduction depuis `num` (« ≤ 151 = Kanto »), qui deviendrait fausse dès
-    // qu'une région se glisse ailleurs dans le Pokédex.
-    generation: asGeneration(c.generation),
+    // L'API porte la génération sur chaque carte du dex ; certaines charges
+    // utiles (gains du Jackpot, avatars) décrivent une carte sans ce champ —
+    // on la situe alors par son n° national plutôt que de crier à l'inconnu.
+    generation: c.generation === undefined ? generationOfNum(c.num) : asGeneration(c.generation),
     name: c.name,
     imageUrl: c.image_url,
     rarity,

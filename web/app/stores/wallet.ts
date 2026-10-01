@@ -1,19 +1,20 @@
 import { defineStore } from 'pinia'
 import type { WireUser } from '~/types/api'
-import { type Generation, DEFAULT_GENERATION, asGeneration } from '~/constants/generation'
+import { type Generation, GENERATIONS, DEFAULT_GENERATION, asGeneration, coinsField } from '~/constants/generation'
 
 interface PendingDebit { ref: string, amount: number }
 
 // Solde unique réconcilié (résout M7 : fini le solde optimiste divergent).
 // Règle : le serveur a toujours raison.
 //
-// Depuis la v4, le joueur possède DEUX bourses (Kanto, Johto) dont une seule
-// est active. Le reste de l'application ne connaît toujours qu'un solde — celui
-// de la génération active — pour que `canAfford`, les débits optimistes et
-// l'affichage restent inchangés. Seul le sélecteur de génération lit `purses`.
+// Depuis la v4, le joueur possède UNE BOURSE PAR GÉNÉRATION (Kanto, Johto,
+// Hoenn…) dont une seule est active. Le reste de l'application ne connaît
+// toujours qu'un solde — celui de la génération active — pour que `canAfford`,
+// les débits optimistes et l'affichage restent inchangés. Seuls le sélecteur
+// de génération et les choix de devise lisent `purses`.
 export const useWalletStore = defineStore('wallet', {
   state: () => ({
-    purses: { 1: null, 2: null } as Record<Generation, number | null>,
+    purses: Object.fromEntries(GENERATIONS.map(g => [g.id, null])) as Record<Generation, number | null>,
     activeGeneration: DEFAULT_GENERATION as Generation,
     lastSync: null as { source: string, at: number } | null,
     pendingDebits: [] as PendingDebit[]
@@ -52,14 +53,13 @@ export const useWalletStore = defineStore('wallet', {
       this.lastSync = { source, at: Date.now() }
     },
 
-    // Réconciliation depuis l'objet utilisateur : lui seul porte les DEUX
+    // Réconciliation depuis l'objet utilisateur : lui seul porte TOUTES les
     // bourses et la génération active. C'est le point d'entrée à privilégier
     // (login, /auth/me, après un achat) ; il ne peut pas se désynchroniser.
     reconcileUser(user: WireUser, source: string) {
       this.pendingDebits = []
       this.activeGeneration = asGeneration(user.active_generation)
-      this.purses[1] = user.coins_gen1
-      this.purses[2] = user.coins_gen2
+      for (const g of GENERATIONS) this.purses[g.id] = user[coinsField(g.id)] ?? null
       this.lastSync = { source, at: Date.now() }
     },
 

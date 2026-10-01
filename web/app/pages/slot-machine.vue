@@ -148,6 +148,12 @@ onMounted(async () => {
           >
             Solde insuffisant pour cette mise.
           </p>
+          <p
+            v-if="slot.spinsAllowed > 1 && !spinning"
+            class="jp__frenzy"
+          >
+            🎰 Jackpot en folie : {{ slot.spinsLeft }} tirage{{ slot.spinsLeft > 1 ? 's' : '' }} restant{{ slot.spinsLeft > 1 ? 's' : '' }} aujourd'hui
+          </p>
         </div>
 
         <!-- Résultat -->
@@ -315,6 +321,7 @@ onMounted(async () => {
   border-radius: 14px;
 }
 .jp__warn { font-size: .8rem; color: var(--color-poke-600); font-weight: 600; }
+.jp__frenzy { font-size: .8rem; color: #c98a1a; font-weight: 700; }
 
 .result {
   width: 100%;

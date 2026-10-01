@@ -7,13 +7,28 @@ function normalizeRoll(r: WireRollResult): RollOutcome {
   if ('isSpecialEvent' in r) {
     if (r.eventType === 'coins') return { kind: 'coins', amount: r.amount, rollCost: r.rollCost }
     if (r.eventType === 'charme_chroma') return { kind: 'charme', rollCost: r.rollCost }
-    return {
-      kind: 'choice',
-      choiceId: r.choiceId,
-      left: normalizeCard(r.leftCard),
-      right: normalizeCard(r.rightCard),
-      rollCost: r.rollCost
+    if (r.eventType === 'card_choice') {
+      return {
+        kind: 'choice',
+        choiceId: r.choiceId,
+        left: normalizeCard(r.leftCard),
+        right: normalizeCard(r.rightCard),
+        rollCost: r.rollCost
+      }
     }
+    // Éclosion : le serveur donne le bébé et un drapeau shiny à part — comme
+    // le client d'origine, on les fusionne en une carte.
+    if (r.eventType === 'egg_hatch') {
+      return {
+        kind: 'egg',
+        card: normalizeCard({ ...r.pokemon, is_alt: r.shiny || r.pokemon.is_alt }),
+        isNew: r.isNew,
+        rollCost: r.rollCost
+      }
+    }
+    // Un événement inconnu doit se voir, pas se faire passer pour un choix de
+    // carte (c'est ainsi que l'éclosion d'œuf plantait la révélation).
+    throw new Error(`Événement de tirage inconnu : ${(r as { eventType?: string }).eventType}`)
   }
   return { kind: 'card', card: normalizeCard(r), isNew: r.isNew, rollCost: r.rollCost }
 }
@@ -21,7 +36,13 @@ function normalizeRoll(r: WireRollResult): RollOutcome {
 export const rollRepo = {
   biomes: async (api: Api): Promise<BiomeInfo[]> => {
     const { biomes } = await api<{ biomes: WireBiome[] }>('/roll/biomes')
-    return biomes.map(b => ({ biome: b.biome, cardCount: b.card_count, cost: b.cost, ownedCount: b.owned_count }))
+    return biomes.map(b => ({
+      biome: b.biome,
+      cardCount: b.card_count,
+      cost: b.cost,
+      effectiveCost: b.effective_cost ?? b.cost,
+      ownedCount: b.owned_count
+    }))
   },
   perform: async (api: Api, biome: string | null): Promise<RollOutcome> => {
     const res = await api<{ card: WireRollResult }>('/roll', {

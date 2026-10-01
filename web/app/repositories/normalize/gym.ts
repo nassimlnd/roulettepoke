@@ -9,9 +9,10 @@ import type {
 import { normalizeBattleRound, normalizeChampionMon } from './battle'
 import { asGeneration } from '~/constants/generation'
 
-// Les arènes sont numérotées 1..16 en continu (Kanto 1-8, Johto 9-16). Le
-// joueur, lui, parcourt deux circuits de 8 : on ramène donc le rang dans son
-// propre circuit, sans quoi Johto s'afficherait « Arène 9 » à « Arène 16 ».
+// Les arènes sont numérotées en continu (Kanto 1-8, Johto 9-16, Hoenn 17-24).
+// Le joueur, lui, parcourt un circuit de 8 par région : on ramène donc le rang
+// dans son propre circuit, sans quoi Johto s'afficherait « Arène 9 » à
+// « Arène 16 » et Hoenn « Arène 17 » à « Arène 24 » (vu en production).
 const GYMS_PER_CIRCUIT = 8
 
 export function normalizeGym(g: WireGym): DomainGym {

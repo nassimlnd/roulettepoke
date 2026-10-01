@@ -6,7 +6,7 @@ import { SHINY_PITY_DENOMINATOR } from '~/constants/game'
 // « émerge ». Gère la carte, les événements pièces / charme, et le choix
 // interactif (event card-choice) où l'on retient une carte sur deux.
 export type RevealView
-  = | { kind: 'card', card: DomainCard, isNew: boolean, quantity?: number }
+  = | { kind: 'card', card: DomainCard, isNew: boolean, quantity?: number, hatched?: boolean }
     | { kind: 'coins', amount: number }
     | { kind: 'charme' }
     | { kind: 'choice', left: DomainCard, right: DomainCard, resolving: boolean }
@@ -18,7 +18,9 @@ const isBig = (c: DomainCard) => c.isShiny || c.rarity === 'Épique' || c.rarity
 
 const title = computed(() => {
   switch (props.view.kind) {
-    case 'card': return props.view.isNew ? 'Nouvelle carte ! ✦' : 'Tu as obtenu :'
+    case 'card':
+      if (props.view.hatched) return 'Un œuf a éclos ! 🥚'
+      return props.view.isNew ? 'Nouvelle carte ! ✦' : 'Tu as obtenu :'
     case 'coins': return 'Événement spécial !'
     case 'charme': return 'Charme Chroma !'
     case 'choice': return 'Choisis ta carte ✦'
@@ -28,7 +30,7 @@ const title = computed(() => {
 const sub = computed(() => {
   const v = props.view
   switch (v.kind) {
-    case 'card': return `${v.card.isShiny ? 'Shiny · ' : ''}${v.card.rarity} · ${v.card.type}`
+    case 'card': return `${v.hatched ? 'Le bébé de la pension · ' : ''}${v.card.isShiny ? 'Shiny · ' : ''}${v.card.rarity} · ${v.card.type}`
     case 'coins': return 'Une pluie de pièces tombe du paquet'
     case 'charme': return 'Tes chances de shiny sont doublées'
     case 'choice': return 'Une seule des deux rejoint ta collection'

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { LeaderboardData, RecentShiny } from '~/types/domain'
 import type { BoardScope } from '~/repositories/leaderboard'
+import { GENERATIONS } from '~/constants/generation'
 import { leaderboardRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
@@ -15,13 +16,15 @@ export const SCORE_RULES = [
   { label: 'Lég. Shiny', pts: 15 }
 ] as const
 
+const SCOPES: readonly BoardScope[] = ['global', ...GENERATIONS.map(g => g.boardScope)]
 const EMPTY = (): Record<BoardScope, LeaderboardData | null> =>
-  ({ global: null, kanto: null, johto: null })
-const NEVER = (): Record<BoardScope, number> => ({ global: 0, kanto: 0, johto: 0 })
+  Object.fromEntries(SCOPES.map(s => [s, null])) as Record<BoardScope, LeaderboardData | null>
+const NEVER = (): Record<BoardScope, number> =>
+  Object.fromEntries(SCOPES.map(s => [s, 0])) as Record<BoardScope, number>
 
-// Trois classements mis en cache séparément : passer de l'un à l'autre ne doit
-// pas rejouer une requête, et surtout les tableaux ne doivent jamais se
-// mélanger. Même schéma que les trois équipes.
+// Un classement par portée (général + une région), mis en cache séparément :
+// passer de l'un à l'autre ne doit pas rejouer une requête, et surtout les
+// tableaux ne doivent jamais se mélanger. Même schéma que les équipes.
 export const useLeaderboardStore = defineStore('leaderboard', {
   state: () => ({
     boards: EMPTY(),
@@ -43,7 +46,7 @@ export const useLeaderboardStore = defineStore('leaderboard', {
 
       // Feed shiny chargé en arrière-plan (non bloquant), borné à la région
       // affichée — sans quoi le classement de Kanto voisine des shiny de Johto.
-      const gen = scope === 'global' ? undefined : (scope === 'kanto' ? 1 : 2)
+      const gen = GENERATIONS.find(g => g.boardScope === scope)?.id
       dedupe(`leaderboard/shinies/${scope}`, () => leaderboardRepo.recentShinies(useApi(), gen))
         .then((s) => { this.shinies = s })
         .catch(() => {})

@@ -62,6 +62,7 @@ function buildAwardGroups(a: WireStatsAnecdotes | undefined): StatAwardGroup[] {
   const sp = a?.spin ?? {}
   const m = a?.motus ?? {}
   const t = a?.tournoi ?? {}
+  const c = a?.concours ?? {}
 
   return [
     {
@@ -154,11 +155,9 @@ function buildAwardGroups(a: WireStatsAnecdotes | undefined): StatAwardGroup[] {
         award('encore', 'i-lucide-repeat', '« Encore... »', 'bad',
           'Le plus de doublons de formes de Zarbi (exemplaires au-delà du premier de chaque forme).',
           'Aucun doublon de Zarbi pour l\'instant', m.encore,
-          (d: { dupes: number }) => `${num(d.dupes)} doublon${s(d.dupes)}`),
-        award('on_te_voit', 'i-lucide-eye', '« On te voit... »', 'good',
-          'Le plus de mots trouvés dès le premier essai.',
-          'Personne n\'a encore trouvé du premier coup', m.on_te_voit,
-          (d: { one_shots: number }) => `${num(d.one_shots)} mot${s(d.one_shots)} en 1 coup`)
+          (d: { dupes: number }) => `${num(d.dupes)} doublon${s(d.dupes)}`)
+        // « On te voit… » (mots trouvés du premier coup) : retirée côté serveur
+        // en 5.0.0 — elle restait affichée à vide chez nous.
       ]
     },
     {
@@ -183,6 +182,27 @@ function buildAwardGroups(a: WireStatsAnecdotes | undefined): StatAwardGroup[] {
           'Pas encore assez de données', t.tyran_victime,
           e => `${e.tyran} → ${e.victime}`,
           d => `${num(d.entries[0]!.wins)} victoires`)
+      ]
+    },
+    // Concours hebdomadaire (v5.0) : le palmarès, la danse, la surperformance.
+    {
+      key: 'concours',
+      label: 'Concours',
+      icon: 'i-lucide-drama',
+      awards: [
+        award('palmares', 'i-lucide-trophy', 'Le plus beau palmarès', 'gold',
+          'Le plus de concours remportés.',
+          'Aucun concours remporté pour l\'instant', c.palmares,
+          (d: { wins: number }) => `${num(d.wins)} concours gagné${s(d.wins)}`),
+        award('dance_king', 'i-lucide-music', 'La / Le chorégraphe', 'good',
+          'Le plus de points de danse cumulés (2 points par manche réussie à la répétition).',
+          'Personne n\'a encore dansé', c.dance_king,
+          (d: { total_rounds: number }) => `${num(d.total_rounds * 2)} points de danse`),
+        entriesAward('underdog', 'i-lucide-dice-5', 'La surperformance', 'neutral',
+          'Le vainqueur d\'un concours avec la plus faible stat de base dans la discipline du jour.',
+          'Pas encore de données', c.underdog,
+          e => `${e.username} (${e.card_name})`,
+          d => `${num(d.entries[0]!.base_stat)}/100 de base en ${d.entries[0]!.discipline}`)
       ]
     }
   ]

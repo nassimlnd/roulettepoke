@@ -3,6 +3,7 @@ import type { LeagueStatus, WireLeagueEstimate, WireLeagueRun, WireLegendaryRewa
 import type { DomainLeagueStatus, LeagueEstimate, LeagueRun, LegendaryReward } from '~/types/domain'
 import { normalizeCard } from './card'
 import { normalizeBattleRound } from './battle'
+import { asGeneration } from '~/constants/generation'
 
 export function normalizeLeagueRun(r: WireLeagueRun): LeagueRun {
   return {
@@ -23,7 +24,13 @@ export function normalizeLeagueStatus(s: LeagueStatus): DomainLeagueStatus {
     cycleStart: s.cycleStart,
     alreadyAttempted: s.alreadyAttempted,
     lastRun: s.lastRun ? normalizeLeagueRun(s.lastRun) : null,
-    legendaries: (s.legendaries ?? []).map(l => ({ id: l.id, name: l.name, imageUrl: l.image_url }))
+    legendaries: (s.legendaries ?? []).map(l => ({
+      id: l.id,
+      name: l.name,
+      imageUrl: l.image_url,
+      generation: typeof l.generation === 'number' ? asGeneration(l.generation) : null
+    })),
+    eligibleGenerations: (s.eligibleGenerations ?? []).map(asGeneration)
   }
 }
 

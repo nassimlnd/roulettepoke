@@ -18,10 +18,10 @@ export const useGymStore = defineStore('gyms', {
   }),
 
   getters: {
-    // /gym renvoie les 16 arènes des deux régions d'un bloc. Le joueur n'en
-    // parcourt qu'une à la fois : celle de sa génération active. Tout ce qui
-    // suit — progression, badges, statut de champion — est donc borné au
-    // circuit courant, comme dans le jeu d'origine.
+    // /gym renvoie d'un bloc les arènes de toutes les régions (8 par région).
+    // Le joueur n'en parcourt qu'une à la fois : celle de sa génération
+    // active. Tout ce qui suit — progression, badges, statut de champion — est
+    // donc borné au circuit courant, comme dans le jeu d'origine.
     circuitGeneration: (): Generation => useWalletStore().activeGeneration,
 
     sorted(): DomainGym[] {
@@ -41,10 +41,7 @@ export const useGymStore = defineStore('gyms', {
 
     isChampion(): boolean {
       return this.sorted.length > 0 && this.sorted.every(g => g.hasBadge)
-    },
-
-    /** Johto n'existe que depuis la v4 : ne proposer la bascule que s'il est là. */
-    hasSecondCircuit: state => state.gyms.some(g => g.generation === 2)
+    }
   },
 
   actions: {
@@ -89,8 +86,10 @@ export const useGymStore = defineStore('gyms', {
       return res
     },
 
+    // L'entraînement porte sur le parcours AFFICHÉ : sans `generation`, le
+    // serveur retombe sur Kanto et le bonus irait au mauvais circuit.
     async train(): Promise<TrainingOutcome> {
-      const res = await trainingRepo.battle(useApi())
+      const res = await trainingRepo.battle(useApi(), this.circuitGeneration)
       this.training = {
         bonus: res.newBonus,
         canFightToday: false,

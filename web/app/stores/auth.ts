@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 // Import explicite : useStorage entre en collision avec le useStorage de Nitro
 // (stockage serveur) dans les auto-imports.
 import { useStorage } from '@vueuse/core'
-import type { WireUser, CardChoice, UUID, DailyBonusCorrection } from '~/types/api'
+import type { WireUser, CardChoice, UUID, DailyBonusExchange } from '~/types/api'
 import { authRepo } from '~/repositories'
 import { ROUTES } from '~/constants/routes'
 import { STORAGE_KEYS } from '~/constants/storage-keys'
@@ -38,17 +38,26 @@ export const useAuthStore = defineStore('auth', {
       this.token = token
       this.user = user
       useWalletStore().reconcileUser(user, 'login')
+      // La réponse de connexion ne porte que l'essentiel (bourses, région
+      // active) : ni avatar, ni charme, ni bureau de change. On complète
+      // aussitôt depuis /auth/me, comme au démarrage de l'application.
+      this.resetMe()
+      void this.fetchMeOnce()
     },
 
-    async register(username: string, email: string, password: string) {
-      const { user, token } = await authRepo.register(useApi(), { username, email, password })
-      this.token = token
-      this.user = user
-      useWalletStore().reconcileUser(user, 'register')
+    // Crée le compte sans le connecter : le serveur envoie un e-mail de
+    // vérification et ne renvoie qu'un message (plus de jeton depuis la 4.1.0).
+    async register(username: string, email: string, password: string): Promise<string> {
+      const { message } = await authRepo.register(useApi(), { username, email, password })
+      return message
     },
 
-    // Bascule Kanto ↔ Johto : change la bourse dépensée, l'équipe d'arènes et
-    // le parcours de badges. Le serveur est la référence — on n'applique le
+    resendVerification(identifier: string): Promise<{ message: string }> {
+      return authRepo.resendVerification(useApi(), identifier)
+    },
+
+    // Bascule de région : change la bourse dépensée, l'équipe d'arènes et le
+    // parcours de badges. Le serveur est la référence — on n'applique le
     // changement localement qu'une fois qu'il a répondu.
     async setActiveGeneration(generation: Generation) {
       const res = await authRepo.setActiveGeneration(useApi(), generation)
@@ -66,13 +75,13 @@ export const useAuthStore = defineStore('auth', {
       return applied
     },
 
-    // Déplace la prime du jour vers la région active. Le droit se consomme :
-    // on éteint le drapeau localement pour que le bouton disparaisse aussitôt,
-    // et on resynchronise les deux bourses depuis le serveur.
-    async correctDailyBonusGeneration(): Promise<DailyBonusCorrection> {
-      const res = await authRepo.correctDailyBonusGeneration(useApi())
-      if (this.user) this.user.canCorrectDailyBonusGeneration = false
-      await useWalletStore().refreshFromServer('daily-bonus-correction')
+    // Bureau de change : fait passer la prime du jour sur une autre région.
+    // Rejouable à volonté ; on note la région qui la porte et on resynchronise
+    // toutes les bourses depuis le serveur.
+    async exchangeDailyBonus(generation: Generation): Promise<DailyBonusExchange> {
+      const res = await authRepo.exchangeDailyBonus(useApi(), generation)
+      if (this.user) this.user.dailyBonusGeneration = res.generation
+      await useWalletStore().refreshFromServer('daily-bonus-exchange')
       return res
     },
 

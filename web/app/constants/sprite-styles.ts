@@ -14,11 +14,14 @@
 //  · Gen 1 s'arrête au n° 151 ET n'a aucun shiny — les jeux Rouge/Bleu ne
 //    connaissaient ni Johto ni les chromatiques. Les cartes hors de sa portée
 //    retombent sur le sprite du jeu ; c'est annoncé au joueur, plus subi.
+//  · Gen 2 (Cristal) s'arrête au n° 251 : pas de Hoenn.
 //  · Gen 6 (X/Y) a une couverture shiny incomplète → volontairement exclu.
-//  · Tous les autres styles couvrent 1 à 251, shiny inclus.
+//  · Gen 7 (Ultra-Soleil / Ultra-Lune) n'est publié par PokeAPI que jusqu'au
+//    n° 251 (404 au-delà, vérifié) : pas de Hoenn non plus.
+//  · Tous les autres styles couvrent 1 à 386, shiny inclus.
 
 import type { PokeType } from '~/types/primitives'
-import { DEX_MAX } from './generation'
+import { DEX_MAX, GENERATIONS } from './generation'
 
 /** Famille de rendu — sert à regrouper les styles dans le sélecteur. */
 export type SpriteFamily = 'jeu' | 'pixel' | 'rendu'
@@ -65,7 +68,7 @@ export const SPRITE_STYLES: readonly SpriteStyle[] = [
     dexMax: 151,
     noShiny: true
   },
-  { key: 'gen2', label: 'Gen 2', hint: 'Cristal', family: 'pixel', path: 'gen2', ext: 'png', local: true },
+  { key: 'gen2', label: 'Gen 2', hint: 'Cristal', family: 'pixel', path: 'gen2', ext: 'png', local: true, dexMax: 251 },
   { key: 'gen3', label: 'Gen 3', hint: 'Émeraude', family: 'pixel', path: 'gen3', ext: 'png', local: true },
   { key: 'gen4', label: 'Gen 4', hint: 'Or / Argent HG-SS', family: 'pixel', path: 'gen4', ext: 'png', local: true },
   { key: 'gen5', label: 'Gen 5', hint: 'Noir / Blanc', family: 'pixel', path: 'gen5', ext: 'png', local: true },
@@ -80,7 +83,7 @@ export const SPRITE_STYLES: readonly SpriteStyle[] = [
     ext: 'gif',
     animated: true
   },
-  { key: 'gen7', label: 'Gen 7', hint: 'Ultra-Soleil / Ultra-Lune', family: 'pixel', path: 'gen7', ext: 'png', local: true },
+  { key: 'gen7', label: 'Gen 7', hint: 'Ultra-Soleil / Ultra-Lune', family: 'pixel', path: 'gen7', ext: 'png', local: true, dexMax: 251 },
   { key: 'home', label: 'HOME', hint: 'Rendus 3D Pokémon HOME', family: 'rendu', path: 'home', ext: 'webp', local: true },
   { key: 'artwork', label: 'Artwork', hint: 'Illustrations officielles', family: 'rendu', path: 'artwork', ext: 'webp', local: true }
   // NB : le jeu `other/showdown` n'est volontairement PAS proposé — c'est le
@@ -111,11 +114,16 @@ export function styleCovers(style: SpriteStyle, num: number, shiny = false): boo
  * pour les 100 Pokémon de Johto et pour tous les shiny.
  */
 export function styleLimitation(style: SpriteStyle): string | null {
-  const noShiny = style.noShiny
-  const partial = (style.dexMax ?? DEX_MAX) < DEX_MAX
-  if (noShiny && partial) return 'Kanto seulement, sans shiny'
-  if (noShiny) return 'Pas de shiny'
-  if (partial) return 'Kanto seulement'
+  const max = style.dexMax ?? DEX_MAX
+  const partial = max < DEX_MAX
+  // Régions entièrement couvertes par ce jeu, nommées (« Kanto et Johto »).
+  const regions = GENERATIONS.filter(g => g.dexTo <= max).map(g => g.region)
+  const only = regions.length <= 1
+    ? `${regions[0] ?? 'Rien'} seulement`
+    : `${regions.slice(0, -1).join(', ')} et ${regions[regions.length - 1]} seulement`
+  if (style.noShiny && partial) return `${only}, sans shiny`
+  if (style.noShiny) return 'Pas de shiny'
+  if (partial) return only
   return null
 }
 

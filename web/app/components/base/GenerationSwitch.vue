@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { GENERATIONS, generationRegion, asGeneration, type Generation } from '~/constants/generation'
 
-// Bascule Kanto ↔ Johto. Depuis la v4 la génération active détermine la bourse
+// Bascule de région. Depuis la v4 la génération active détermine la bourse
 // dépensée, le parcours d'arènes et l'équipe engagée : c'est un sélecteur
 // global, pas un filtre de page. On l'accole au solde parce que les deux
 // répondent à la même question — « quel argent est-ce que je dépense ? ».
@@ -18,28 +18,33 @@ function purse(g: Generation): string {
   return v === null ? '—' : v.toLocaleString('fr-FR')
 }
 
-// ─── Prime du jour créditée dans la mauvaise région ───────────────────────────
-const canCorrect = computed(() => auth.user?.canCorrectDailyBonusGeneration === true)
-const correcting = ref(false)
+// ─── Bureau de change ─────────────────────────────────────────────────────────
+// La prime du jour est créditée dans UNE région et peut être re-basculée vers
+// une autre à volonté dans la journée (v5). Les montants diffèrent par région
+// (base + badges de la région), c'est pourquoi on les annonce.
+const canExchange = computed(() => auth.user?.canExchangeDailyBonus === true)
+const bonusGeneration = computed(() =>
+  asGeneration(auth.user?.dailyBonusGeneration ?? active.value))
+const exchangeTargets = computed(() => GENERATIONS.filter(g => g.id !== bonusGeneration.value))
+const exchanging = ref<Generation | null>(null)
 
-async function correctBonus() {
-  if (correcting.value) return
-  correcting.value = true
+async function exchangeBonus(g: Generation) {
+  if (exchanging.value !== null) return
+  exchanging.value = g
   try {
-    const res = await auth.correctDailyBonusGeneration()
-    // Le serveur détaille soit un montant par région, soit un seul montant.
-    const parts = Object.entries(res.amounts ?? { [res.generation]: res.amount ?? 0 })
-      .map(([g, amount]) => `${amount} 🪙 ${generationRegion(asGeneration(Number(g)))}`)
+    const res = await auth.exchangeDailyBonus(g)
+    const parts = Object.entries(res.amounts ?? {})
+      .map(([id, amount]) => `${amount} 🪙 ${generationRegion(asGeneration(Number(id)))}`)
     toast.add({
-      title: 'Prime du jour déplacée',
+      title: `Prime du jour passée sur ${generationRegion(g)}`,
       description: parts.join(' · '),
       color: 'success',
-      icon: 'i-lucide-rotate-ccw'
+      icon: 'i-lucide-landmark'
     })
   } catch (err) {
     toast.add({ title: humanizeError(err), color: 'error' })
   } finally {
-    correcting.value = false
+    exchanging.value = null
   }
 }
 
@@ -116,23 +121,27 @@ async function pick(g: Generation) {
             class="size-4 pick__check"
           />
         </button>
-        <!-- La prime du jour est créditée dans UNE région. Le serveur ouvre le
-             droit de la déplacer une fois par jour ; on n'affiche le bouton que
-             tant qu'il est ouvert. -->
-        <button
-          v-if="canCorrect"
-          type="button"
-          class="pick__fix"
-          :disabled="correcting"
-          @click="correctBonus"
-        >
-          <UIcon
-            :name="correcting ? 'i-lucide-loader-circle' : 'i-lucide-rotate-ccw'"
-            class="size-4"
-            :class="{ 'animate-spin': correcting }"
-          />
-          Déplacer la prime du jour ici
-        </button>
+        <!-- Bureau de change : un bouton par région qui ne porte pas la prime. -->
+        <template v-if="canExchange">
+          <p class="pick__head pick__head--sub">
+            Prime du jour · {{ generationRegion(bonusGeneration) }}
+          </p>
+          <button
+            v-for="g in exchangeTargets"
+            :key="`exchange-${g.id}`"
+            type="button"
+            class="pick__fix"
+            :disabled="exchanging !== null"
+            @click="exchangeBonus(g.id)"
+          >
+            <UIcon
+              :name="exchanging === g.id ? 'i-lucide-loader-circle' : 'i-lucide-arrow-right-left'"
+              class="size-4"
+              :class="{ 'animate-spin': exchanging === g.id }"
+            />
+            Passer la prime sur {{ g.region }}
+          </button>
+        </template>
 
         <p class="pick__note">
           Chaque région a sa propre bourse, ses arènes et son équipe.
@@ -194,6 +203,7 @@ async function pick(g: Generation) {
   color: var(--ui-text-dimmed);
   padding: 4px 8px 6px;
 }
+.pick__head--sub { padding-top: 10px; }
 .pick__opt {
   width: 100%;
   display: flex;

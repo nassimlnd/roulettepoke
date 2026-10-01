@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainLeagueStatus, LeagueEstimate, LeagueRun, LegendaryReward } from '~/types/domain'
 import type { UUID } from '~/types/api'
+import type { Currency } from '~/constants/generation'
 import { leagueRepo } from '~/repositories'
 
 // Ligue des 4 (Elite Four) : statut hebdomadaire, estimation, défi (1/semaine),
@@ -39,9 +40,9 @@ export const useLeagueStore = defineStore('league', {
       return run
     },
 
-    async claimCoins() {
+    async claimCoins(currency?: Currency) {
       if (!this.run) return
-      await leagueRepo.rewardCoins(useApi(), this.run.runId)
+      await leagueRepo.rewardCoins(useApi(), this.run.runId, currency)
       this.rewardTaken = true
     },
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
 import type { DomainTournament, TournamentAnalysis } from '~/types/domain'
+import type { Currency } from '~/constants/generation'
 import { tournamentRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 
@@ -34,9 +35,9 @@ export const useTournamentStore = defineStore('tournament', {
       }
     },
 
-    // Inscription : débite 20 🪙, fenêtre lundi → mardi 12:00.
-    async register() {
-      await tournamentRepo.register(useApi())
+    // Inscription : débite 20 🪙 dans la devise choisie, fenêtre lundi → mardi 12:00.
+    async register(currency: Currency) {
+      await tournamentRepo.register(useApi(), currency)
       await this.refreshBalance()
       await this.ensureFresh(true)
     },

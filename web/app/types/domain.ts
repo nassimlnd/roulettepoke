@@ -18,7 +18,8 @@ export interface DomainCard {
   imageUrl: string
   rarity: RealRarity
   isShiny: boolean
-  level: 1 | 2 | 3
+  /** 0 = bébé (Pichu, Mélo…), 1 = forme de base, 2 et 3 = évolutions. */
+  level: 0 | 1 | 2 | 3
   biome: Biome
   type: PokeType
   parentCardId: UUID
@@ -84,6 +85,7 @@ export type RollOutcome
     | { kind: 'coins', amount: number, rollCost: number }
     | { kind: 'charme', rollCost: number }
     | { kind: 'choice', choiceId: UUID, left: DomainCard, right: DomainCard, rollCost: number }
+    | { kind: 'egg', card: DomainCard, isNew: boolean, rollCost: number }
 
 export type CelebrationTier
   = | 'common' | 'rare' | 'epic' | 'legendary' | 'shiny' | 'shiny-legendary'
@@ -91,7 +93,10 @@ export type CelebrationTier
 export interface BiomeInfo {
   biome: Biome
   cardCount: number
+  /** Prix hors événement. */
   cost: number
+  /** Prix du jour, remise d'événement comprise — celui qui est débité. */
+  effectiveCost: number
   ownedCount: number
 }
 
@@ -213,7 +218,7 @@ export interface RecentWin {
 // ─── Arènes ─────────────────────────────────────────────────────────────────────
 export interface DomainGym {
   id: UUID
-  /** Rang global 1..16. Le rang AU SEIN d'un parcours est `orderInCircuit`. */
+  /** Rang global continu (1..24). Le rang AU SEIN d'un parcours est `orderInCircuit`. */
   order: number
   generation: Generation
   /** 1..8 — position dans son propre parcours, celle affichée au joueur. */
@@ -386,7 +391,7 @@ export interface ChatMessage {
 }
 
 // ─── Ligue des 4 (Elite Four) ─────────────────────────────────────────────────
-export interface LeagueLegendary { id: UUID, name: string, imageUrl: string }
+export interface LeagueLegendary { id: UUID, name: string, imageUrl: string, generation: Generation | null }
 
 export interface LeagueStage {
   opponentName: string
@@ -420,6 +425,8 @@ export interface DomainLeagueStatus {
   alreadyAttempted: boolean
   lastRun: LeagueRun | null
   legendaries: LeagueLegendary[]
+  /** Régions dont le joueur a les 8 badges — devises et légendaires éligibles. */
+  eligibleGenerations: Generation[]
 }
 
 export interface LegendaryOdds { captureProbability: number, challengers: string[] }

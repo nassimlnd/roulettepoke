@@ -1,6 +1,7 @@
 import type { WireTournament, WireMyAnalysis } from '~/types/api'
 import type { DomainTournament, TournamentAnalysis } from '~/types/domain'
 import type { Api } from './_client'
+import type { Currency } from '~/constants/generation'
 import { normalizeTournament, normalizeTournamentAnalysis } from './normalize'
 
 export const tournamentRepo = {
@@ -12,5 +13,8 @@ export const tournamentRepo = {
     const a = await api<WireMyAnalysis>('/tournament/my-analysis')
     return normalizeTournamentAnalysis(a)
   },
-  register: (api: Api) => api('/tournament/register', { method: 'POST' })
+  // `currency` = la bourse débitée (20 🪙) ET créditée en cas de gain. Sans
+  // elle le serveur prend Kanto, même pour un joueur qui joue ailleurs.
+  register: (api: Api, currency: Currency) =>
+    api('/tournament/register', { method: 'POST', body: { currency } })
 }

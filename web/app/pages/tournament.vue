@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GENERATIONS, currencyOf, asGeneration, generationRegion, type Generation } from '~/constants/generation'
 import type { ChampionMon, TeamMember, TournamentStatus } from '~/types/domain'
 import type { PokeType } from '~/types/api'
 import { useTournamentStore, TOURNAMENT_ENTRY_FEE } from '~/stores/tournament'
@@ -50,15 +51,28 @@ function medalFor(place: number): string {
 // ─── Inscription ──────────────────────────────────────────────────────────────
 const registerOpen = ref(false)
 const { pending: registering, run } = useAsyncAction()
-const canAfford = computed(() => wallet.canAfford(TOURNAMENT_ENTRY_FEE))
+
+// ─── Devise d'inscription ─────────────────────────────────────────────────────
+// La bourse choisie est débitée (20 🪙) ET recevra le gain. Par défaut la
+// région active ; le joueur peut en changer avant de confirmer. Sans ce choix
+// le serveur prenait Kanto, même pour un joueur qui joue ailleurs.
+const payWith = ref<Generation>(wallet.activeGeneration)
+const payOptions = GENERATIONS.map(g => ({ value: String(g.id), label: g.region }))
+const payKey = computed({
+  get: () => String(payWith.value),
+  set: (v: string) => { payWith.value = asGeneration(Number(v)) }
+})
+const payRegion = computed(() => generationRegion(payWith.value))
+const payBalance = computed(() => wallet.purses[payWith.value] ?? 0)
+const canAfford = computed(() => payBalance.value >= TOURNAMENT_ENTRY_FEE)
 
 function confirmRegister() {
   if (!canAfford.value) {
-    toast.add({ title: `Il te manque des pièces (inscription : ${TOURNAMENT_ENTRY_FEE} 🪙).`, color: 'error' })
+    toast.add({ title: `Il te manque des pièces ${payRegion.value} (inscription : ${TOURNAMENT_ENTRY_FEE} 🪙).`, color: 'error' })
     return
   }
   return run(async () => {
-    await tourney.register()
+    await tourney.register(currencyOf(payWith.value))
     toast.add({ title: 'Inscription confirmée ! 🎉', color: 'success', icon: 'i-lucide-check' })
     registerOpen.value = false
   })
@@ -148,6 +162,20 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
 
       <!-- Action d'inscription / statut -->
       <div class="tn__cta">
+        <div
+          v-if="t.status === 'registration_open' && !t.isRegistered"
+          class="tn__pay"
+        >
+          <span class="tn__pay-label">Payer avec</span>
+          <PSegmented
+            v-model="payKey"
+            :options="payOptions"
+            size="sm"
+            a11y="radio"
+            aria-label="Bourse d'inscription"
+          />
+          <span class="tn__pay-label tabular">{{ payBalance.toLocaleString('fr-FR') }} 🪙 dispo</span>
+        </div>
         <PButton
           v-if="t.status === 'registration_open' && !t.isRegistered"
           :disabled="!canAfford"
@@ -346,7 +374,7 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
     <ConfirmDialog
       v-model:open="registerOpen"
       title="S'inscrire au tournoi ?"
-      :message="`L'inscription coûte ${TOURNAMENT_ENTRY_FEE} 🪙. Ton équipe actuelle sera figée jeudi 11:55 pour les combats de jeudi 12:00.`"
+      :message="`L'inscription coûte ${TOURNAMENT_ENTRY_FEE} 🪙, prélevés sur ta bourse ${payRegion} — si tu gagnes, la récompense y sera versée. Ton équipe actuelle sera figée jeudi 11:55 pour les combats de jeudi 12:00.`"
       :confirm-label="`S'inscrire (${TOURNAMENT_ENTRY_FEE} 🪙)`"
       :loading="registering"
       @confirm="confirmRegister"
@@ -358,6 +386,8 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
 .tn { display: flex; flex-direction: column; gap: 16px; }
 .tn__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .tn__title-wrap { display: flex; align-items: center; gap: 12px; }
+.tn__pay { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.tn__pay-label { font-size: .84rem; color: var(--ui-text-muted); }
 .tn__title { font-weight: 700; font-size: 1.7rem; margin: 0; }
 .tn__status {
   font-family: var(--font-display);

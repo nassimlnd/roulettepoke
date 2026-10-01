@@ -32,8 +32,10 @@ export const gymRepo = {
 
 export const trainingRepo = {
   status: (api: Api) => api<TrainingStatus>('/training/status'),
-  battle: async (api: Api): Promise<TrainingOutcome> => {
-    const t = await api<WireTrainingResult>('/training/battle', { method: 'POST' })
+  // `generation` = le parcours visé ; le client d'origine envoie l'onglet
+  // actif, et le serveur retombe sur Kanto si le champ manque.
+  battle: async (api: Api, generation: number): Promise<TrainingOutcome> => {
+    const t = await api<WireTrainingResult>('/training/battle', { method: 'POST', body: { generation } })
     return normalizeTrainingOutcome(t)
   }
 }

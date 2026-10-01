@@ -46,10 +46,10 @@ const fOwned = ref<'all' | 'owned' | 'missing'>('all')
 // dans le décompte de progression, là où type/rareté/biome n'y touchent pas.
 const fRegion = ref<string>('all')
 
-// Zarbi appartient à Johto : on ne le montre pas quand le joueur a restreint sa
-// vue à Kanto. Le chargement suit l'affichage — inutile d'appeler l'endpoint
-// pour un joueur qui ne regarde que le dex de Kanto.
-const showZarbi = computed(() => fRegion.value !== '1')
+// Zarbi appartient à Johto : on ne le montre que sur « Toutes » ou Johto. Le
+// chargement suit l'affichage — inutile d'appeler l'endpoint pour un joueur
+// qui ne regarde que le dex de Kanto ou de Hoenn.
+const showZarbi = computed(() => fRegion.value === 'all' || fRegion.value === '2')
 const zarbiOpen = ref(false)
 const smartSellOpen = ref(false)
 

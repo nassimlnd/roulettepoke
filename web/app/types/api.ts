@@ -20,12 +20,15 @@ export interface WireUser {
   email: string
   coins_gen1: number
   coins_gen2: number
+  coins_gen3: number
   active_generation: number
   avatar_url: string | null
   avatar_is_alt: boolean
   charme_chroma_rolls: number
-  /** Le droit de déplacer la prime du jour d'une région à l'autre est-il ouvert ? */
-  canCorrectDailyBonusGeneration?: boolean
+  /** Région qui porte la prime du jour (bureau de change, v5). */
+  dailyBonusGeneration?: number
+  /** Le bureau de change est-il ouvert ? (prime re-basculable à volonté) */
+  canExchangeDailyBonus?: boolean
 }
 
 // Zarbi est un cas à part dans le modèle : une seule carte du dex, déclinée en
@@ -43,12 +46,12 @@ export interface WireZarbiForm {
 
 // La prime de connexion est créditée dans UNE région. Si le joueur constate
 // qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
-export interface DailyBonusCorrection {
-  /** Région finalement créditée. */
+// Bureau de change (v5) : remplace « corriger la prime » (1×/jour, endpoint
+// disparu → 404). Réponse : la région qui porte désormais la prime, et le
+// montant de celle-ci dans chaque région.
+export interface DailyBonusExchange {
   generation: number
-  amount?: number
-  /** Montant par région après correction, quand le serveur le détaille. */
-  amounts?: Record<string, number>
+  amounts: Record<string, number>
 }
 
 // ─── Motus — le mot du jour ──────────────────────────────────────────────────
@@ -161,17 +164,24 @@ export interface WireCard {
   name: string
   image_url: string
   rarity: Rarity
-  level: 1 | 2 | 3
+  /** 0 = bébé (Pichu, Mélo…), 1 = forme de base, 2 et 3 = évolutions. */
+  level: 0 | 1 | 2 | 3
   parent_card_id: UUID
   is_alt: boolean
   biome: Biome
   type: PokeType
-  /** 1 (Kanto) ou 2 (Johto) — absent avant la v4. */
+  /** 1 (Kanto), 2 (Johto) ou 3 (Hoenn) — absent avant la v4. */
   generation?: number
   base_weight?: number
   biome_id?: UUID
   standard_id?: UUID | null
   created_at?: ISODate
+  /** Stats de concours (v5), sur 100 — une par discipline. */
+  sang_froid?: number
+  beaute?: number
+  grace?: number
+  intelligence?: number
+  robustesse?: number
 }
 
 export interface WireOwnedCard extends WireCard {
@@ -181,6 +191,9 @@ export interface WireOwnedCard extends WireCard {
 }
 
 export interface AuthResponse { user: WireUser, token: string }
+// Depuis la 4.1.0 l'inscription ne connecte PLUS : le compte est créé, un
+// e-mail de vérification part, et le serveur ne renvoie qu'un message.
+export interface RegisterResponse { message: string }
 
 export interface CardChoice {
   id: UUID
@@ -207,6 +220,16 @@ export type WireRollResult
       rightCard: WireCard & { owned: boolean }
       rollCost: number
     }
+    // L'œuf confié par la pension de l'Aventure éclôt ici, dans la roulette
+    // classique, après un certain nombre de tirages.
+    | {
+      isSpecialEvent: true
+      eventType: 'egg_hatch'
+      pokemon: WireCard
+      shiny: boolean
+      isNew: boolean
+      rollCost: number
+    }
 
 export interface WireBiome {
   biome: Biome
@@ -214,6 +237,8 @@ export interface WireBiome {
   biome_weight: number
   cost: number
   owned_count: number
+  /** Prix du jour, remise d'événement comprise (Soldes, Journée d'une région). */
+  effective_cost?: number
 }
 
 // Réponse mesurée : { success, sellPrice, newQuantity, newCoins, generation }.
@@ -234,6 +259,8 @@ export interface WireInventory {
   items: { item_type: string, quantity: number }[]
   activeBiomeTicket: string | null
   activeTypeTicket: string | null
+  /** Tirages restants avant l'éclosion de l'œuf en incubation ; null sans œuf. */
+  eggRollsRemaining?: number | null
 }
 
 export interface WireTeamMember {
@@ -262,9 +289,12 @@ export interface WireBadge {
 
 export interface WireGym {
   id: UUID
-  /** Numéro global 1..16 : Kanto occupe 1-8, Johto 9-16. */
+  /** Numéro global continu : Kanto 1-8, Johto 9-16, Hoenn 17-24. */
   order_num: number
   generation?: number
+  /** 1 d'ordinaire, 2 les semaines « Arènes ouvertes » (v5.1). */
+  attempts_allowed?: number
+  attempts_this_week?: number
   name: string
   type: PokeType
   badge_name: string
@@ -279,6 +309,7 @@ export interface TrainingStatus {
   bonus: number
   canFightToday: boolean
   coins: number
+  active_generation?: number
 }
 
 export interface WireChampionMon {
@@ -339,6 +370,11 @@ export interface SlotStatus {
   canSpin: boolean
   lastSpin: ISODate | null
   coins: number
+  /** 1 d'ordinaire, 2 les jours de « Jackpot en folie » (v5.1). */
+  spinsAllowed?: number
+  spinsToday?: number
+  /** Bourse débitée/créditée : la génération active côté serveur. */
+  generation?: number
 }
 
 export type WireLineResult
@@ -362,7 +398,7 @@ export interface WireRecentWin {
   spun_at: ISODate
 }
 
-export interface WireLeagueLegendary { id: UUID, name: string, image_url: string }
+export interface WireLeagueLegendary { id: UUID, name: string, image_url: string, generation?: number }
 
 export interface LeagueStatus {
   eligible: boolean
@@ -370,6 +406,8 @@ export interface LeagueStatus {
   alreadyAttempted: boolean
   lastRun: WireLeagueRun | null
   legendaries: WireLeagueLegendary[]
+  /** Régions dont le joueur a les 8 badges : devises et légendaires éligibles à la récompense. */
+  eligibleGenerations?: number[]
 }
 
 export interface WireLeagueStage {
@@ -418,6 +456,8 @@ export interface WireTournamentParticipant {
 export interface WireTournament {
   id: UUID
   tournament_date: ISODate
+  /** Type et biome avantagés cette semaine : +10 % par critère, +20 % max (v5). */
+  weeklyAdvantage?: { type: PokeType, biome: Biome } | null
   status: 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
   prize_pool: number
   created_at: ISODate
@@ -463,6 +503,9 @@ export interface SpinStatus {
   legendaryGrantedThisWeek?: boolean
   legendaryTransfersThisWeek?: number
   legendaryTransferRate?: number
+  legendaryFailedTransfersThisWeek?: number
+  legendaryAttemptsExhausted?: boolean
+  active_generation?: number
 }
 
 // POST /spin/start (et /renew) : démarre une run côté serveur. Renvoie la
@@ -581,6 +624,10 @@ export interface WireLeaderboardResponse {
     current: WireLeaderboardRow
     below: WireLeaderboardRow | null
   } | null
+  /** Maxima du jeu (taille du catalogue), pour afficher « x / max ». */
+  maxStandard?: number
+  maxLegendary?: number
+  maxShiny?: number
 }
 
 export interface WireRecentShiny {
@@ -641,11 +688,16 @@ export interface WireStatsAnecdotes {
     determined?: { players: string[], attempts_count: number, transfers_count: number } | null
     egg_master?: { players: string[], eggs: number } | null
   }
+  // « On te voit… » (mots trouvés du premier coup) a été retirée en 5.0.0.
   motus?: {
     bernard_pivot?: { players: string[], wins: number } | null
     rap_god?: { players: string[], forms_owned: number } | null
     encore?: { players: string[], dupes: number } | null
-    on_te_voit?: { players: string[], one_shots: number } | null
+  }
+  concours?: {
+    palmares?: { players: string[], wins: number } | null
+    dance_king?: { players: string[], total_rounds: number } | null
+    underdog?: { entries: { username: string, card_name: string, discipline: string, base_stat: number }[] } | null
   }
   tournoi?: {
     most_wins?: { players: string[], wins: number } | null
@@ -679,4 +731,45 @@ export interface WireChatMessage {
 export interface WireChatHistory {
   messages: WireChatMessage[]
   isAdmin: boolean
+}
+
+// ─── Événements du jour & objectif de la semaine (v5.1) ──────────────────────
+// Un seul endpoint, /game-events/current, porte trois choses : les événements
+// surprise du jour, l'objectif collectif de la semaine, et le PRIX EFFECTIF du
+// tirage standard (remises d'événement comprises).
+export type GameEventType
+  = 'generation_day' | 'sales' | 'special_rain' | 'daily_bonus_x2'
+    | 'jackpot_frenzy' | 'open_gyms' | 'merchant' | 'spin_lucky'
+
+export interface WireGameEvent {
+  /** Un type inconnu (événement futur) doit être ignoré, pas planter. */
+  type: GameEventType | string
+  startsOn?: string
+  params?: { generation?: number }
+  merchant?: {
+    price?: number
+    wanted?: { cardId: UUID, name: string, generation: number }[]
+    soldCardIds?: UUID[]
+    drawnTodayCardIds?: UUID[]
+  }
+}
+
+export interface WireCommunityGoal {
+  weekStart: string
+  weekEnd: string
+  metric: 'rolls' | 'spin_runs' | 'gym_battles' | 'jackpot_spins' | string
+  target: number
+  progress: number
+  achieved: boolean
+  status: string
+  minContribution: number
+  myContribution: number
+  contributors: number
+  reward: { item: string, quantity: number, label: string } | null
+}
+
+export interface WireGameEvents {
+  events: { date: string, active: WireGameEvent[] }
+  goal: WireCommunityGoal | null
+  rollCost: { base: number, effective: number }
 }

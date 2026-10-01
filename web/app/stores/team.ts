@@ -4,19 +4,21 @@ import type { TeamMember } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { teamRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
-import type { TeamScope } from '~/constants/generation'
+import { TEAM_SCOPES, type TeamScope } from '~/constants/generation'
 
 const TTL = CACHE_TTL_SHORT
 export const TEAM_MAX = 6
 export const REMOVE_COST = 10 // 🪙 — coût du retrait d'un membre (définitif)
 
-const EMPTY = (): Record<TeamScope, TeamMember[]> => ({ global: [], gen1: [], gen2: [] })
-const NEVER = (): Record<TeamScope, number> => ({ global: 0, gen1: 0, gen2: 0 })
+const EMPTY = (): Record<TeamScope, TeamMember[]> =>
+  Object.fromEntries(TEAM_SCOPES.map(s => [s.value, [] as TeamMember[]])) as Record<TeamScope, TeamMember[]>
+const NEVER = (): Record<TeamScope, number> =>
+  Object.fromEntries(TEAM_SCOPES.map(s => [s.value, 0])) as Record<TeamScope, number>
 
-// Depuis la v4 le joueur entretient TROIS équipes : celle du Tournoi (et de la
-// Ligue), celle des arènes de Kanto, celle des arènes de Johto. On les garde en
-// cache séparément — passer d'un onglet à l'autre ne doit pas rejouer une
-// requête, et surtout les rosters ne doivent jamais se mélanger.
+// Le joueur entretient UNE ÉQUIPE PAR PORTÉE : celle du Tournoi (et de la
+// Ligue), puis celle des arènes de chaque région. On les garde en cache
+// séparément — passer d'un onglet à l'autre ne doit pas rejouer une requête,
+// et surtout les rosters ne doivent jamais se mélanger.
 export const useTeamStore = defineStore('team', {
   state: () => ({
     rosters: EMPTY(),

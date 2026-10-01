@@ -339,3 +339,48 @@ sous-systèmes en deux mois) et que notre front en dépend pour chaque règle.
 Tant que nous consommons son API, la vague D est due à chaque version majeure.
 C'est l'argument principal pour la v3 — et la raison de commencer par le modèle
 de génération et le sondage de contrat, qui serviront dans les deux cas.
+
+---
+
+# Mise à jour du 1ᵉʳ octobre 2026 — vague D livrée
+
+## Ce qui a changé
+
+- **Le modèle de génération est piloté par les données.** `GENERATIONS` (trois
+  entrées) est la seule source : bourses, portées d'équipe, onglets de
+  classement, circuits d'arènes, filtre de collection, devises en dérivent.
+  `asGeneration` ne déguise plus une valeur inconnue en Kanto : elle passe
+  telle quelle (« Génération N ») avec un avertissement, et une carte sans
+  champ `generation` est située par son numéro de dex. Vérifié en réel :
+  Kanto 151, Johto 100, Hoenn 135 cartes ; « Arènes de Hoenn » 1 à 8 ; menu de
+  région à trois bourses ; Zarbi masqué hors Johto.
+- **L'inscription fonctionne à nouveau** : elle attend le message du serveur,
+  affiche « vérifie ta boîte mail » et propose de renvoyer le lien ; la
+  connexion propose le renvoi quand le compte n'est pas vérifié. La connexion
+  complète ensuite l'utilisateur depuis `/auth/me` (la réponse de login ne
+  porte ni avatar, ni charme, ni bureau de change).
+- **Bureau de change** à la place du bouton mort : un bouton par région qui ne
+  porte pas la prime, testé en aller-retour Kanto → Johto → Kanto sur le compte
+  de test.
+- **Tirage** : prix effectif (`rollCost.effective`, `effective_cost` par biome)
+  affiché et débité, prix de base barré les jours de remise ; éclosion d'œuf
+  révélée comme une carte (« Un œuf a éclos ! ») ; un événement inconnu lève
+  une erreur claire au lieu de se faire passer pour un choix de carte.
+- **Devise** choisie au tournoi (sélecteur « Payer avec », solde de la bourse
+  affiché, inscription dans cette devise) et à la Ligue (bourse créditée parmi
+  les régions éligibles, légendaires filtrés de même) ; `generation` envoyée à
+  l'entraînement ; Jackpot en folie (tirages restants) ; palmarès Concours et
+  retrait de « On te voit… » ; bébés (niveau 0) nommés ; Guide mis à jour.
+- **Types wire remis d'aplomb** et un sondage de contrat rejouable,
+  `scripts/probe-contract.mjs`, qui diffe les clés reçues de la production
+  contre `types/api.ts` (compte de test par variables d'environnement, jamais
+  commité). Lancé après la vague : aucune dérive restante.
+- **Sprites de Hoenn** rapatriés pour les styles qui les publient (Gen 3, 4, 5,
+  HOME, Artwork) ; Gen 2 et Gen 7 s'arrêtent à Johto et le disent.
+
+## Ce qui reste hors de cette vague (vagues E à G)
+
+Bandeau d'événements, objectif de la semaine, activités du jour et Premiers
+pas depuis l'API, notifications affichées, Concours, tournoi complet (avantage,
+analyse, tableau, replays), échanges 5.1.1, Paintkemon, notes de version,
+historiques.

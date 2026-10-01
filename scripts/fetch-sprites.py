@@ -47,8 +47,8 @@ from PIL import Image
 BASE = "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon"
 OUT_ROOT = Path(__file__).resolve().parent.parent / "web" / "public" / "sprites"
 
-# Bornes du Pokédex couvert par le jeu (Kanto + Johto).
-DEX_MAX = 251
+# Bornes du Pokédex couvert par le jeu (Kanto + Johto + Hoenn).
+DEX_MAX = 386
 
 # Taille cible des styles ré-encodés. La fenêtre d'art d'une carte fait ~105 px ;
 # 256 couvre confortablement les écrans 2× sans servir du 512 inutile.
@@ -71,18 +71,26 @@ class Style:
 
 STYLES: list[Style] = [
     Style("gen1", "versions/generation-i/red-blue", "png", dex_max=151, has_shiny=False),
-    Style("gen2", "versions/generation-ii/crystal", "png"),
+    # Cristal s'arrête à Johto : pas de sprite de Hoenn dans ce jeu.
+    Style("gen2", "versions/generation-ii/crystal", "png", dex_max=251),
     Style("gen3", "versions/generation-iii/emerald", "png"),
     Style("gen4", "versions/generation-iv/heartgold-soulsilver", "png"),
     Style("gen5", "versions/generation-v/black-white", "png"),
-    Style("gen7", "versions/generation-vii/ultra-sun-ultra-moon", "png"),
+    # PokeAPI ne publie ce jeu que jusqu'au n° 251 (404 au-delà, vérifié).
+    Style("gen7", "versions/generation-vii/ultra-sun-ultra-moon", "png", dex_max=251),
     Style("home", "other/home", "png", resize=True),
     Style("artwork", "other/official-artwork", "png", resize=True),
 ]
 
 
-def fetch(url: str, attempts: int = 3) -> bytes | None:
-    """Renvoie le corps de la réponse, ou None sur 404. Réessaie le reste."""
+def fetch(url: str, attempts: int = 4) -> bytes | None:
+    """Renvoie le corps de la réponse, ou None si le sprite est introuvable.
+
+    Un 404 est définitif. Les autres erreurs (403 passager du CDN, coupure)
+    sont réessayées ; passé le dernier essai on renonce à CE sprite en le
+    signalant, plutôt que d'abandonner tout le lot — le script est idempotent,
+    une relance ne reprend que ce qui manque.
+    """
     for i in range(attempts):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "pokeroulette-sprites/1"})
@@ -92,10 +100,12 @@ def fetch(url: str, attempts: int = 3) -> bytes | None:
             if e.code == 404:
                 return None
             if i == attempts - 1:
-                raise
-        except Exception:
+                print(f"  ! {url} : HTTP {e.code} après {attempts} essais", file=sys.stderr)
+                return None
+        except Exception as e:  # noqa: BLE001 — réseau : on réessaie, puis on renonce
             if i == attempts - 1:
-                raise
+                print(f"  ! {url} : {e}", file=sys.stderr)
+                return None
         time.sleep(2 ** i)
     return None
 

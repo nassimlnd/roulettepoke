@@ -56,6 +56,10 @@ const wire: WireStats = {
     },
     tournoi: {
       tyran_victime: { entries: [{ tyran: 'Nate', victime: 'Emma', wins: 6 }] }
+    },
+    concours: {
+      dance_king: { players: ['Léa'], total_rounds: 14 },
+      underdog: { entries: [{ username: 'Nate', card_name: 'Rattata', discipline: 'Grâce', base_stat: 12 }] }
     }
     // famille spin absente en entier
   }
@@ -83,9 +87,19 @@ describe('normalizeStats (contrat v4)', () => {
     expect(adrien.victim).toBeNull()
   })
 
-  it('construit les 5 familles × 4 récompenses du palmarès', () => {
-    expect(d.awardGroups.map(g => g.key)).toEqual(['roulette', 'jackpot', 'spin', 'motus', 'tournoi'])
-    for (const g of d.awardGroups) expect(g.awards).toHaveLength(4)
+  it('construit les 6 familles du palmarès (v5 : Concours en plus, Motus à 3)', () => {
+    expect(d.awardGroups.map(g => g.key)).toEqual(['roulette', 'jackpot', 'spin', 'motus', 'tournoi', 'concours'])
+    expect(d.awardGroups.map(g => g.awards.length)).toEqual([4, 4, 4, 3, 4, 3])
+    // « On te voit… » a disparu côté serveur : plus de carte vide à son nom.
+    expect(d.awardGroups.flatMap(g => g.awards).some(a => a.key === 'on_te_voit')).toBe(false)
+  })
+
+  it('formate les récompenses du Concours', () => {
+    const concours = d.awardGroups[5]!
+    expect(concours.awards.find(a => a.key === 'dance_king')!.detail).toBe('28 points de danse')
+    const underdog = concours.awards.find(a => a.key === 'underdog')!
+    expect(underdog.names).toEqual(['Nate (Rattata)'])
+    expect(underdog.detail).toBe('12/100 de base en Grâce')
   })
 
   it('formate une récompense pourvue : vedettes plafonnées à 2 + « +N »', () => {
@@ -114,7 +128,7 @@ describe('normalizeStats (contrat v4)', () => {
 
   it('tolère un payload sans anecdotes du tout', () => {
     const bare = normalizeStats({ ...wire, anecdotes: undefined })
-    expect(bare.awardGroups).toHaveLength(5)
-    expect(bare.awardGroups.flatMap(g => g.awards)).toHaveLength(20)
+    expect(bare.awardGroups).toHaveLength(6)
+    expect(bare.awardGroups.flatMap(g => g.awards)).toHaveLength(22)
   })
 })

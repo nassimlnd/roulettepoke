@@ -29,7 +29,8 @@ const sections = [
       // Masquées ») qui ne correspondaient à aucun réglage réel.
       'Rythme de révélation réglable dans Réglages : Complète (animation entière), Rapide (accélérée) ou Directe (résultat immédiat).',
       'Filtrer par biome cible les cartes d\'une région — le coût dépend du biome (voir la table ci-dessous).',
-      'Événements spéciaux (1 %) sur les tirages sans filtre : bonus de coins, Charme Chroma, ou choix entre deux cartes.'
+      'Événements spéciaux (1 %) sur les tirages sans filtre : bonus de coins, Charme Chroma, choix entre deux cartes, ou éclosion de l\'œuf confié par la pension de l\'Aventure.',
+      'Des événements surprise changent parfois le prix du jour (Soldes −50 %, Journée d\'une région −30 %) : le prix affiché sur chaque booster est toujours celui qui sera débité.'
     ]
   },
   {
@@ -37,7 +38,7 @@ const sections = [
     color: '#e0a92e',
     title: 'Raretés & Shiny',
     items: [
-      'Quatre raretés : Commun, Rare (1ʳᵉ évolution), Épique (2ᵉ évolution), Légendaire.',
+      'Quatre raretés : Commun, Rare (1ʳᵉ évolution), Épique (2ᵉ évolution), Légendaire — plus les bébés (Pichu, Mélo, Azurill…), un palier avant la forme de base.',
       'Les Shiny sont des versions alternatives ultra-rares (cadre argenté, ✦).',
       'Chance shiny de base : 1/500 (0,2 %). Chaque exemplaire déjà possédé d\'un Pokémon augmente sa chance shiny de +1/500 — c\'est le « pity », désormais affiché sur chaque doublon et dans la collection.',
       'Revendre un Shiny donne un Charme Chroma (au lieu de coins).'
@@ -60,9 +61,12 @@ const sections = [
     title: 'Équipe & arènes',
     items: [
       'Constitue une équipe de 6 Pokémon via la roulette d\'équipe — la carte tirée quitte définitivement ta collection (confirmation demandée).',
-      'Deux parcours indépendants de 8 arènes, un par région (Kanto et Johto). Une tentative par semaine et par arène.',
-      `Bonus de connexion : ${DAILY_BONUS_BASE} 🪙 par jour, + ${DAILY_BONUS_PER_BADGE} 🪙 par badge de ta région active — soit ${DAILY_BONUS_BASE + GYMS_PER_REGION * DAILY_BONUS_PER_BADGE} 🪙/jour une fois les ${GYMS_PER_REGION} badges de la région obtenus.`,
-      'Un entraînement quotidien gratuit augmente tes chances en arène.'
+      'Trois régions — Kanto, Johto et Hoenn — chacune avec sa bourse, son parcours de 8 arènes, son équipe d\'arène et son classement. La région active se choisit dans la barre de navigation.',
+      'Une tentative par semaine et par arène ; les semaines « Arènes ouvertes », deux.',
+      `Bonus de connexion : ${DAILY_BONUS_BASE} 🪙 par jour, + ${DAILY_BONUS_PER_BADGE} 🪙 par badge de la région qui reçoit la prime — soit ${DAILY_BONUS_BASE + GYMS_PER_REGION * DAILY_BONUS_PER_BADGE} 🪙/jour une fois les ${GYMS_PER_REGION} badges de la région obtenus.`,
+      'Bureau de change : la prime du jour tombe dans une région, et tu peux la faire passer sur une autre, à volonté dans la journée, depuis le sélecteur de région.',
+      'Un entraînement quotidien gratuit augmente tes chances en arène — sur le parcours de la région affichée.',
+      'Tournoi et Ligue des 4 : tu choisis la bourse qui paie l\'inscription et reçoit la récompense.'
     ]
   }
 ] as const

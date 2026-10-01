@@ -6,6 +6,8 @@ import { biomeSlug } from '~/utils/poke'
 const props = withDefaults(defineProps<{
   biome: string // '' = Tous les biomes
   cost: number
+  /** Prix hors événement : affiché barré quand `cost` est remisé. */
+  baseCost?: number
   owned?: number
   total?: number
   size?: 'sm' | 'md' | 'lg'
@@ -49,7 +51,10 @@ const ballSize = computed(() => Math.round(WIDTHS[props.size] * 0.3))
           v-else
           class="tabular"
         >Toutes régions</span>
-        <span class="pack__cost tabular"><i />{{ cost }}</span>
+        <span class="pack__cost tabular"><i /><s
+          v-if="baseCost && baseCost > cost"
+          class="pack__old"
+        >{{ baseCost }}</s>{{ cost }}</span>
       </div>
     </div>
   </div>
@@ -144,6 +149,7 @@ const ballSize = computed(() => Math.round(WIDTHS[props.size] * 0.3))
   text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
 }
 .pack__cost { display: inline-flex; align-items: center; gap: 4px; }
+.pack__old { opacity: .6; font-weight: 500; }
 .pack__cost i {
   width: calc(var(--w) * 0.06);
   height: calc(var(--w) * 0.06);

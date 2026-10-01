@@ -1,18 +1,18 @@
 import type { WireLeaderboardResponse, WireRecentShiny } from '~/types/api'
 import type { LeaderboardData, RecentShiny } from '~/types/domain'
-import type { Generation } from '~/constants/generation'
+import type { Generation, RegionSlug } from '~/constants/generation'
 import type { Api } from './_client'
 import { normalizeLeaderboardRow, normalizeRecentShiny } from './normalize'
 
 /**
- * Trois classements : le classement général, et un par région. Ils partagent
- * exactement la même forme de réponse, seul le chemin change.
+ * Le classement général, et un par région. Ils partagent exactement la même
+ * forme de réponse, seul le chemin change.
  *
  * Il existait ici un quatrième appel, `/leaderboard/cheaters`, qui alimentait
  * un onglet « Tricheurs ». La route a disparu du serveur (404) : l'onglet
  * menait à une erreur. Les classements régionaux la remplacent.
  */
-export type BoardScope = 'global' | 'kanto' | 'johto'
+export type BoardScope = 'global' | RegionSlug
 
 function boardPath(scope: BoardScope): string {
   return scope === 'global' ? '/leaderboard' : `/leaderboard/${scope}`

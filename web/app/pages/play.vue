@@ -4,7 +4,6 @@ import type { DomainCard, RollOutcome } from '~/types/domain'
 import type { RevealView } from '~/components/game/BoosterReveal.vue'
 import type { BatchTile } from '~/components/game/BoosterRevealBatch.vue'
 import type { RevealMode } from '~/stores/preferences'
-import { BASE_ROLL_COST } from '~/stores/roll'
 import { eventRepo } from '~/repositories'
 import { biomeSlug } from '~/utils/poke'
 
@@ -83,15 +82,17 @@ const REVEAL_MS: Record<RevealMode, number> = { visible: 3000, smart: 1400, hidd
 const orbitMs = computed(() => (motionOn.value ? REVEAL_MS[prefs.revealMode] : 60))
 
 // ─── Carrousel de boosters ────────────────────────────────────────────────────
-interface BoosterOption { biome: string, cost: number, owned?: number, total?: number }
+// `cost` est le prix du jour (celui qui est débité) ; `baseCost` le prix hors
+// événement, affiché barré les jours de remise.
+interface BoosterOption { biome: string, cost: number, baseCost: number, owned?: number, total?: number }
 const boosters = computed<BoosterOption[]>(() => [
-  { biome: '', cost: BASE_ROLL_COST },
-  ...rollStore.biomes.map(b => ({ biome: b.biome, cost: b.cost, owned: b.ownedCount, total: b.cardCount }))
+  { biome: '', cost: rollStore.standardCost, baseCost: rollStore.rollCost.base },
+  ...rollStore.biomes.map(b => ({ biome: b.biome, cost: b.effectiveCost, baseCost: b.cost, owned: b.ownedCount, total: b.cardCount }))
 ])
 const selected = computed(() => prefs.selectedBiome)
-// Un ticket actif filtre le tirage au coût de base (le ticket EST l'accès au biome).
+// Un ticket actif filtre le tirage au coût standard (le ticket EST l'accès au biome).
 const currentCost = computed(() =>
-  hasActiveTicket.value ? BASE_ROLL_COST : rollStore.costForBiome(prefs.selectedBiome))
+  hasActiveTicket.value ? rollStore.standardCost : rollStore.costForBiome(prefs.selectedBiome))
 const currentTint = computed(() =>
   prefs.selectedBiome ? `var(--color-biome-${biomeSlug(prefs.selectedBiome as Biome)})` : 'var(--color-poke-500)')
 
@@ -108,9 +109,11 @@ const batchCost = computed(() => currentCost.value * BATCH_SIZE)
 const affordableBatch = computed(() => wallet.canAfford(batchCost.value))
 
 // ─── Vue de révélation dérivée de l'état ──────────────────────────────────────
+// Une éclosion d'œuf se révèle comme une carte, avec son propre titre.
+const hatched = ref(false)
 const revealView = computed<RevealView | null>(() => {
   if (resolvedCard.value) {
-    return { kind: 'card', card: resolvedCard.value.card, isNew: resolvedCard.value.isNew, quantity: resolvedCard.value.quantity }
+    return { kind: 'card', card: resolvedCard.value.card, isNew: resolvedCard.value.isNew, quantity: resolvedCard.value.quantity, hatched: hatched.value }
   }
   const o = outcome.value
   if (o?.kind === 'coins') return { kind: 'coins', amount: o.amount }
@@ -136,6 +139,7 @@ async function open() {
   errorMsg.value = ''
   outcome.value = null
   resolvedCard.value = null
+  hatched.value = false
   phase.value = 'opening'
   const biome = rollBiome()
   const hadTicket = hasActiveTicket.value
@@ -148,7 +152,8 @@ async function open() {
       wait(orbitMs.value)
     ])
     outcome.value = o
-    if (o.kind === 'card') {
+    if (o.kind === 'card' || o.kind === 'egg') {
+      hatched.value = o.kind === 'egg'
       resolvedCard.value = { card: o.card, isNew: o.isNew, quantity: qtyFor(o.card, o.isNew) }
       refreshCollection()
       if (boosted) auth.consumeCharmeRoll() // le backend ne décrémente que les tirages normaux
@@ -186,7 +191,7 @@ function buildTiles(outcomes: RollOutcome[]): BatchTile[] {
     return prior + n
   }
   return outcomes.map<BatchTile>((o) => {
-    if (o.kind === 'card') return { kind: 'card', card: o.card, isNew: o.isNew, quantity: qtyOf(o.card) }
+    if (o.kind === 'card' || o.kind === 'egg') return { kind: 'card', card: o.card, isNew: o.isNew, quantity: qtyOf(o.card) }
     if (o.kind === 'coins') return { kind: 'coins', amount: o.amount }
     if (o.kind === 'charme') return { kind: 'charme' }
     return { kind: 'choice', choiceId: o.choiceId, left: o.left, right: o.right, resolving: false, resolved: null }
@@ -230,7 +235,7 @@ async function open5() {
     }
     batchTiles.value = buildTiles(outcomes)
     batchCount.value = outcomes.length
-    celebrateBest(outcomes.flatMap(o => (o.kind === 'card' ? [o.card] : [])))
+    celebrateBest(outcomes.flatMap(o => (o.kind === 'card' || o.kind === 'egg' ? [o.card] : [])))
     refreshCollection()
     // Échec partiel (ex. quota atteint en cours) : on révèle le butin acquis.
     if (error) {
@@ -405,6 +410,7 @@ onMounted(() => {
               <BoosterPack
                 :biome="b.biome"
                 :cost="b.cost"
+                :base-cost="b.baseCost"
                 :owned="b.owned"
                 :total="b.total"
                 size="md"

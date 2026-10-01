@@ -2,6 +2,7 @@
 import type { LeagueLegendary, LeagueRun } from '~/types/domain'
 import type { PokeType } from '~/types/api'
 import { typeSlug } from '~/utils/poke'
+import { GENERATIONS, currencyOf, asGeneration, generationRegion, type Generation } from '~/constants/generation'
 import { useLeagueStore, LEAGUE_COINS_REWARD } from '~/stores/league'
 import { useGymStore } from '~/stores/gyms'
 import { useBattleStore } from '~/stores/battle'
@@ -67,11 +68,32 @@ function doChallenge() {
 }
 
 // ─── Récompense : pièces ──────────────────────────────────────────────────────
+// Les 500 🪙 vont dans la bourse d'une région dont le joueur a les 8 badges —
+// un seul choix la plupart du temps, un sélecteur sinon. Les légendaires
+// proposés suivent la même règle ; sans la liste (API antérieure), on garde tout.
+const eligibleGens = computed(() => status.value?.eligibleGenerations ?? [])
+const coinChoices = computed(() => GENERATIONS.filter(g => eligibleGens.value.includes(g.id)))
+const payout = ref<Generation | null>(null)
+watch(coinChoices, (choices) => {
+  if (!choices.some(g => g.id === payout.value)) payout.value = choices[0]?.id ?? null
+}, { immediate: true })
+const payoutKey = computed({
+  get: () => String(payout.value ?? ''),
+  set: (v: string) => { payout.value = asGeneration(Number(v)) }
+})
+const payoutOptions = computed(() => coinChoices.value.map(g => ({ value: String(g.id), label: g.region })))
+const rewardLegendaries = computed(() => {
+  const all = status.value?.legendaries ?? []
+  if (!eligibleGens.value.length) return all
+  return all.filter(l => l.generation === null || eligibleGens.value.includes(l.generation))
+})
+
 function claimCoins() {
   return run(async () => {
-    await league.claimCoins()
+    await league.claimCoins(payout.value ? currencyOf(payout.value) : undefined)
     await refreshBalance()
-    toast.add({ title: `+${LEAGUE_COINS_REWARD} pièces empochées !`, color: 'success', icon: 'i-lucide-coins' })
+    const where = payout.value ? ` (${generationRegion(payout.value)})` : ''
+    toast.add({ title: `+${LEAGUE_COINS_REWARD} pièces empochées${where} !`, color: 'success', icon: 'i-lucide-coins' })
   })
 }
 
@@ -170,6 +192,19 @@ const { loading, errorMsg, retry } = usePageData(async () => {
           <h2 class="reward__title font-display">
             Choisis ta récompense
           </h2>
+          <div
+            v-if="coinChoices.length > 1"
+            class="rpay"
+          >
+            <span class="rpay__label">Verser les pièces sur</span>
+            <PSegmented
+              v-model="payoutKey"
+              :options="payoutOptions"
+              size="sm"
+              a11y="radio"
+              aria-label="Région créditée"
+            />
+          </div>
           <button
             class="rcoins"
             :disabled="busy"
@@ -191,7 +226,7 @@ const { loading, errorMsg, retry } = usePageData(async () => {
               … ou tente de capturer un légendaire
             </p>
             <LegendaryStrip
-              :legendaries="status?.legendaries ?? []"
+              :legendaries="rewardLegendaries"
               pickable
               :busy="busy"
               @pick="openLegendary"
@@ -681,6 +716,8 @@ const { loading, errorMsg, retry } = usePageData(async () => {
 /* Récompense */
 .reward { display: flex; flex-direction: column; gap: 14px; }
 .reward__title { font-weight: 700; font-size: 1.15rem; }
+.rpay { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rpay__label { font-size: .84rem; color: var(--ui-text-muted); }
 .rcoins {
   display: flex;
   align-items: center;

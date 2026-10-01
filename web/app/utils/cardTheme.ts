@@ -70,7 +70,9 @@ export function cosmeticHp(num: number, rarity: RealRarity): number {
   return HP_BASE[rarity] + ((num * 7) % 25)
 }
 
-export const STAGE_LABEL: Record<1 | 2 | 3, string> = {
+// Les bébés (Pichu, Mélo, Azurill…) sont un palier AVANT la forme de base.
+export const STAGE_LABEL: Record<0 | 1 | 2 | 3, string> = {
+  0: 'Bébé',
   1: 'De base',
   2: 'Niv. 1',
   3: 'Niv. 2'
