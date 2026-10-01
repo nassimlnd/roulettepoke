@@ -2,15 +2,30 @@ import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT, CACHE_TTL_LONG } from '~/constants/cache'
 import type {
   TrainingStatus, SlotStatus, SpinStatus,
-  TradeEligibility, NotificationsResponse, MotusToday
+  TradeEligibility, NotificationsResponse, MotusToday, WireActivity
 } from '~/types/api'
 import type { DomainGym, DomainTournament, DomainTrade, DomainLeagueStatus } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
-  tradesRepo, gymRepo, notificationsRepo, motusRepo
+  tradesRepo, gymRepo, notificationsRepo, motusRepo, activitiesRepo
 } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 import { nextDailyReset, nextWeekly } from '~/utils/paris-time'
+import { hashToRoute } from '~/utils/links'
+
+// Nos tuiles ↔ les clés des « Activités du jour » du serveur. Quand le serveur
+// connaît l'activité, SON état `done` fait foi : il voit des choses que nos
+// statuts ne voient pas (ex. une tentative d'arène déjà jouée cette semaine).
+const ACTIVITY_KEYS: Record<string, string> = {
+  training: 'training',
+  jackpot: 'jackpot',
+  motus: 'motus',
+  gym: 'gym',
+  tournament: 'tournament',
+  league: 'league',
+  trade: 'trade',
+  spin: 'spin_reward'
+}
 
 const TTL_SHORT = CACHE_TTL_SHORT
 const TTL_LONG = CACHE_TTL_LONG
@@ -38,6 +53,7 @@ export const useHubStore = defineStore('hub', {
     gyms: [] as DomainGym[],
     motus: null as MotusToday | null,
     notifications: null as NotificationsResponse | null,
+    activities: [] as WireActivity[],
     shortFetchedAt: 0,
     longFetchedAt: 0
   }),
@@ -55,14 +71,25 @@ export const useHubStore = defineStore('hub', {
     leagueUnlocked: state => !!state.league?.cycleStart || !!state.league?.eligible,
     currentGym: state => state.gyms.find(g => !g.hasBadge) ?? null,
 
+    // État `done` d'une activité selon le serveur ; undefined s'il ne la liste
+    // pas (pas disponible aujourd'hui, ou API antérieure à la 4.2).
+    serverDone(state) {
+      return (tileKey: string): boolean | undefined =>
+        state.activities.find(a => a.key === (ACTIVITY_KEYS[tileKey] ?? tileKey))?.done
+    },
+
     // Tuiles « Aujourd'hui »
     dailyTiles(state): QuotaTile[] {
       const daily = nextDailyReset()
+      const open = (key: string, fallback: boolean) => {
+        const done = this.serverDone(key)
+        return done === undefined ? fallback : !done
+      }
       return [
         {
           key: 'training',
           label: 'Entraînement',
-          available: !!state.training?.canFightToday,
+          available: open('training', !!state.training?.canFightToday),
           nextResetAt: daily,
           to: '/gyms',
           reward: '+5 🪙 · +2 % de bonus d\'arène'
@@ -70,7 +97,7 @@ export const useHubStore = defineStore('hub', {
         {
           key: 'jackpot',
           label: 'Jackpot',
-          available: !!state.slot?.canSpin,
+          available: open('jackpot', !!state.slot?.canSpin),
           nextResetAt: daily,
           to: '/slot-machine',
           reward: 'Pièces, tickets, Charme ou légendaire'
@@ -78,7 +105,7 @@ export const useHubStore = defineStore('hub', {
         {
           key: 'motus',
           label: 'Motus — mot du jour',
-          available: state.motus?.status === 'in_progress',
+          available: open('motus', state.motus?.status === 'in_progress'),
           nextResetAt: daily,
           to: '/motus',
           reward: 'Une forme de Zarbi · +10 🪙 au 1ᵉʳ'
@@ -91,11 +118,15 @@ export const useHubStore = defineStore('hub', {
       const monday = nextWeekly(1, 0)
       const thursday = nextWeekly(4, 12)
       const gym = state.gyms.find(g => !g.hasBadge)
+      const open = (key: string, fallback: boolean) => {
+        const done = this.serverDone(key)
+        return done === undefined ? fallback : !done
+      }
       const tiles: QuotaTile[] = [
         {
           key: 'gym',
           label: gym ? gym.name : 'Arènes',
-          available: !!gym?.canAttempt,
+          available: open('gym', !!gym?.canAttempt),
           nextResetAt: monday,
           to: '/gyms',
           // `badgeName` contient déjà le mot « Badge » (ex. « Badge Roche ») :
@@ -105,7 +136,7 @@ export const useHubStore = defineStore('hub', {
         {
           key: 'tournament',
           label: 'Tournoi',
-          available: state.tournament?.status === 'registration_open' && !state.tournament?.isRegistered,
+          available: open('tournament', state.tournament?.status === 'registration_open' && !state.tournament?.isRegistered),
           nextResetAt: thursday,
           to: '/tournament',
           reward: state.tournament?.prizePool
@@ -117,7 +148,7 @@ export const useHubStore = defineStore('hub', {
         tiles.push({
           key: 'league',
           label: 'Ligue des 4',
-          available: !!state.league?.eligible && !state.league?.alreadyAttempted,
+          available: open('league', !!state.league?.eligible && !state.league?.alreadyAttempted),
           nextResetAt: thursday,
           to: '/league',
           reward: 'Pièces ou capture d\'un légendaire'
@@ -126,7 +157,7 @@ export const useHubStore = defineStore('hub', {
       tiles.push({
         key: 'trade',
         label: 'Échange',
-        available: !!state.tradeEligibility?.eligible,
+        available: open('trade', !!state.tradeEligibility?.eligible),
         nextResetAt: monday,
         to: '/trades',
         reward: 'Une carte manquante de même rareté'
@@ -137,11 +168,33 @@ export const useHubStore = defineStore('hub', {
           // « Aventure » et non « Spin » : la navbar, la page et le Guide disent
           // Aventure — le hub était le seul à employer le mot interne.
           label: 'Aventure',
-          available: !state.spin?.rewardedThisWeek,
+          available: open('spin', !state.spin?.rewardedThisWeek),
           nextResetAt: monday,
           to: '/spin',
           reward: 'Récompense hebdo + tentative légendaire'
         })
+        // La tentative légendaire de l'Aventure est un rendez-vous à part pour
+        // le serveur (10 captures par semaine) : on la montre dès qu'il la liste.
+        const legendary = state.activities.find(a => a.key === 'spin_legendary')
+        if (legendary) {
+          tiles.push({
+            key: 'spin_legendary',
+            label: 'Aventure — légendaire',
+            available: !legendary.done,
+            nextResetAt: monday,
+            to: '/spin',
+            reward: 'Tentative de transfert d\'un légendaire'
+          })
+        }
+      }
+      // Toute activité que le serveur annonce et que nos tuiles ne couvrent
+      // pas : on la relaie telle quelle plutôt que de la taire.
+      const covered = new Set([...tiles.map(t => ACTIVITY_KEYS[t.key] ?? t.key), ...this.dailyTiles.map(t => ACTIVITY_KEYS[t.key] ?? t.key)])
+      for (const a of state.activities) {
+        if (covered.has(a.key)) continue
+        const to = hashToRoute(a.link)
+        if (!to) continue
+        tiles.push({ key: a.key, label: a.label, available: !a.done, nextResetAt: monday, to, reward: '' })
       }
       return tiles
     }
@@ -172,13 +225,14 @@ export const useHubStore = defineStore('hub', {
       // L'éligibilité aux échanges dépend de la région : 120 cartes uniques à
       // Kanto, 80 à Johto.
       const gen = useWalletStore().activeGeneration
-      const [training, slot, spin, gyms, eligibility, motus] = await Promise.all([
+      const [training, slot, spin, gyms, eligibility, motus, activities] = await Promise.all([
         dedupe('training/status', () => trainingRepo.status(api)).catch(() => null),
         dedupe('slot/status', () => slotRepo.status(api)).catch(() => null),
         dedupe('spin/status', () => spinRepo.status(api)).catch(() => null),
         dedupe('gym', () => gymRepo.getAll(api)).catch(() => [] as DomainGym[]),
         dedupe(`trades/eligibility/${gen}`, () => tradesRepo.eligibility(api, gen)).catch(() => null),
-        dedupe('motus/today', () => motusRepo.today(api)).catch(() => null)
+        dedupe('motus/today', () => motusRepo.today(api)).catch(() => null),
+        dedupe('activities/today', () => activitiesRepo.today(api)).catch(() => [] as WireActivity[])
       ])
       this.training = training
       this.slot = slot
@@ -186,6 +240,7 @@ export const useHubStore = defineStore('hub', {
       this.gyms = gyms
       this.tradeEligibility = eligibility
       this.motus = motus
+      this.activities = activities
       this.longFetchedAt = Date.now()
     },
 

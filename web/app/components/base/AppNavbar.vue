@@ -113,23 +113,7 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
              question. -->
         <GenerationSwitch />
         <ThemeToggle />
-        <UChip
-          :show="hub.unreadNotifications > 0"
-          :text="hub.unreadNotifications"
-          size="2xl"
-          color="error"
-        >
-          <button
-            class="icon-btn"
-            aria-label="Notifications"
-            @click="hub.markNotificationsRead()"
-          >
-            <UIcon
-              name="i-lucide-bell"
-              class="size-5"
-            />
-          </button>
-        </UChip>
+        <NotificationsMenu />
         <NuxtLink
           to="/settings"
           class="avatar-link"
@@ -264,17 +248,6 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
   align-items: center;
   gap: 8px;
 }
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  color: var(--ui-text-muted);
-  transition: color .15s ease, background .15s ease;
-}
-.icon-btn:hover { color: var(--ui-text); background: var(--ui-bg-muted); }
-
 .avatar-link {
   display: grid;
   place-items: center;

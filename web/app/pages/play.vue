@@ -516,8 +516,13 @@ onMounted(() => {
       </Transition>
     </div>
 
-    <!-- Hub : quotas du jour / de la semaine (masqué pendant l'ouverture) -->
-    <HubPanel v-if="phase === 'idle'" />
+    <!-- Premiers pas, objectif de la semaine, quotas du jour / de la semaine
+         (masqués pendant l'ouverture) -->
+    <template v-if="phase === 'idle'">
+      <OnboardingChecklist />
+      <CommunityGoal />
+      <HubPanel />
+    </template>
 
     <BagModal v-model:open="bagOpen" />
 

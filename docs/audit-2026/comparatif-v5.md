@@ -384,3 +384,37 @@ Bandeau d'événements, objectif de la semaine, activités du jour et Premiers
 pas depuis l'API, notifications affichées, Concours, tournoi complet (avantage,
 analyse, tableau, replays), échanges 5.1.1, Paintkemon, notes de version,
 historiques.
+
+---
+
+# Mise à jour du 1ᵉʳ octobre 2026 — vague E livrée
+
+L'engagement piloté par le serveur, quatre endpoints en lecture et un en
+écriture :
+
+- **Bandeau des événements du jour** sous la navbar (`/game-events/current`) :
+  les huit types du jeu décrits avec leurs mots (Soldes, Journée d'une région,
+  Pluie d'événements, Prime ×2, Jackpot en folie, Arènes ouvertes, marchand,
+  Aventure chanceuse), lien vers la page concernée, masquable, de retour dès
+  que l'empreinte du jour change ; un type inconnu est ignoré. Le **marchand**
+  badge les cartes qu'il recherche dans la collection et son prix remplace le
+  prix de vente quand la carte a été tirée aujourd'hui ; une vente au marchand
+  rafraîchit la demande pour tout le monde.
+- **Objectif de la semaine** sur l'accueil, replié : progression collective,
+  contribution du joueur face au minimum requis, récompense versée le lundi.
+- **Activités du jour** (`/activities/today`) réconciliées avec les tuiles du
+  hub : quand le serveur connaît l'activité, son état fait foi ; les activités
+  qu'il annonce et que nos tuiles ne couvraient pas (tentative légendaire de
+  l'Aventure) apparaissent.
+- **Premiers pas** (`/onboarding/status`, `/onboarding/claim`) : la checklist
+  des 8 étapes avec liens vers nos pages (l'étape Concours est marquée
+  « bientôt ici » jusqu'à la vague F), réclamation des 150 🪙 × 3 régions,
+  renoncement définitif avec confirmation.
+- **Notifications enfin affichées** : la cloche ouvre la liste (message, date
+  relative, non-lues en évidence) ; les ancres du front d'origine sont traduites
+  vers nos routes, sans lien quand nous n'avons pas la page.
+
+Vérifié en réel sur le compte de test : Premiers pas 6/8, objectif 216/250,
+tuile « Aventure — légendaire », deux notifications liées vers /suggestions ;
+bandeau et badge marchand vérifiés en injectant un jour de Soldes dans le
+store (aucun événement réel ce jour-là). 107 tests, lint, typecheck, build.

@@ -253,6 +253,8 @@ export interface SellResult {
   newCoins?: number
   generation?: number
   charmeObtained?: boolean
+  /** Le marchand du jour a acheté cette carte au prix fort (v5.1). */
+  merchantSale?: boolean
 }
 
 export interface WireInventory {
@@ -772,4 +774,26 @@ export interface WireGameEvents {
   events: { date: string, active: WireGameEvent[] }
   goal: WireCommunityGoal | null
   rollCost: { base: number, effective: number }
+}
+
+// ─── Activités du jour & Premiers pas ────────────────────────────────────────
+// Les liens sont les ancres du front d'origine (`#motus`) : à traduire via
+// hashToRoute avant affichage.
+export interface WireActivity {
+  key: string
+  label: string
+  done: boolean
+  link: string
+}
+
+export interface WireOnboardingStatus {
+  steps: { key: string, label: string, link: string, done: boolean }[]
+  allDone: boolean
+  rewardClaimed: boolean
+}
+
+export interface WireOnboardingClaim {
+  coinsGen1: number
+  coinsGen2: number
+  coinsGen3: number
 }

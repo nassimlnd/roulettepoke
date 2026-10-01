@@ -1,46 +1,44 @@
 import { defineStore } from 'pinia'
 import { CACHE_TTL_LONG } from '~/constants/cache'
 import type { BiomeInfo, RollOutcome } from '~/types/domain'
-import { rollRepo, eventsRepo } from '~/repositories'
+import { rollRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
+import { BASE_ROLL_COST } from '~/constants/game'
 
-// Coût de base d'un tirage standard (sans filtre biome), hors événement.
-export const BASE_ROLL_COST = 10
+// Ré-exporté pour les consommateurs historiques (Guide).
+export { BASE_ROLL_COST }
 
 export const useRollStore = defineStore('roll', {
   state: () => ({
     biomes: [] as BiomeInfo[],
-    biomesFetchedAt: 0,
-    // Prix du jour du tirage standard : `effective` tient compte des remises
-    // d'événement (Soldes −50 %, Journée d'une région −30 %). C'est lui qui est
-    // débité ; afficher `base` à sa place rendait le prix faux ces jours-là.
-    rollCost: { base: BASE_ROLL_COST, effective: BASE_ROLL_COST }
+    biomesFetchedAt: 0
   }),
 
   getters: {
-    standardCost: state => state.rollCost.effective
+    // Prix du jour du tirage standard : `effective` tient compte des remises
+    // d'événement (Soldes −50 %, Journée d'une région −30 %). C'est lui qui est
+    // débité ; afficher `base` à sa place rendait le prix faux ces jours-là.
+    // La donnée vit dans le store des événements, qui la tient fraîche.
+    rollCost: () => useEventsStore().rollCost,
+    standardCost(): number { return this.rollCost.effective }
   },
 
   actions: {
     async ensureBiomes(force = false) {
       if (!force && this.biomes.length && Date.now() - this.biomesFetchedAt < CACHE_TTL_LONG) return
-      const [biomes, events] = await Promise.all([
+      const [biomes] = await Promise.all([
         dedupe('roll/biomes', () => rollRepo.biomes(useApi())),
-        // Le prix effectif vit à côté des événements du jour ; sans réponse on
-        // garde le tarif de base plutôt que de bloquer le tirage.
-        dedupe('game-events', () => eventsRepo.current(useApi())).catch(() => null)
+        // Sans réponse des événements on garde le tarif de base plutôt que de
+        // bloquer le tirage.
+        useEventsStore().ensureFresh(force).catch(() => {})
       ])
       this.biomes = biomes
-      if (events?.rollCost) {
-        const base = events.rollCost.base ?? BASE_ROLL_COST
-        this.rollCost = { base, effective: events.rollCost.effective ?? base }
-      }
       this.biomesFetchedAt = Date.now()
     },
 
     costForBiome(biome: string): number {
-      if (!biome) return this.rollCost.effective
-      return this.biomes.find(b => b.biome === biome)?.effectiveCost ?? this.rollCost.effective
+      if (!biome) return this.standardCost
+      return this.biomes.find(b => b.biome === biome)?.effectiveCost ?? this.standardCost
     },
 
     // Un tirage réel : débit optimiste puis résolution serveur (le solde exact

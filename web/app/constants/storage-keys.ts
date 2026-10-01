@@ -15,5 +15,7 @@ export const STORAGE_KEYS = {
   spriteStyle: 'pkr_sprite_style',
   teamRollSkipConfirm: 'pkr_team_roll_skip_confirm',
   replaySpeed: 'replay_speed',
-  spinMuted: 'spin_muted'
+  spinMuted: 'spin_muted',
+  eventsDismissed: 'pkr_events_dismissed', // empreinte du bandeau d'événements masqué
+  onboardingDismissed: 'gacha_onboarding_dismissed' // même clé que l'ancien front
 } as const

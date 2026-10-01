@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import type { DomainOwnedCard } from '~/types/domain'
 import { SELL_PRICE } from '~/utils/poke'
+import { merchantOffer, type MerchantOffer } from '~/utils/gameEvents'
 import { SHINY_PITY_DENOMINATOR, MERGE_COST } from '~/constants/game'
 import { GENERATIONS } from '~/constants/generation'
 
 const collection = useCollectionStore()
+const events = useEventsStore()
 const toast = useToast()
+
+// Marchand du jour (événement v5.1) : il rachète certains Pokémon au prix
+// fort, mais seulement ceux tirés aujourd'hui et pas encore vendus par un
+// autre joueur. Badge sur la carte, prix repris dans la vente à l'unité.
+const wantedById = computed(() => {
+  const m = new Map<string, MerchantOffer>()
+  for (const w of events.merchant?.wanted ?? []) {
+    const offer = merchantOffer(events.merchant, w.cardId)
+    if (offer) m.set(w.cardId, offer)
+  }
+  return m
+})
 
 const TABS = [
   { value: 'standard', label: 'Standard' },
@@ -56,6 +70,7 @@ const smartSellOpen = ref(false)
 const { loading, errorMsg, retry } = usePageData(async () => {
   await collection.ensureFresh()
   if (showZarbi.value) collection.ensureZarbi().catch(() => {})
+  events.ensureFresh().catch(() => {})
 })
 
 watch(showZarbi, (v) => {
@@ -134,9 +149,13 @@ function canMerge(card: DomainOwnedCard): boolean {
   return collection.mergeables.some(m => m.id === card.id)
 }
 
+const merchantFor = computed(() =>
+  selected.value ? wantedById.value.get(selected.value.id) ?? null : null)
 const sellPrice = computed(() => {
   if (!selected.value) return 0
-  return selected.value.isShiny ? 0 : SELL_PRICE[selected.value.rarity]
+  if (selected.value.isShiny) return 0
+  const offer = merchantFor.value
+  return offer?.eligible ? offer.price : SELL_PRICE[selected.value.rarity]
 })
 
 function confirmSell() {
@@ -144,12 +163,18 @@ function confirmSell() {
   return run(async () => {
     const res = await collection.sell(selected.value!.id)
     toast.add({
-      title: res.charmeObtained ? 'Charme Chroma obtenu !' : `+${res.sellPrice ?? 0} coins`,
+      title: res.charmeObtained
+        ? 'Charme Chroma obtenu !'
+        : res.merchantSale
+          ? `Le marchand te l'achète au prix fort ! +${res.sellPrice ?? 0} 🪙`
+          : `+${res.sellPrice ?? 0} coins`,
       color: 'success',
       icon: res.charmeObtained ? 'i-lucide-sparkles' : 'i-lucide-coins'
     })
     sellOpen.value = false
     detailOpen.value = false
+    // Premier arrivé, premier servi : la demande du marchand change pour tous.
+    if (res.merchantSale) events.ensureFresh(true).catch(() => {})
     await collection.ensureFresh(true)
   })
 }
@@ -361,6 +386,15 @@ function confirmMerge() {
           v-if="sortByPity && card.owned && !card.isShiny"
           class="pity"
         >✦ {{ shinyChance(card) }}</span>
+        <!-- Marchand du jour : prix fort si la carte a été tirée aujourd'hui. -->
+        <span
+          v-if="wantedById.get(card.id)"
+          class="wanted"
+          :class="{ 'wanted--hot': wantedById.get(card.id)!.eligible }"
+          :title="wantedById.get(card.id)!.eligible
+            ? `Le marchand te l'achète ${wantedById.get(card.id)!.price} 🪙 aujourd'hui`
+            : `Recherché par le marchand du jour (${wantedById.get(card.id)!.price} 🪙) — il faut la tirer aujourd'hui`"
+        >🧑‍🌾 {{ wantedById.get(card.id)!.price }} 🪙</span>
       </button>
     </div>
 
@@ -602,6 +636,22 @@ function confirmMerge() {
   padding: 2px 5px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .28);
 }
+
+.wanted {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: .6rem;
+  font-weight: 800;
+  color: #5c3d00;
+  background: linear-gradient(150deg, #fff2d6, #ffe0a0);
+  border: 1px solid #f0d189;
+  border-radius: 6px;
+  padding: 2px 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+  opacity: .8;
+}
+.wanted--hot { opacity: 1; box-shadow: 0 0 0 2px rgba(224, 169, 46, .5), 0 1px 4px rgba(0, 0, 0, .18); }
 
 .pity {
   position: absolute;

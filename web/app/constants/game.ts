@@ -24,3 +24,7 @@ export const DAILY_BONUS_PER_BADGE = 10
 // compte le parcours reçu) ; cette constante ne sert qu'aux textes du Guide,
 // qui doivent rester lisibles hors connexion.
 export const GYMS_PER_REGION = 8
+
+// Coût de base d'un tirage standard (sans filtre biome), hors événement. Le
+// prix du jour, remises comprises, vient de /game-events/current.
+export const BASE_ROLL_COST = 10
