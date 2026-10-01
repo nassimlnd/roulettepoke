@@ -34,9 +34,11 @@ export const COMPETITION_LINKS: readonly NavLink[] = [
 
 // Consultation & communauté.
 export const SECONDARY_LINKS: readonly NavLink[] = [
+  { to: '/paintkemon', label: 'Paintkemon', icon: 'i-lucide-palette' },
   { to: '/stats', label: 'Stats', icon: 'i-lucide-chart-column' },
   { to: '/suggestions', label: 'Idées', icon: 'i-lucide-lightbulb' },
-  { to: '/rules', label: 'Guide', icon: 'i-lucide-book-open' }
+  { to: '/rules', label: 'Guide', icon: 'i-lucide-book-open' },
+  { to: '/notes', label: 'Nouveautés', icon: 'i-lucide-newspaper' }
 ]
 
 // Toutes les destinations, pour un contrôle d'exhaustivité en test.

@@ -1,12 +1,12 @@
 import type {
   WireBadge, WireGym, TrainingStatus, WireGymDetail, WireGymEstimate,
-  WireBattleResult, WireTrainingResult, UUID
+  WireBattleResult, WireTrainingResult, WireGymAttempt, UUID
 } from '~/types/api'
-import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome } from '~/types/domain'
+import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, GymAttempt } from '~/types/domain'
 import type { Api } from './_client'
 import {
   normalizeGym, normalizeGymDetail, normalizeGymEstimate,
-  normalizeBattleResult, normalizeTrainingOutcome
+  normalizeBattleResult, normalizeTrainingOutcome, normalizeGymAttempt
 } from './normalize'
 
 export const gymRepo = {
@@ -27,7 +27,10 @@ export const gymRepo = {
     const b = await api<WireBattleResult>(`/gym/${id}/battle`, { method: 'POST' })
     return normalizeBattleResult(b)
   },
-  getHistory: (api: Api) => api<unknown[]>('/gym/history')
+  getHistory: async (api: Api): Promise<GymAttempt[]> => {
+    const rows = await api<WireGymAttempt[]>('/gym/history')
+    return (rows ?? []).map(normalizeGymAttempt)
+  }
 }
 
 export const trainingRepo = {

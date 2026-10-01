@@ -1,10 +1,10 @@
 // Normalisation des arènes : arène, détail (champions), estimation, combat,
 // entraînement.
 import type {
-  WireGym, WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult
+  WireGym, WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult, WireGymAttempt
 } from '~/types/api'
 import type {
-  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome
+  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, GymAttempt
 } from '~/types/domain'
 import { normalizeBattleRound, normalizeChampionMon } from './battle'
 import { asGeneration } from '~/constants/generation'
@@ -56,6 +56,25 @@ export function normalizeBattleResult(b: WireBattleResult): BattleResult {
     won: b.won,
     badgeName: b.badge_name ?? null,
     rounds: (b.log ?? []).map(normalizeBattleRound)
+  }
+}
+
+// Tentative passée (v5) : le journal serveur suffit à rejouer le combat. La
+// génération manque sur d'anciens enregistrements → déduite du rang global.
+export function normalizeGymAttempt(a: WireGymAttempt): GymAttempt {
+  const generation = asGeneration(a.generation ?? Math.ceil(a.order_num / GYMS_PER_CIRCUIT))
+  return {
+    id: a.id,
+    attemptedAt: a.attempted_at,
+    won: a.won,
+    gymName: a.gym_name,
+    generation,
+    orderInCircuit: a.order_num - (generation - 1) * GYMS_PER_CIRCUIT,
+    type: a.type,
+    badgeName: a.badge_name,
+    badgeImageUrl: a.badge_image_url,
+    team: (a.battle_log?.player_team ?? []).map(p => ({ name: p.name, imageUrl: p.image_url })),
+    rounds: (a.battle_log?.log ?? []).map(normalizeBattleRound)
   }
 }
 

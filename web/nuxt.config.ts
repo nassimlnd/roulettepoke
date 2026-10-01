@@ -153,6 +153,9 @@ export default defineNuxtConfig({
         'lucide:tornado',
         'lucide:trending-down',
         'lucide:waves',
+        'lucide:palette',
+        'lucide:newspaper',
+        'lucide:wrench',
         'lucide:settings'
       ]
     }

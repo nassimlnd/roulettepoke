@@ -15,6 +15,8 @@ export const ROUTES = {
   tournament: '/tournament',
   contest: '/contest',
   trades: '/trades',
+  paintkemon: '/paintkemon',
+  notes: '/notes',
   settings: '/settings',
   login: '/login',
   register: '/register',

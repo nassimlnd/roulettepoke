@@ -80,6 +80,14 @@ const sections = [
       'Score = stat du Pokémon dans la discipline × un facteur chance (±30 %) tiré au dévoilement, + le bonus de la répétition de danse (2 points par manche réussie, jusqu\'à 20 — une seule tentative, juste après l\'inscription).',
       'Le gagnant choisit un Légendaire de la génération dans laquelle il a payé son inscription.'
     ]
+  },
+  {
+    icon: 'i-lucide-palette',
+    color: '#8b5cf6',
+    title: 'Paintkemon',
+    items: [
+      'Un coloriage numéroté à compléter avec tous les dresseurs, sans enjeu ni récompense : choisis une couleur dans la palette, puis colorie les cases qui portent son numéro. Les coups des autres apparaissent en direct.'
+    ]
   }
 ] as const
 </script>

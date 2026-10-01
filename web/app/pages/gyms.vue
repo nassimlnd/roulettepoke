@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DomainGym, TeamMember } from '~/types/domain'
+import type { DomainGym, TeamMember, GymAttempt } from '~/types/domain'
 import type { UUID } from '~/types/api'
 import { useGymStore } from '~/stores/gyms'
 import { useBattleStore } from '~/stores/battle'
@@ -13,7 +13,10 @@ const region = computed(() => generationRegion(gym.circuitGeneration))
 const battle = useBattleStore()
 const toast = useToast()
 
-const { loading, errorMsg, retry } = usePageData(() => gym.ensureFresh())
+const { loading, errorMsg, retry } = usePageData(async () => {
+  await gym.ensureFresh()
+  gym.loadHistory()
+})
 const trainingLoading = ref(false)
 
 const training = computed(() => gym.training)
@@ -87,12 +90,28 @@ async function fight() {
       winSub: `Badge ${g.badgeName} obtenu — ${g.name}.`,
       loseSub: 'Reviens tenter ta chance la semaine prochaine.'
     })
+    gym.loadHistory(true)
   } catch (err) {
     toast.add({ title: humanizeError(err), color: 'error' })
   } finally {
     fighting.value = false
   }
 }
+
+// ─── Historique des combats (v5) ──────────────────────────────────────────────
+// Le journal serveur suffit à rejouer chaque tentative, gagnée ou perdue.
+function replayAttempt(a: GymAttempt) {
+  return battle.present({
+    rounds: a.rounds,
+    won: a.won,
+    badgeUrl: a.badgeImageUrl,
+    title: a.gymName,
+    winSub: `Badge ${a.badgeName} obtenu — ${a.gymName}.`,
+    loseSub: 'Un combat passé — reviens tenter ta chance.'
+  })
+}
+const attemptDate = (d: string) =>
+  new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 async function train() {
   if (trainingLoading.value) return
@@ -217,6 +236,63 @@ async function train() {
         <GymTile :gym="g" />
       </button>
     </div>
+
+    <!-- Historique des combats (v5) — région affichée seulement -->
+    <section
+      v-if="gym.circuitHistory.length"
+      class="hist"
+    >
+      <h2 class="hist__title font-display">
+        <UIcon
+          name="i-lucide-history"
+          class="size-4"
+        />
+        Historique des combats
+        <span class="hist__note">({{ gym.circuitHistory.length }})</span>
+      </h2>
+      <ul class="hist__list">
+        <li
+          v-for="a in gym.circuitHistory"
+          :key="a.id"
+          class="att"
+          :class="{ 'att--won': a.won }"
+        >
+          <img
+            :src="a.badgeImageUrl"
+            :alt="a.badgeName"
+            class="att__badge"
+            :class="{ 'att__badge--off': !a.won }"
+          >
+          <div class="att__body">
+            <div class="att__top">
+              <b class="att__name">{{ a.gymName }}</b>
+              <span class="att__res">{{ a.won ? 'Victoire' : 'Défaite' }}</span>
+            </div>
+            <span class="att__meta">{{ attemptDate(a.attemptedAt) }} · Arène {{ a.orderInCircuit }} · {{ a.type }}</span>
+            <div
+              v-if="a.team.length"
+              class="att__team"
+            >
+              <img
+                v-for="(m, i) in a.team"
+                :key="i"
+                :src="m.imageUrl"
+                :alt="m.name"
+                :title="m.name"
+              >
+            </div>
+          </div>
+          <PButton
+            v-if="a.rounds.length"
+            color="neutral"
+            icon="i-lucide-play"
+            @click="replayAttempt(a)"
+          >
+            Revoir
+          </PButton>
+        </li>
+      </ul>
+    </section>
 
     <!-- ═══ Détail / Combat ═══ -->
     <UModal
@@ -577,4 +653,28 @@ async function train() {
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: 10px;
 }
+.hist { display: flex; flex-direction: column; gap: 12px; }
+.hist__title { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; margin: 0; }
+.hist__note { font-weight: 600; font-size: .82rem; color: var(--ui-text-dimmed); }
+.hist__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.att {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+}
+.att--won { border-color: color-mix(in oklab, #5bbf82 55%, transparent); }
+.att__badge { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.att__badge--off { filter: grayscale(1) opacity(.45); }
+.att__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.att__top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.att__name { color: var(--ui-text-highlighted); }
+.att__res { font-weight: 800; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--color-poke-600); }
+.att--won .att__res { color: #3f9e66; }
+.att__meta { font-size: .78rem; color: var(--ui-text-muted); }
+.att__team { display: flex; gap: 2px; margin-top: 2px; }
+.att__team img { width: 30px; height: 30px; object-fit: contain; }
 </style>

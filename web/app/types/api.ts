@@ -898,3 +898,52 @@ export interface WireTournamentSummary {
 
 /** Forme de Zarbi proposable à l'échange (`/trades/players/:id/zarbi-forms`). */
 export interface WireTradeZarbiForm { id: UUID, form: string, image_url: string, quantity: number, is_alt?: boolean }
+
+// ─── Paintkemon : coloriage numéroté collaboratif (v5.0) ────────────────────
+export interface WireColoringColor { id: string, hex: string, name: string }
+export interface WireColoringCell {
+  x: number
+  y: number
+  /** null tant que la case n'est pas coloriée. */
+  color_id: string | null
+  /** null hors du dessin : la case n'est jamais jouable. */
+  target_color_id: string | null
+}
+export interface WireColoringGrid {
+  width: number
+  height: number
+  palette: WireColoringColor[]
+  cells: WireColoringCell[]
+  progress: { filled: number, playable: number }
+}
+/** Diffusion WebSocket /api/ws/coloring : une case vient d'être coloriée. */
+export interface WireColoringFrame {
+  type: string
+  x?: number
+  y?: number
+  color_id?: string | null
+  cell?: WireColoringCell
+}
+
+// ─── Historique des arènes (GET /gym/history) ───────────────────────────────
+export interface WireGymAttempt {
+  id: UUID
+  attempted_at: ISODate
+  won: boolean
+  battle_log: {
+    log: WireBattleRound[]
+    won?: boolean
+    player_team?: { name: string, type?: PokeType, rarity?: string, image_url: string }[]
+    player_knocked_out?: number
+    champion_knocked_out?: number
+  } | null
+  gym_name: string
+  order_num: number
+  type: PokeType
+  generation?: number
+  badge_name: string
+  badge_image_url: string
+}
+
+// ─── Jackpot : historique personnel (GET /slot-machine/my-history) ──────────
+export interface WireSlotRecord { prizes: WireLineResult[], cost: number, spun_at: ISODate }

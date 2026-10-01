@@ -1,6 +1,6 @@
 // Normalisation de la machine à sous (lignes gagnantes + gains récents).
-import type { WireLineResult, WireSpinResult, WireRecentWin } from '~/types/api'
-import type { LineReward, SpinResult, RecentWin } from '~/types/domain'
+import type { WireLineResult, WireSpinResult, WireRecentWin, WireSlotRecord } from '~/types/api'
+import type { LineReward, SpinResult, RecentWin, SlotRecord } from '~/types/domain'
 import { normalizeCard } from './card'
 
 function normalizeLineReward(r: WireLineResult): LineReward {
@@ -20,6 +20,16 @@ export function normalizeSpinResult(w: WireSpinResult): SpinResult {
     lines: (w.lineResults ?? []).map(normalizeLineReward),
     cost: w.cost,
     newCoins: w.newCoins
+  }
+}
+
+// Historique personnel (v5). Un lot légendaire sans carte attachée (ancien
+// enregistrement) ne peut pas être décrit : il est passé sous silence.
+export function normalizeSlotRecord(r: WireSlotRecord): SlotRecord {
+  return {
+    prizes: (r.prizes ?? []).filter(p => p.type !== 'legendary' || 'card' in p).map(normalizeLineReward),
+    cost: r.cost ?? 0,
+    spunAt: r.spun_at
   }
 }
 

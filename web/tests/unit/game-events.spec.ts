@@ -86,7 +86,9 @@ describe('hashToRoute', () => {
 
   it('donne null pour les pages que nous n\'avons pas, jamais un lien mort', () => {
     expect(hashToRoute('#contest')).toBe('/contest')
-    expect(hashToRoute('#coloring')).toBeNull()
+    expect(hashToRoute('#coloring')).toBe('/paintkemon')
+    expect(hashToRoute('#patchnotes')).toBe('/notes')
+    expect(hashToRoute('#chat')).toBeNull()
     expect(hashToRoute(null)).toBeNull()
     expect(hashToRoute('')).toBeNull()
   })

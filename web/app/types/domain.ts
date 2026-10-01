@@ -599,3 +599,34 @@ export interface AdvNode {
   badge?: number // gym : n° du badge décerné à la victoire
   gimmick?: GymGimmick // gym : modificateur de combat télégraphié
 }
+
+// ─── Paintkemon ──────────────────────────────────────────────────────────────
+export interface ColoringColor { id: string, hex: string, name: string, number: number }
+export interface ColoringCell { x: number, y: number, colorId: string | null, targetId: string | null }
+export interface ColoringGrid {
+  width: number
+  height: number
+  palette: ColoringColor[]
+  /** Ligne par ligne, de gauche à droite. */
+  cells: ColoringCell[]
+  filled: number
+  playable: number
+}
+
+// ─── Historique des arènes ───────────────────────────────────────────────────
+export interface GymAttempt {
+  id: UUID
+  attemptedAt: ISODate
+  won: boolean
+  gymName: string
+  generation: Generation
+  orderInCircuit: number
+  type: PokeType
+  badgeName: string
+  badgeImageUrl: string
+  team: { name: string, imageUrl: string }[]
+  rounds: BattleRound[]
+}
+
+// ─── Jackpot : historique personnel ─────────────────────────────────────────
+export interface SlotRecord { prizes: LineReward[], cost: number, spunAt: ISODate }

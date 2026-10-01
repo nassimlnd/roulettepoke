@@ -23,6 +23,9 @@ const competitionBadge = computed(() => hub.tradeActionsRequired + (hub.contestO
 // déplacement du focus DANS le menu. Une version précédente ouvrait bien le
 // menu au focus, mais Tab sautait par-dessus son contenu — les cinq
 // destinations restaient donc inatteignables au clavier.
+// Pastille sur « Nouveautés » tant que la dernière version n'a pas été lue.
+const { unseen: notesUnseen } = useReleaseNotes()
+
 const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
   label: l.to === '/trades' && hub.tradeActionsRequired
     ? `${l.label} (${hub.tradeActionsRequired})`
@@ -107,6 +110,11 @@ const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
             class="size-4"
           />
           <span class="nav__label">{{ l.label }}</span>
+          <span
+            v-if="l.to === '/notes' && notesUnseen"
+            class="nav__dot"
+            title="Nouvelle version"
+          />
         </NuxtLink>
       </nav>
 

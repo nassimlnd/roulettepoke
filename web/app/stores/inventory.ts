@@ -17,6 +17,8 @@ export const useInventoryStore = defineStore('inventory', {
     items: [] as { item_type: string, quantity: number }[],
     activeBiomeTicket: null as string | null,
     activeTypeTicket: null as string | null,
+    /** Tirages restants avant l'éclosion de l'œuf confié par la pension ; null sans œuf. */
+    eggRollsRemaining: null as number | null,
     fetchedAt: 0
   }),
 
@@ -38,12 +40,13 @@ export const useInventoryStore = defineStore('inventory', {
       }),
 
     hasActiveTicket: state => !!(state.activeBiomeTicket || state.activeTypeTicket),
+    hasEgg: state => state.eggRollsRemaining !== null,
     activeBiomeName: state => (state.activeBiomeTicket ? (BIOME_SLUG_TO_NAME[state.activeBiomeTicket] ?? state.activeBiomeTicket) : null),
     activeTypeName: state => (state.activeTypeTicket ? (TYPE_SLUG_TO_NAME[state.activeTypeTicket] ?? state.activeTypeTicket) : null),
 
     isEmpty(): boolean {
       return this.charmeCount === 0 && this.biomeTickets.length === 0 && this.typeTickets.length === 0
-        && !this.activeBiomeTicket && !this.activeTypeTicket
+        && !this.activeBiomeTicket && !this.activeTypeTicket && !this.hasEgg
     }
   },
 
@@ -63,6 +66,7 @@ export const useInventoryStore = defineStore('inventory', {
       this.items = data.items ?? []
       this.activeBiomeTicket = data.activeBiomeTicket
       this.activeTypeTicket = data.activeTypeTicket
+      this.eggRollsRemaining = data.eggRollsRemaining ?? null
       this.fetchedAt = Date.now()
     },
 

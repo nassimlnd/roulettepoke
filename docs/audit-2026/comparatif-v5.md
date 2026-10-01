@@ -464,3 +464,45 @@ revu (18 résultats, dévoilement complet), tournoi du 1ᵉʳ octobre (16 matchs
 l'historique, équipe Tournoi avec trois membres avantagés, fiche de carte avec
 les cinq stats ; les échanges restent verrouillés pour ce compte (54/120
 cartes). 112 tests, lint, typecheck, build.
+
+---
+
+# Mise à jour du 1ᵉʳ octobre 2026 — vague G livrée
+
+« Le reste », au complet :
+
+- **Paintkemon** (`/paintkemon`) : le coloriage numéroté collaboratif
+  (`/coloring/grid`, `POST /coloring/cells`, diffusion `/api/ws/coloring`
+  authentifiée comme le tchat). Palette numérotée, numéro de la couleur cible
+  sur chaque case à colorier, cases hors dessin inertes, clic ou clique-glisse
+  à la souris (une fois par tracé), tap au doigt (le glissé reste un
+  défilement), zoom par taille de case et Ctrl + molette, progression, état
+  « dessin terminé » qui désactive la palette, indicateur de connexion. Les
+  coups des autres dresseurs sont appliqués par trame, sans double comptage.
+- **Nouveautés** (`/notes`) : les notes de version de ce front, codées en dur
+  comme chez eux (`config/release-notes.ts`, v2.0 → v2.7, sections Nouveautés /
+  Corrections / À venir), dernière version ouverte, pastille dans la barre de
+  navigation tant qu'elle n'a pas été lue (`pkr_notes_seen`).
+- **Historique des arènes** (`/gym/history`) sur la page Arènes, filtré par la
+  région affichée : date, badge, résultat, équipe engagée, et chaque combat se
+  rejoue dans la scène de combat. Rechargé après un combat.
+- **Jackpot — mes parties** (`/slot-machine/my-history`) à côté des derniers
+  gros lots : lots, mise, date.
+- **Œuf mystérieux** dans le sac à dos (`eggRollsRemaining`) avec les quatre
+  paliers d'incubation du jeu d'origine ; un sac qui ne contient que l'œuf
+  n'est plus annoncé vide.
+- **Silhouettes** : déjà en place chez nous depuis juillet (sprite en
+  silhouette, « ? » en surimpression) ; nous gardons le nom visible, qui dit au
+  joueur ce qui lui manque.
+- Guide : section Paintkemon ; ancres `#coloring` et `#patchnotes` des
+  notifications traduites vers nos pages.
+
+Vérifié en réel sur le compte de test : grille 90 × 43 (3 870 cases, 20
+couleurs) terminée à 100 % ; le jeu exercé en libérant une case dans le store
+et en remplaçant l'action d'envoi — aucun coup réel joué sur le dessin — puis
+une trame de diffusion simulée qui recolorie la case et ramène la progression à
+100 % ; notes de version (8 entrées, pastille éteinte après lecture) ; un
+combat d'arène du 22 juillet rejoué ; trois parties de Jackpot ; œuf injecté
+dans le sac. Le WebSocket ne traverse pas le proxy de développement (comme
+celui du tchat), l'indicateur reste donc « Hors ligne » en local. 122 tests,
+lint, typecheck, build.

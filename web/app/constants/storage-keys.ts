@@ -18,5 +18,6 @@ export const STORAGE_KEYS = {
   spinMuted: 'spin_muted',
   eventsDismissed: 'pkr_events_dismissed', // empreinte du bandeau d'événements masqué
   contestRevealSeen: 'contest_reveal_seen', // id du dernier concours dont le dévoilement a été proposé (même clé que l'ancien front)
-  onboardingDismissed: 'gacha_onboarding_dismissed' // même clé que l'ancien front
+  onboardingDismissed: 'gacha_onboarding_dismissed', // même clé que l'ancien front
+  notesSeen: 'pkr_notes_seen' // dernière version des notes consultée (pastille « nouveautés »)
 } as const

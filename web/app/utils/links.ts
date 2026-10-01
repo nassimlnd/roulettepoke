@@ -19,6 +19,8 @@ const HASH_ROUTES: Record<string, string> = {
   'tournament': ROUTES.tournament,
   'contest': ROUTES.contest,
   'trades': ROUTES.trades,
+  'coloring': ROUTES.paintkemon,
+  'patchnotes': ROUTES.notes,
   'suggestions': '/suggestions',
   'motus': '/motus'
 }

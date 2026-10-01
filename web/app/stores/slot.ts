@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
-import type { SpinResult, RecentWin } from '~/types/domain'
+import type { SpinResult, RecentWin, SlotRecord } from '~/types/domain'
 import type { SlotStatus } from '~/types/api'
 import { slotRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
@@ -11,6 +11,8 @@ export const useSlotStore = defineStore('slot', {
   state: () => ({
     status: null as SlotStatus | null,
     recentWins: [] as RecentWin[],
+    // Mes parties (v5) : lots gagnés, mise, date — du plus récent au plus ancien.
+    myHistory: [] as SlotRecord[],
     fetchedAt: 0
   }),
 
@@ -31,11 +33,18 @@ export const useSlotStore = defineStore('slot', {
       this.status = await dedupe('slot/status', () => slotRepo.status(useApi()))
       this.fetchedAt = Date.now()
       this.loadRecentWins()
+      this.loadMyHistory()
     },
 
     async loadRecentWins() {
       try {
         this.recentWins = await slotRepo.recentWins(useApi())
+      } catch { /* silencieux */ }
+    },
+
+    async loadMyHistory() {
+      try {
+        this.myHistory = await slotRepo.myHistory(useApi())
       } catch { /* silencieux */ }
     },
 

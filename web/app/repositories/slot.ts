@@ -1,7 +1,7 @@
-import type { SlotStatus, WireSpinResult, WireRecentWin } from '~/types/api'
-import type { SpinResult, RecentWin } from '~/types/domain'
+import type { SlotStatus, WireSpinResult, WireRecentWin, WireSlotRecord } from '~/types/api'
+import type { SpinResult, RecentWin, SlotRecord } from '~/types/domain'
 import type { Api } from './_client'
-import { normalizeSpinResult, normalizeRecentWin } from './normalize'
+import { normalizeSpinResult, normalizeRecentWin, normalizeSlotRecord } from './normalize'
 
 export const slotRepo = {
   status: (api: Api) => api<SlotStatus>('/slot-machine/status'),
@@ -12,5 +12,9 @@ export const slotRepo = {
   recentWins: async (api: Api): Promise<RecentWin[]> => {
     const { wins } = await api<{ wins: WireRecentWin[] }>('/slot-machine/recent-wins')
     return wins.map(normalizeRecentWin)
+  },
+  myHistory: async (api: Api): Promise<SlotRecord[]> => {
+    const { history } = await api<{ history: WireSlotRecord[] }>('/slot-machine/my-history')
+    return (history ?? []).map(normalizeSlotRecord)
   }
 }

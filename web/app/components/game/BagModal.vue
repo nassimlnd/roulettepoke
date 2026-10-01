@@ -2,9 +2,13 @@
 // Sac à dos du joueur (port de inventoryModal.js du jeu original) : Charme Chroma
 // + tickets biome/type. Les tickets filtrent le PROCHAIN tirage (usage unique) et
 // un seul peut être actif à la fois (biome OU type).
+import { eggStatusLabel } from '~/utils/egg'
+
 const open = defineModel<boolean>('open', { default: false })
 
 const inv = useInventoryStore()
+// Servi par le backend (proxifié en dev, même origine en prod), comme les sprites.
+const EGG_IMG = '/images/icons/egg_static.webp'
 const toast = useToast()
 
 const loading = ref(false)
@@ -88,7 +92,7 @@ async function toggleTicket(row: Row) {
   <UModal
     v-model:open="open"
     title="Sac à dos"
-    description="Charme Chroma et tickets de tirage. Les tickets filtrent ton prochain tirage."
+    description="Charme Chroma, tickets de tirage et œuf en incubation. Les tickets filtrent ton prochain tirage."
   >
     <template #body>
       <div class="bag">
@@ -115,6 +119,32 @@ async function toggleTicket(row: Row) {
         </p>
 
         <template v-else>
+          <!-- Œuf mystérieux (v5) : indicatif, l'éclosion arrive seule au fil des tirages -->
+          <section
+            v-if="inv.hasEgg"
+            class="bag__sec"
+          >
+            <h3 class="bag__h font-display">
+              <UIcon
+                name="i-lucide-egg"
+                class="size-4"
+              /> Œuf mystérieux
+            </h3>
+            <div class="row">
+              <span class="row__ico row__ico--egg">
+                <img
+                  :src="EGG_IMG"
+                  alt=""
+                  class="row__egg"
+                >
+              </span>
+              <div class="row__info">
+                <span class="row__name">Œuf mystérieux</span>
+                <span class="row__desc">{{ eggStatusLabel(inv.eggRollsRemaining ?? 0) }} — il éclora de lui-même au fil de tes tirages.</span>
+              </div>
+            </div>
+          </section>
+
           <!-- Charme Chroma -->
           <section
             v-if="inv.charmeCount > 0"
@@ -311,6 +341,8 @@ async function toggleTicket(row: Row) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 2px 6px rgba(0, 0, 0, .12);
 }
 .row__ico--charme { background: radial-gradient(circle at 36% 30%, #e9d5ff, #a06cc4 60%, #7a49a8); }
+.row__ico--egg { background: radial-gradient(circle at 36% 30%, #fff7e0, #f6d98a 60%, #d9b45a); }
+.row__egg { width: 28px; height: 28px; object-fit: contain; }
 .row__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .row__name {
   display: inline-flex;

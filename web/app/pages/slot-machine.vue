@@ -242,6 +242,51 @@ onMounted(async () => {
         >
           Aucun gros lot récent.
         </p>
+
+        <!-- Mon historique (v5) -->
+        <h2 class="feed__title feed__title--mine font-display">
+          <UIcon
+            name="i-lucide-history"
+            class="size-4"
+          /> Mes parties
+        </h2>
+        <ul
+          v-if="slot.myHistory.length"
+          class="feed__list"
+        >
+          <li
+            v-for="(r, i) in slot.myHistory.slice(0, 10)"
+            :key="i"
+            class="fitem"
+          >
+            <div class="fitem__top">
+              <b
+                class="fitem__user"
+                :class="{ 'fitem__user--miss': !r.prizes.length }"
+              >{{ r.prizes.length ? 'Gagné' : 'Rien cette fois' }}</b>
+              <span class="fitem__time">{{ timeAgo(r.spunAt) }}</span>
+            </div>
+            <div class="fitem__prizes">
+              <span
+                v-for="(p, j) in r.prizes"
+                :key="j"
+                class="prize"
+              >
+                <SlotSymbolTile
+                  :symbol="symOf(p)"
+                  :size="22"
+                />{{ rewardShort(p) }}
+              </span>
+              <span class="fitem__cost">{{ r.cost > 0 ? `${r.cost} 🪙 misés` : 'Gratuit' }}</span>
+            </div>
+          </li>
+        </ul>
+        <p
+          v-else
+          class="feed__empty"
+        >
+          Aucune partie pour l'instant.
+        </p>
       </aside>
     </div>
 
@@ -382,6 +427,9 @@ onMounted(async () => {
   border-radius: 999px;
 }
 .feed__empty { font-size: .82rem; color: var(--ui-text-dimmed); padding: 8px 2px 12px; }
+.feed__title--mine { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ui-border); }
+.fitem__user--miss { color: var(--ui-text-muted); font-weight: 600; }
+.fitem__cost { align-self: center; font-size: .72rem; font-weight: 700; color: var(--ui-text-dimmed); }
 
 /* Barème */
 .odds {

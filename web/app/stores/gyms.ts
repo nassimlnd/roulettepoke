@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
-import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome } from '~/types/domain'
+import type { DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, GymAttempt } from '~/types/domain'
 import type { TrainingStatus, UUID } from '~/types/api'
 import type { Generation } from '~/constants/generation'
 import { gymRepo, trainingRepo } from '~/repositories'
@@ -14,7 +14,10 @@ export const useGymStore = defineStore('gyms', {
     training: null as TrainingStatus | null,
     details: {} as Record<UUID, GymDetail>,
     estimates: {} as Record<UUID, GymEstimate | null>,
-    fetchedAt: 0
+    fetchedAt: 0,
+    // Historique des combats (v5), toutes régions ; filtré par circuit à l'affichage.
+    history: [] as GymAttempt[],
+    historyLoaded: false
   }),
 
   getters: {
@@ -41,6 +44,12 @@ export const useGymStore = defineStore('gyms', {
 
     isChampion(): boolean {
       return this.sorted.length > 0 && this.sorted.every(g => g.hasBadge)
+    },
+
+    circuitHistory(): GymAttempt[] {
+      return this.history
+        .filter(a => a.generation === this.circuitGeneration)
+        .sort((a, b) => b.attemptedAt.localeCompare(a.attemptedAt))
     }
   },
 
@@ -101,6 +110,15 @@ export const useGymStore = defineStore('gyms', {
 
     refreshBalance() {
       return useWalletStore().refreshFromServer('gym')
+    },
+
+    // Non bloquant : la section reste vide si l'appel échoue.
+    async loadHistory(force = false) {
+      if (this.historyLoaded && !force) return
+      try {
+        this.history = await dedupe('gym/history', () => gymRepo.getHistory(useApi()))
+        this.historyLoaded = true
+      } catch { /* silencieux */ }
     }
   }
 })
