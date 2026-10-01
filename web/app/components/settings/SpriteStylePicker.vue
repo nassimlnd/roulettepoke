@@ -49,7 +49,8 @@ const previewCard = computed<DomainCard>(() => ({
   biome: 'Plaines',
   type: mon.value.type,
   parentCardId: `preview-${mon.value.num}`,
-  standardId: null
+  standardId: null,
+  contestStats: null
 }))
 
 // Les styles embarqués s'affichent directement — ils sont sur le même hôte.

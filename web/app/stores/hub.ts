@@ -4,10 +4,10 @@ import type {
   TrainingStatus, SlotStatus, SpinStatus,
   TradeEligibility, NotificationsResponse, MotusToday, WireActivity
 } from '~/types/api'
-import type { DomainGym, DomainTournament, DomainTrade, DomainLeagueStatus } from '~/types/domain'
+import type { DomainGym, DomainTournament, DomainTrade, DomainLeagueStatus, DomainContest } from '~/types/domain'
 import {
   trainingRepo, slotRepo, leagueRepo, tournamentRepo, spinRepo,
-  tradesRepo, gymRepo, notificationsRepo, motusRepo, activitiesRepo
+  tradesRepo, gymRepo, notificationsRepo, motusRepo, activitiesRepo, contestRepo
 } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
 import { nextDailyReset, nextWeekly } from '~/utils/paris-time'
@@ -47,6 +47,7 @@ export const useHubStore = defineStore('hub', {
     slot: null as SlotStatus | null,
     league: null as DomainLeagueStatus | null,
     tournament: null as DomainTournament | null,
+    contest: null as DomainContest | null,
     spin: null as SpinStatus | null,
     trades: [] as DomainTrade[],
     tradeEligibility: null as TradeEligibility | null,
@@ -68,6 +69,8 @@ export const useHubStore = defineStore('hub', {
       ).length
     },
     unreadNotifications: state => state.notifications?.unreadCount ?? 0,
+    // Inscriptions au concours ouvertes et pas encore inscrit·e : pastille.
+    contestOpen: state => state.contest?.status === 'registration_open' && !state.contest.isRegistered,
     leagueUnlocked: state => !!state.league?.cycleStart || !!state.league?.eligible,
     currentGym: state => state.gyms.find(g => !g.hasBadge) ?? null,
 
@@ -144,6 +147,17 @@ export const useHubStore = defineStore('hub', {
             : 'Part de la cagnotte'
         }
       ]
+      // Concours : inscriptions du jeudi au mardi 11:55, un Légendaire au gagnant.
+      if (state.contest) {
+        tiles.push({
+          key: 'contest',
+          label: 'Concours',
+          available: this.contestOpen,
+          nextResetAt: state.contest.status === 'registration_open' ? new Date(state.contest.date) : nextWeekly(4, 0),
+          to: '/contest',
+          reward: state.contest.isRegistered ? 'Inscrit·e — dévoilement mardi midi' : 'Un Légendaire pour le gagnant'
+        })
+      }
       if (this.leagueUnlocked) {
         tiles.push({
           key: 'league',
@@ -205,16 +219,18 @@ export const useHubStore = defineStore('hub', {
     async ensureShort(force = false) {
       if (!force && this.shortFetchedAt && Date.now() - this.shortFetchedAt < TTL_SHORT) return
       const api = useApi()
-      const [trades, tournament, league, notifications] = await Promise.all([
+      const [trades, tournament, league, notifications, contest] = await Promise.all([
         dedupe('trades', () => tradesRepo.list(api)).catch(() => [] as DomainTrade[]),
         dedupe('tournament/current', () => tournamentRepo.current(api)).catch(() => null),
         dedupe('league/status', () => leagueRepo.status(api)).catch(() => null),
-        dedupe('notifications', () => notificationsRepo.list(api)).catch(() => null)
+        dedupe('notifications', () => notificationsRepo.list(api)).catch(() => null),
+        dedupe('contest/current', () => contestRepo.current(api)).catch(() => null)
       ])
       this.trades = trades
       this.tournament = tournament
       this.league = league
       this.notifications = notifications
+      this.contest = contest
       this.shortFetchedAt = Date.now()
     },
 

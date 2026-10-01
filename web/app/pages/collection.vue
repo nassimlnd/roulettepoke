@@ -2,6 +2,7 @@
 import type { DomainOwnedCard } from '~/types/domain'
 import { SELL_PRICE } from '~/utils/poke'
 import { merchantOffer, type MerchantOffer } from '~/utils/gameEvents'
+import { DISCIPLINES, DISCIPLINE_ICON } from '~/utils/contest'
 import { SHINY_PITY_DENOMINATOR, MERGE_COST } from '~/constants/game'
 import { GENERATIONS } from '~/constants/generation'
 
@@ -425,6 +426,24 @@ function confirmMerge() {
                 · chance shiny estimée {{ shinyChance(selected) }}
               </template>
             </p>
+            <!-- Stats de concours (v5) : ce que vaut la carte dans chaque discipline. -->
+            <ul
+              v-if="selected.contestStats"
+              class="cstats"
+              aria-label="Stats de concours"
+            >
+              <li
+                v-for="d in DISCIPLINES"
+                :key="d"
+                :title="`${d} (concours)`"
+              >
+                <UIcon
+                  :name="DISCIPLINE_ICON[d]"
+                  class="size-3.5"
+                />
+                <b class="tabular">{{ selected.contestStats[d] }}</b>
+              </li>
+            </ul>
           </div>
           <div class="detail__actions">
             <PButton
@@ -673,6 +692,26 @@ function confirmMerge() {
   gap: 14px;
 }
 .detail__info { text-align: center; }
+.cstats {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cstats li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .76rem;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-muted);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+.cstats b { color: var(--ui-text-highlighted); }
 .detail__sub {
   color: var(--ui-text-muted);
   font-size: .88rem;

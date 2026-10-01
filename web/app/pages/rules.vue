@@ -66,7 +66,19 @@ const sections = [
       `Bonus de connexion : ${DAILY_BONUS_BASE} 🪙 par jour, + ${DAILY_BONUS_PER_BADGE} 🪙 par badge de la région qui reçoit la prime — soit ${DAILY_BONUS_BASE + GYMS_PER_REGION * DAILY_BONUS_PER_BADGE} 🪙/jour une fois les ${GYMS_PER_REGION} badges de la région obtenus.`,
       'Bureau de change : la prime du jour tombe dans une région, et tu peux la faire passer sur une autre, à volonté dans la journée, depuis le sélecteur de région.',
       'Un entraînement quotidien gratuit augmente tes chances en arène — sur le parcours de la région affichée.',
-      'Tournoi et Ligue des 4 : tu choisis la bourse qui paie l\'inscription et reçoit la récompense.'
+      'Tournoi et Ligue des 4 : tu choisis la bourse qui paie l\'inscription et reçoit la récompense. Au tournoi, un type et un biome sont avantagés chaque semaine : +10 % par critère pour chaque Pokémon concerné, jusqu\'à +20 %.'
+    ]
+  },
+  {
+    icon: 'i-lucide-drama',
+    color: '#c65b9d',
+    title: 'Concours',
+    items: [
+      'Chaque semaine, inscris un Pokémon à un concours : une discipline est tirée (Sang-froid, Beauté, Grâce, Intelligence ou Robustesse), parfois avec une restriction de biome ou de type. Les stats de concours de chaque carte se lisent dans sa fiche.',
+      'Inscriptions du jeudi au mardi 11:55, dévoilement mardi midi devant un jury de trois joueurs. Inscription 10 🪙 dans la bourse de ton choix ; shiny et Légendaires exclus.',
+      'Le Pokémon inscrit quitte ta collection : il te revient si tu ne gagnes pas, il est perdu s\'il remporte le concours.',
+      'Score = stat du Pokémon dans la discipline × un facteur chance (±30 %) tiré au dévoilement, + le bonus de la répétition de danse (2 points par manche réussie, jusqu\'à 20 — une seule tentative, juste après l\'inscription).',
+      'Le gagnant choisit un Légendaire de la génération dans laquelle il a payé son inscription.'
     ]
   }
 ] as const

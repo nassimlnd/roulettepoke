@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DomainTrade } from '~/types/domain'
+import type { DomainTrade, TradeCardRef } from '~/types/domain'
 
 // Ligne d'échange : cartes demandée/proposée + acteurs + statut + actions selon
 // mon rôle (initiateur/cible) et l'étape.
@@ -7,6 +7,22 @@ const props = defineProps<{ trade: DomainTrade, me: string | null, busy?: boolea
 const emit = defineEmits<{ accept: [], decline: [], confirm: [], reject: [], cancel: [] }>()
 
 const isInitiator = computed(() => props.trade.initiatorId === props.me)
+const isTarget = computed(() => props.trade.targetId === props.me)
+
+// Zarbi s'échange forme par forme : on le dit dans le nom.
+const nameOf = (c: TradeCardRef) => (c.zarbiForm ? `${c.name} (forme ${c.zarbiForm})` : c.name)
+
+// « Tu possèdes X fois » (v5) : ce que je donne ou ce qu'on me demande.
+const ownedLine = computed(() => {
+  const t = props.trade
+  if (isTarget.value && t.requestedOwnedByTarget !== null) {
+    return `Tu possèdes ${nameOf(t.requested)} ${t.requestedOwnedByTarget} fois.`
+  }
+  if (isInitiator.value && t.offered && t.offeredOwnedByInitiator !== null) {
+    return `Tu possèdes ${nameOf(t.offered)} ${t.offeredOwnedByInitiator} fois.`
+  }
+  return ''
+})
 
 const STATUS: Record<DomainTrade['status'], { label: string, cls: string }> = {
   pending_target: { label: 'En attente de réponse', cls: 'wait' },
@@ -21,7 +37,12 @@ const status = computed(() => STATUS[props.trade.status])
 // Actions à afficher pour MOI.
 const canAcceptOffer = computed(() => props.trade.status === 'pending_target' && !isInitiator.value)
 const canConfirm = computed(() => props.trade.status === 'pending_initiator' && isInitiator.value)
-const canCancel = computed(() => props.trade.status === 'pending_target' && isInitiator.value)
+// L'initiateur annule tant que la cible n'a pas répondu ; depuis la 5.1.1 la
+// cible peut aussi se rétracter après avoir répondu, tant que ce n'est pas
+// confirmé.
+const canCancel = computed(() =>
+  (props.trade.status === 'pending_target' && isInitiator.value)
+  || (props.trade.status === 'pending_initiator' && isTarget.value))
 </script>
 
 <template>
@@ -29,7 +50,7 @@ const canCancel = computed(() => props.trade.status === 'pending_target' && isIn
     <div class="row__cards">
       <TradeCardMini
         label="Demandée"
-        :name="trade.requested.name"
+        :name="nameOf(trade.requested)"
         :image-url="trade.requested.imageUrl"
         :rarity="trade.requested.rarity"
       />
@@ -40,7 +61,7 @@ const canCancel = computed(() => props.trade.status === 'pending_target' && isIn
       <TradeCardMini
         v-if="trade.offered"
         label="En retour"
-        :name="trade.offered.name"
+        :name="nameOf(trade.offered)"
         :image-url="trade.offered.imageUrl"
         :rarity="trade.offered.rarity"
       />
@@ -61,6 +82,12 @@ const canCancel = computed(() => props.trade.status === 'pending_target' && isIn
         class="row__status"
         :class="`row__status--${status.cls}`"
       >{{ status.label }}</span>
+      <p
+        v-if="ownedLine"
+        class="row__owned"
+      >
+        {{ ownedLine }}
+      </p>
     </div>
 
     <div
@@ -111,7 +138,7 @@ const canCancel = computed(() => props.trade.status === 'pending_target' && isIn
         :disabled="busy"
         @click="emit('cancel')"
       >
-        Annuler
+        {{ isTarget ? 'Annuler l\'échange' : 'Annuler' }}
       </PButton>
     </div>
   </div>
@@ -147,6 +174,7 @@ const canCancel = computed(() => props.trade.status === 'pending_target' && isIn
 .row__meta { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 5px; }
 .row__who { font-size: .88rem; color: var(--ui-text-toned); }
 .row__who b { color: var(--ui-text-highlighted); font-weight: 700; }
+.row__owned { font-size: .78rem; color: var(--ui-text-muted); margin: 4px 0 0; }
 .row__status {
   align-self: flex-start;
   font-size: .7rem;

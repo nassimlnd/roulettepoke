@@ -13,6 +13,7 @@ import { TEAM_SCOPES, type TeamScope } from '~/constants/generation'
 const team = useTeamStore()
 const wallet = useWalletStore()
 const collection = useCollectionStore()
+const hub = useHubStore()
 const prefs = usePreferencesStore()
 const toast = useToast()
 
@@ -35,10 +36,20 @@ const activeTypeLabel = computed(() =>
 const { loading, errorMsg, retry } = usePageData(async () => {
   await team.ensureFresh()
   collection.ensureFresh().catch(() => {})
+  hub.ensureShort().catch(() => {})
   inventoryRepo.get(useApi())
     .then((inv) => { activeTypeTicket.value = inv.activeTypeTicket })
     .catch(() => {})
 })
+
+// ─── Avantage hebdomadaire du tournoi (v5) ────────────────────────────────────
+// +10 % par critère (type, biome) pour chaque Pokémon de l'équipe Tournoi :
+// rappelé ici, où l'on compose, et signalé sur chaque carte concernée.
+const advantage = computed(() => (team.scope === 'global' ? hub.tournament?.weeklyAdvantage ?? null : null))
+function advantaged(m: TeamMember): boolean {
+  const adv = advantage.value
+  return !!adv && (m.type === adv.type || (m.biome !== null && m.biome === adv.biome))
+}
 
 // ─── Réorganisation (échange de 2 slots) ──────────────────────────────────────
 const reorganizing = ref(false)
@@ -182,6 +193,17 @@ async function onScopeChange(value: string | number) {
       </p>
     </div>
 
+    <div
+      v-if="advantage"
+      class="adv"
+    >
+      <UIcon
+        name="i-lucide-sparkles"
+        class="size-5"
+      />
+      <span>Cette semaine au tournoi, les Pokémon de type <b>{{ advantage.type }}</b> et ceux du biome <b>{{ advantage.biome }}</b> sont avantagés : +10 % par critère, jusqu'à +20 %.</span>
+    </div>
+
     <p class="team__lead">
       Compose ton équipe à la roulette. Chaque Pokémon tiré quitte
       définitivement ta collection — choisis-les avec soin.
@@ -261,6 +283,10 @@ async function onScopeChange(value: string | number) {
               :interactive="false"
               :position="i + 1"
             />
+            <span
+              v-if="advantaged(slot)"
+              class="slot__adv"
+            >✨ Avantagé</span>
           </button>
           <button
             v-if="!reorganizing"
@@ -519,6 +545,37 @@ async function onScopeChange(value: string | number) {
   border: 1px solid rgba(224, 169, 46, .4);
 }
 .ticket b { color: #5c3a00; }
+
+.adv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: .86rem;
+  font-weight: 600;
+  color: #5c3a00;
+  background: linear-gradient(150deg, #fff2d6, #ffe6b0);
+  border: 1px solid rgba(224, 169, 46, .4);
+}
+.adv b { color: #3d2600; }
+.slot__adv {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .68rem;
+  white-space: nowrap;
+  color: #5c3a00;
+  background: linear-gradient(150deg, #fff2d6, #ffe6b0);
+  border: 1px solid rgba(224, 169, 46, .6);
+  padding: 2px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+  pointer-events: none;
+}
 
 .reorg {
   display: flex;

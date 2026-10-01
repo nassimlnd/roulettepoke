@@ -29,6 +29,10 @@ async function fetchCards() {
   }
 }
 
+// Les cartes que je ne possède pas encore d'abord : ce sont celles qu'on vient
+// chercher (v5 fait de même).
+const sorted = computed(() => [...cards.value].sort((a, b) => Number(a.viewerOwns) - Number(b.viewerOwns)))
+
 watch(open, (v) => {
   if (v) {
     rarity.value = props.rarities[0] ?? 'Commun'
@@ -83,7 +87,7 @@ watch(rarity, () => {
           class="pk__grid"
         >
           <button
-            v-for="c in cards"
+            v-for="c in sorted"
             :key="c.id"
             class="pcard"
             :style="{ '--r': RARITY_META[c.rarity].color }"

@@ -136,6 +136,23 @@ export default defineNuxtConfig({
         'lucide:trees',
         'lucide:ticket',
         'lucide:coins',
+        'lucide:brain',
+        'lucide:cloud-rain',
+        'lucide:clover',
+        'lucide:copy',
+        'lucide:dice-5',
+        'lucide:droplets',
+        'lucide:egg',
+        'lucide:globe',
+        'lucide:heart-pulse',
+        'lucide:mic',
+        'lucide:mountain',
+        'lucide:repeat',
+        'lucide:ribbon',
+        'lucide:snowflake',
+        'lucide:tornado',
+        'lucide:trending-down',
+        'lucide:waves',
         'lucide:settings'
       ]
     }

@@ -1,8 +1,8 @@
-import type { WireTrade, TradeEligibility, WireTradePlayer, WireTradeCard, UUID } from '~/types/api'
-import type { DomainTrade, TradePlayer, TradeCard, RealRarity } from '~/types/domain'
+import type { WireTrade, TradeEligibility, WireTradePlayer, WireTradeCard, WireTradeZarbiForm, UUID } from '~/types/api'
+import type { DomainTrade, TradePlayer, TradeCard, RealRarity, ZarbiForm } from '~/types/domain'
 import type { Generation } from '~/constants/generation'
 import type { Api } from './_client'
-import { normalizeTrade, normalizeTradePlayer, normalizeTradeCard } from './normalize'
+import { normalizeTrade, normalizeTradePlayer, normalizeTradeCard, normalizeZarbiForm } from './normalize'
 
 // Les échanges sont cloisonnés par région : deux listes de partenaires et deux
 // seuils d'éligibilité distincts, et jamais d'échange entre régions (le front
@@ -26,10 +26,16 @@ export const tradesRepo = {
     })
     return cards.map(normalizeTradeCard)
   },
-  create: (api: Api, targetId: UUID, requestedCardId: UUID) =>
-    api('/trades', { method: 'POST', body: { targetId, requestedCardId } }),
-  respond: (api: Api, id: UUID, accept: boolean, offeredCardId?: UUID) =>
-    api(`/trades/${id}/respond`, { method: 'POST', body: { accept, offeredCardId } }),
+  // Zarbi s'échange FORME par forme : la carte est générique, la forme précise
+  // l'exemplaire (v4.3+). Les formes vivent à Johto.
+  playerZarbiForms: async (api: Api, playerId: UUID): Promise<ZarbiForm[]> => {
+    const forms = await api<WireTradeZarbiForm[]>(`/trades/players/${playerId}/zarbi-forms`, { query: { generation: 2 } })
+    return forms.map(f => normalizeZarbiForm({ ...f, is_alt: !!f.is_alt }))
+  },
+  create: (api: Api, targetId: UUID, requestedCardId: UUID, requestedZarbiFormId: UUID | null = null) =>
+    api('/trades', { method: 'POST', body: { targetId, requestedCardId, requestedZarbiFormId } }),
+  respond: (api: Api, id: UUID, accept: boolean, offeredCardId?: UUID, offeredZarbiFormId: UUID | null = null) =>
+    api(`/trades/${id}/respond`, { method: 'POST', body: { accept, offeredCardId, offeredZarbiFormId } }),
   confirm: (api: Api, id: UUID, accept: boolean) =>
     api(`/trades/${id}/confirm`, { method: 'POST', body: { accept } }),
   cancel: (api: Api, id: UUID) => api(`/trades/${id}/cancel`, { method: 'POST' })

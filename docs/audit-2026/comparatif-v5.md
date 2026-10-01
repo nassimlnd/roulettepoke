@@ -418,3 +418,49 @@ Vérifié en réel sur le compte de test : Premiers pas 6/8, objectif 216/250,
 tuile « Aventure — légendaire », deux notifications liées vers /suggestions ;
 bandeau et badge marchand vérifiés en injectant un jour de Soldes dans le
 store (aucun événement réel ce jour-là). 107 tests, lint, typecheck, build.
+
+---
+
+# Mise à jour du 1ᵉʳ octobre 2026 — vague F livrée
+
+Les trois boucles de jeu qui manquaient encore, chacune de bout en bout :
+
+- **Concours hebdomadaire** (`/contest`) : discipline, restriction et dates
+  de la semaine, candidats éligibles de la collection classés par stat (hors
+  shiny et Légendaires, restriction appliquée), inscription à 10 🪙 dans la
+  bourse de son choix — qui fixe aussi la génération du Légendaire à gagner —
+  avec l'avertissement que la carte quitte la collection ; **répétition de
+  danse** (Simon à quatre panneaux, 2 points par manche, seconde chance si
+  l'on échoue dès la première, fermeture en pleine partie = manches acquises
+  soumises, « Passer » ne consomme rien) ; **dévoilement** mis en scène du
+  dernier au premier devant trois juges (répartition entière des scores, pas
+  de faux ex-aequo — même règle que l'original), proposé une fois par concours
+  puis rejouable ; **choix du Légendaire** par le gagnant ; **historique** des
+  concours avec consultation d'un concours passé. Les stats de concours
+  apparaissent dans la fiche de chaque carte, l'étape Concours des Premiers
+  pas pointe sur la page, le Guide a sa section.
+- **Tournoi complet** : type et biome avantagés de la semaine dans le
+  récapitulatif, et rappelés sur la page Équipe (bandeau + chip « ✨ Avantagé »
+  sur chaque membre concerné de l'équipe Tournoi) ; **tableau** du tournoi
+  (finale → premier tour, match pour la 3ᵉ place, passages automatiques) ;
+  **replays** de chaque match avec la scène de combat — de mon point de vue
+  si je joue, de celui du vainqueur sinon ; « Mon parcours » ; **historique**
+  des tournois avec podium et tableau d'un tournoi passé, rejouable ; gains
+  réellement versés affichés dès que le tournoi est joué.
+- **Échanges 5.1.1** : formes de Zarbi demandées / proposées (choix de la
+  forme en deux temps), quantités possédées affichées sur chaque échange,
+  Légendaires de Kanto échangeables, annulation possible par la cible après
+  avoir répondu.
+
+Au passage : 17 icônes liées dynamiquement (disciplines, Johto/Hoenn,
+récompenses des Stats, événements) manquaient au bundle client et s'affichaient
+vides — ajoutées à la liste explicite de `nuxt.config.ts`.
+
+Vérifié en réel sur le compte de test : concours « Intelligence » ouvert
+(54 candidats, modale d'inscription sans confirmer), répétition jouée sur trois
+manches avec la soumission interceptée, concours « Grâce » du 29 septembre
+revu (18 résultats, dévoilement complet), tournoi du 1ᵉʳ octobre (16 matchs,
+14 replays, avantage Électrik / Forêt), tournoi du 24 septembre depuis
+l'historique, équipe Tournoi avec trois membres avantagés, fiche de carte avec
+les cinq stats ; les échanges restent verrouillés pour ce compte (54/120
+cartes). 112 tests, lint, typecheck, build.

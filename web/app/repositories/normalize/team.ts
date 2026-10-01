@@ -14,6 +14,7 @@ export function normalizeTeamMember(m: WireTeamMember): TeamMember {
     rarity: realRarity(m.rarity),
     isShiny,
     imageUrl: m.image_url,
-    typeImageUrl: m.type_image_url ?? null
+    typeImageUrl: m.type_image_url ?? null,
+    biome: m.biome ?? null
   }
 }

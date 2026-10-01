@@ -277,6 +277,8 @@ export interface WireTeamMember {
   type_image_url?: string
   generation?: number
   level?: number
+  /** v5 : visible dans l'équipe Tournoi, où l'avantage de la semaine s'applique. */
+  biome?: Biome
   added_at?: ISODate
   type_color?: string
 }
@@ -467,8 +469,9 @@ export interface WireTournament {
   participants: WireTournamentParticipant[]
   is_registered?: boolean
   teamsAreLocked?: boolean
+  /** Équipes figées, par identifiant de joueur. */
   snapshots?: Record<UUID, WireCard[]>
-  matches?: unknown[]
+  matches?: WireTournamentMatch[]
   results?: { placement: number, username: string, prize: number, avatar_url: string | null, avatar_is_alt: boolean | null }[]
 }
 
@@ -560,6 +563,12 @@ export interface WireTrade {
   created_at: ISODate
   target_responded_at?: ISODate
   completed_at?: ISODate
+  /** v5 : exemplaires possédés par chaque partie, et formes de Zarbi. */
+  requested_card_target_quantity?: number | null
+  offered_card_initiator_quantity?: number | null
+  requested_card_generation?: number
+  requested_zarbi_form?: string | null
+  offered_zarbi_form?: string | null
 }
 
 export interface TradeEligibility {
@@ -584,6 +593,7 @@ export interface WireTradeCard {
   rarity: Rarity
   quantity: number
   viewer_owns: boolean
+  generation?: number
 }
 
 export interface WireNotification {
@@ -797,3 +807,94 @@ export interface WireOnboardingClaim {
   coinsGen2: number
   coinsGen3: number
 }
+
+// ─── Concours (v5.0) ─────────────────────────────────────────────────────────
+export type ContestDiscipline = 'Sang-froid' | 'Beauté' | 'Grâce' | 'Intelligence' | 'Robustesse'
+export type ContestStatus = 'registration_open' | 'registration_closed' | 'in_progress' | 'completed'
+
+/** Inscrits — renvoyés au seul joueur inscrit, tant que le concours n'est pas dévoilé. */
+export interface WireContestEntry {
+  user_id: UUID
+  username: string
+  image_url: string | null
+  card_name: string
+  stat: number | string
+  dance_rounds: number | null
+  dance_bonus: number | null
+  partial_score: number | string | null
+}
+
+export interface WireContestResult {
+  user_id: UUID
+  placement: number
+  username: string
+  card_name: string
+  /** Le serveur sérialise le score en chaîne (« 148.1469… »). */
+  score: number | string
+  card_removed: boolean
+  prize_card_id: UUID | null
+  prize_card_name: string | null
+  prize_card_image_url?: string | null
+  prize_coins?: number
+  prize_charme_chroma?: number
+  image_url: string | null
+}
+
+export interface WireContest {
+  id: UUID
+  contest_date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction_type: 'biome' | 'type' | 'aucune' | null
+  restriction_value: string | null
+  created_at: ISODate
+  revealed_at: ISODate | null
+  entry_count: number
+  is_registered?: boolean
+  my_dance_score?: number | null
+  entries?: WireContestEntry[] | null
+  results?: WireContestResult[]
+  /** Noms des trois juges (joueurs non participants), choisis côté serveur. */
+  judges?: string[]
+}
+
+export interface WireContestSummary {
+  id: UUID
+  contest_date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction_type: 'biome' | 'type' | 'aucune' | null
+  restriction_value: string | null
+  entry_count: number
+}
+
+export interface WireContestPrizeOption { id: UUID, name: string, image_url: string, generation: number }
+
+// ─── Tournoi : matchs et historique (v5) ─────────────────────────────────────
+export interface WireTournamentMatch {
+  /** 0 = match pour la 3ᵉ place ; le plus grand round = finale. */
+  round: number
+  match_index?: number
+  is_bye: boolean
+  is_third_place_match?: boolean
+  player1_id: UUID | null
+  player2_id: UUID | null
+  player1_name: string | null
+  player2_name: string | null
+  winner_id: UUID | null
+  winner_name?: string | null
+  loser_id?: UUID | null
+  battle_log?: WireBattleRound[] | null
+}
+
+export interface WireTournamentSummary {
+  id: UUID
+  tournament_date: ISODate
+  status: 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
+  prize_pool: number
+  completed_at: ISODate | null
+  participant_count: number
+}
+
+/** Forme de Zarbi proposable à l'échange (`/trades/players/:id/zarbi-forms`). */
+export interface WireTradeZarbiForm { id: UUID, form: string, image_url: string, quantity: number, is_alt?: boolean }

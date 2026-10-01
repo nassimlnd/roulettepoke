@@ -30,7 +30,18 @@ export function normalizeCard(c: WireCard): DomainCard {
     biome: c.biome,
     type: c.type,
     parentCardId: c.parent_card_id,
-    standardId: c.standard_id ?? null
+    standardId: c.standard_id ?? null,
+    // Les cinq stats de concours (v5) n'existent que sur les cartes du dex ;
+    // null quand la charge utile ne les porte pas (gains du Jackpot, avatars…).
+    contestStats: typeof c.sang_froid === 'number'
+      ? {
+          'Sang-froid': c.sang_froid,
+          'Beauté': c.beaute ?? 0,
+          'Grâce': c.grace ?? 0,
+          'Intelligence': c.intelligence ?? 0,
+          'Robustesse': c.robustesse ?? 0
+        }
+      : null
   }
 }
 

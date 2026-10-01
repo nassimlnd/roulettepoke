@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { CACHE_TTL_SHORT } from '~/constants/cache'
-import type { DomainTournament, TournamentAnalysis } from '~/types/domain'
+import type { DomainTournament, TournamentSummary, TournamentAnalysis } from '~/types/domain'
+import type { UUID } from '~/types/api'
 import type { Currency } from '~/constants/generation'
 import { tournamentRepo } from '~/repositories'
 import { dedupe } from '~/utils/dedupe'
@@ -12,10 +13,24 @@ export const useTournamentStore = defineStore('tournament', {
   state: () => ({
     current: null as DomainTournament | null,
     analysis: null as TournamentAnalysis | null,
-    fetchedAt: 0
+    fetchedAt: 0,
+    // Historique (v5) : la liste, et le tournoi passé ouvert en consultation.
+    history: [] as TournamentSummary[],
+    historyLoaded: false,
+    viewing: null as DomainTournament | null
   }),
 
   actions: {
+    async loadHistory(force = false) {
+      if (this.historyLoaded && !force) return
+      this.history = await dedupe('tournament/list', () => tournamentRepo.list(useApi()))
+      this.historyLoaded = true
+    },
+
+    async view(id: UUID) {
+      this.viewing = await tournamentRepo.byId(useApi(), id)
+    },
+
     async ensureFresh(force = false) {
       if (!force && this.fetchedAt && Date.now() - this.fetchedAt < TTL) return
       this.current = await dedupe('tournament/current', () => tournamentRepo.current(useApi()))

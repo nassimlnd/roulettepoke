@@ -13,6 +13,7 @@ export const ROUTES = {
   rules: '/rules',
   league: '/league',
   tournament: '/tournament',
+  contest: '/contest',
   trades: '/trades',
   settings: '/settings',
   login: '/login',

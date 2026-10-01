@@ -76,12 +76,16 @@ export const useTradesStore = defineStore('trades', {
       return tradesRepo.playerCards(useApi(), playerId, rarity, useWalletStore().activeGeneration)
     },
 
-    async create(targetId: UUID, requestedCardId: UUID) {
-      await tradesRepo.create(useApi(), targetId, requestedCardId)
+    playerZarbiForms(playerId: UUID) {
+      return tradesRepo.playerZarbiForms(useApi(), playerId)
+    },
+
+    async create(targetId: UUID, requestedCardId: UUID, requestedZarbiFormId: UUID | null = null) {
+      await tradesRepo.create(useApi(), targetId, requestedCardId, requestedZarbiFormId)
       await this.ensureFresh(true)
     },
-    async respond(id: UUID, accept: boolean, offeredCardId?: UUID) {
-      await tradesRepo.respond(useApi(), id, accept, offeredCardId)
+    async respond(id: UUID, accept: boolean, offeredCardId?: UUID, offeredZarbiFormId: UUID | null = null) {
+      await tradesRepo.respond(useApi(), id, accept, offeredCardId, offeredZarbiFormId)
       await this.ensureFresh(true)
     },
     async confirm(id: UUID, accept: boolean) {

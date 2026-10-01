@@ -4,7 +4,7 @@
 // `isShiny` + rareté réelle.
 
 import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine, RealRarity, TradeStatus, TournamentStatus } from './primitives'
-import type { SuggestionStatus, VoteValue } from './api'
+import type { SuggestionStatus, VoteValue, ContestDiscipline, ContestStatus } from './api'
 import type { Generation } from '~/constants/generation'
 
 // Ré-export pour préserver les imports existants depuis `~/types/domain`.
@@ -24,7 +24,11 @@ export interface DomainCard {
   type: PokeType
   parentCardId: UUID
   standardId: UUID | null
+  /** Stats de concours sur 100 (v5), par discipline ; null quand la charge utile ne les porte pas. */
+  contestStats: ContestStats | null
 }
+
+export type ContestStats = Record<ContestDiscipline, number>
 
 export interface DomainOwnedCard extends DomainCard {
   quantity: number
@@ -106,6 +110,8 @@ export interface TradeCardRef {
   name: string
   imageUrl: string | null
   rarity: RealRarity
+  /** Lettre de la forme quand la carte est Zarbi (v5). */
+  zarbiForm: string | null
 }
 
 export interface DomainTrade {
@@ -117,6 +123,9 @@ export interface DomainTrade {
   targetUsername: string
   requested: TradeCardRef
   offered: TradeCardRef | null
+  /** Exemplaires de la carte demandée chez la cible, et de la carte offerte chez l'initiateur (v5). */
+  requestedOwnedByTarget: number | null
+  offeredOwnedByInitiator: number | null
   createdAt: ISODate
   completedAt: ISODate | null
 }
@@ -138,6 +147,60 @@ export interface TradeCard {
   viewerOwns: boolean
 }
 
+// ─── Concours ────────────────────────────────────────────────────────────────
+export interface ContestRestriction { type: 'biome' | 'type', value: string }
+
+export interface ContestEntry {
+  userId: UUID
+  username: string
+  imageUrl: string | null
+  cardName: string
+  stat: number
+  /** null = répétition de danse pas encore jouée. */
+  danceRounds: number | null
+  danceBonus: number | null
+  partialScore: number | null
+}
+
+export interface ContestResult {
+  userId: UUID
+  placement: number
+  username: string
+  cardName: string
+  imageUrl: string | null
+  score: number
+  cardRemoved: boolean
+  prizeCardId: UUID | null
+  prizeCardName: string | null
+  prizeCardImageUrl: string | null
+}
+
+export interface DomainContest {
+  id: UUID
+  /** Date du dévoilement (le mardi). */
+  date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction: ContestRestriction | null
+  entryCount: number
+  isRegistered: boolean
+  myDanceScore: number | null
+  entries: ContestEntry[]
+  results: ContestResult[]
+  judges: string[]
+}
+
+export interface ContestSummary {
+  id: UUID
+  date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction: ContestRestriction | null
+  entryCount: number
+}
+
+export interface ContestPrizeOption { id: UUID, name: string, imageUrl: string, generation: Generation }
+
 // ─── Tournoi ─────────────────────────────────────────────────────────────────
 export interface TournamentParticipant {
   userId: UUID
@@ -154,6 +217,28 @@ export interface TournamentResult {
   avatarIsShiny: boolean
 }
 
+export interface TournamentMatch {
+  /** 0 = match pour la 3ᵉ place ; le plus grand round = finale. */
+  round: number
+  isBye: boolean
+  isThirdPlace: boolean
+  player1Id: UUID | null
+  player2Id: UUID | null
+  player1Name: string
+  player2Name: string
+  winnerId: UUID | null
+  rounds: BattleRound[]
+}
+
+export interface TournamentSnapshotCard {
+  name: string
+  type: PokeType
+  biome: Biome | null
+  imageUrl: string
+  isShiny: boolean
+  rarity: RealRarity
+}
+
 export interface DomainTournament {
   id: UUID
   date: ISODate
@@ -163,6 +248,19 @@ export interface DomainTournament {
   isRegistered: boolean
   teamsAreLocked: boolean
   results: TournamentResult[]
+  /** Type et biome avantagés cette semaine (+10 % par critère, v5). */
+  weeklyAdvantage: { type: PokeType, biome: Biome } | null
+  matches: TournamentMatch[]
+  /** Équipes figées par identifiant de joueur. */
+  snapshots: Record<UUID, TournamentSnapshotCard[]>
+}
+
+export interface TournamentSummary {
+  id: UUID
+  date: ISODate
+  status: TournamentStatus
+  prizePool: number
+  participantCount: number
 }
 
 export interface TypeRec {
@@ -328,6 +426,8 @@ export interface TeamMember {
   isShiny: boolean
   imageUrl: string
   typeImageUrl: string | null
+  /** Biome d'origine — porté par l'équipe Tournoi, où l'avantage de la semaine s'applique. */
+  biome: Biome | null
 }
 
 // ─── Statistiques (forme normalisée de WireStats) ─────────────────────────────

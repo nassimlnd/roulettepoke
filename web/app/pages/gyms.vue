@@ -39,7 +39,8 @@ const champions = computed<TeamMember[]>(() => (detail.value?.champions ?? []).m
   rarity: c.rarity,
   isShiny: c.isShiny,
   imageUrl: c.imageUrl,
-  typeImageUrl: null
+  typeImageUrl: null,
+  biome: null
 })))
 
 async function openDetail(g: DomainGym) {

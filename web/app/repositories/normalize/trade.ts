@@ -15,16 +15,20 @@ export function normalizeTrade(t: WireTrade): DomainTrade {
       id: t.requested_card_id ?? null,
       name: t.requested_card_name,
       imageUrl: t.requested_card_image ?? null,
-      rarity: realRarity(t.requested_card_rarity)
+      rarity: realRarity(t.requested_card_rarity),
+      zarbiForm: t.requested_zarbi_form ?? null
     },
     offered: t.offered_card_name
       ? {
           id: t.offered_card_id ?? null,
           name: t.offered_card_name,
           imageUrl: t.offered_card_image ?? null,
-          rarity: realRarity(t.offered_card_rarity ?? 'Commun')
+          rarity: realRarity(t.offered_card_rarity ?? 'Commun'),
+          zarbiForm: t.offered_zarbi_form ?? null
         }
       : null,
+    requestedOwnedByTarget: t.requested_card_target_quantity ?? null,
+    offeredOwnedByInitiator: t.offered_card_initiator_quantity ?? null,
     createdAt: t.created_at,
     completedAt: t.completed_at ?? null
   }

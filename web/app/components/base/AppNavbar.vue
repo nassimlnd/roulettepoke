@@ -14,8 +14,9 @@ const competitionActive = computed(() =>
   COMPETITION_LINKS.some(l => route.path.startsWith(l.to)))
 
 // Un échange en attente de réponse doit se voir depuis n'importe quelle page —
-// il était jusqu'ici signalé uniquement dans le menu mobile.
-const competitionBadge = computed(() => hub.tradeActionsRequired)
+// il était jusqu'ici signalé uniquement dans le menu mobile. Même pastille
+// pour un concours dont les inscriptions sont ouvertes.
+const competitionBadge = computed(() => hub.tradeActionsRequired + (hub.contestOpen ? 1 : 0))
 
 // Items du menu déroulant. On passe par UDropdownMenu (et non un UPopover
 // maison) : il fournit la navigation aux flèches, la fermeture par Échap et le
@@ -23,9 +24,11 @@ const competitionBadge = computed(() => hub.tradeActionsRequired)
 // menu au focus, mais Tab sautait par-dessus son contenu — les cinq
 // destinations restaient donc inatteignables au clavier.
 const competitionItems = computed(() => COMPETITION_LINKS.map(l => ({
-  label: l.to === '/trades' && competitionBadge.value
-    ? `${l.label} (${competitionBadge.value})`
-    : l.label,
+  label: l.to === '/trades' && hub.tradeActionsRequired
+    ? `${l.label} (${hub.tradeActionsRequired})`
+    : l.to === '/contest' && hub.contestOpen
+      ? `${l.label} · inscriptions ouvertes`
+      : l.label,
   icon: l.icon,
   to: l.to
 })))

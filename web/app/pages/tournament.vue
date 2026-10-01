@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { GENERATIONS, currencyOf, asGeneration, generationRegion, type Generation } from '~/constants/generation'
-import type { ChampionMon, TeamMember, TournamentStatus } from '~/types/domain'
-import type { PokeType } from '~/types/api'
+import type { ChampionMon, TeamMember, TournamentStatus, TournamentMatch } from '~/types/domain'
+import type { PokeType, UUID } from '~/types/api'
 import { useTournamentStore, TOURNAMENT_ENTRY_FEE } from '~/stores/tournament'
 import { typeSlug } from '~/utils/poke'
+import { flipRounds, maxRound, roundLabel } from '~/utils/tournament'
 
 // Page Tournoi hebdomadaire. Inscriptions lundi→mardi 12:00 (20 🪙), équipes
 // figées jeudi 11:55, combats jeudi 12:00, gains 60/30/10 %.
 const tourney = useTournamentStore()
 const wallet = useWalletStore()
+const auth = useAuthStore()
+const battle = useBattleStore()
 const toast = useToast()
 
 const t = computed(() => tourney.current)
 const a = computed(() => tourney.analysis)
+const me = computed(() => auth.userId)
 
 const STATUS: Record<TournamentStatus, { label: string, cls: string }> = {
   registration_open: { label: 'Inscriptions ouvertes', cls: 'open' },
@@ -25,20 +29,23 @@ const statusMeta = computed(() => (t.value ? STATUS[t.value.status] : null))
 const dateLabel = computed(() =>
   t.value ? new Date(t.value.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '')
 
+// Estimation 60/30/10 % arrondie aux 5 🪙 tant que le tournoi n'est pas joué ;
+// ensuite les gains réellement versés (l'arrondi du serveur diffère un peu).
 const prizes = computed(() => {
   const pool = t.value?.prizePool ?? 0
   const r = (p: number) => Math.round((pool * p) / 5) * 5
+  const paid = (place: number) => t.value?.results.find(x => x.placement === place)?.prize ?? null
   return [
-    { place: 1, medal: '🥇', amount: r(0.6) },
-    { place: 2, medal: '🥈', amount: r(0.3) },
-    { place: 3, medal: '🥉', amount: r(0.1) }
+    { place: 1, medal: '🥇', amount: paid(1) ?? r(0.6) },
+    { place: 2, medal: '🥈', amount: paid(2) ?? r(0.3) },
+    { place: 3, medal: '🥉', amount: paid(3) ?? r(0.1) }
   ]
 })
 const matchups = computed(() => [...(a.value?.matchups ?? [])].sort((x, y) => y.winProbability - x.winProbability))
 const results = computed(() => [...(t.value?.results ?? [])].sort((x, y) => x.placement - y.placement))
 
 function toMember(c: ChampionMon): TeamMember {
-  return { teamEntryId: String(c.position), position: c.position, cardId: '', name: c.name, type: c.type, rarity: c.rarity, isShiny: c.isShiny, imageUrl: c.imageUrl, typeImageUrl: null }
+  return { teamEntryId: String(c.position), position: c.position, cardId: '', name: c.name, type: c.type, rarity: c.rarity, isShiny: c.isShiny, imageUrl: c.imageUrl, typeImageUrl: null, biome: null }
 }
 function typeColor(type: PokeType): string {
   // Repli neutre pour un type hors de notre palette (ex. Acier).
@@ -78,6 +85,87 @@ function confirmRegister() {
   })
 }
 
+// ─── Tableau, parcours et replays (v5) ────────────────────────────────────────
+// Le journal serveur d'un match est écrit du point de vue du joueur 1. On le
+// rejoue de MON point de vue si je joue (défaite possible — c'est mon match),
+// sinon de celui du vainqueur : un replay se termine sur une victoire.
+function replay(m: TournamentMatch) {
+  const mine = !!me.value && (m.player1Id === me.value || m.player2Id === me.value)
+  const povIsP1 = mine ? m.player1Id === me.value : m.winnerId === m.player1Id
+  const rounds = povIsP1 ? m.rounds : flipRounds(m.rounds)
+  const pov = povIsP1 ? m.player1Name : m.player2Name
+  const opp = povIsP1 ? m.player2Name : m.player1Name
+  const won = m.winnerId !== null && m.winnerId === (povIsP1 ? m.player1Id : m.player2Id)
+  const wins = rounds.filter(r => r.playerWon).length
+  const tally = `${wins}/${rounds.length} duel${wins > 1 ? 's' : ''} remporté${wins > 1 ? 's' : ''} face à ${opp}.`
+  return battle.present({
+    rounds,
+    won,
+    title: `${pov} vs ${opp}`,
+    winTitle: mine ? 'Victoire !' : `${pov} l'emporte !`,
+    winSub: tally,
+    loseSub: tally
+  })
+}
+
+const myMatches = computed(() => {
+  const id = me.value
+  if (!id || !t.value) return []
+  return t.value.matches
+    .filter(m => m.player1Id === id || m.player2Id === id)
+    .sort((x, y) => (x.round || Infinity) - (y.round || Infinity))
+})
+const currentMaxRound = computed(() => maxRound(t.value?.matches ?? []))
+const opponentOf = (m: TournamentMatch) => (m.player1Id === me.value ? m.player2Name : m.player1Name)
+const iWon = (m: TournamentMatch) => m.winnerId !== null && m.winnerId === me.value
+
+// ─── Historique (v5) ──────────────────────────────────────────────────────────
+const historyOpen = ref(false)
+const historyLoading = ref(false)
+const viewLoading = ref<UUID | null>(null)
+const detailOpen = ref(false)
+const history = computed(() => [...tourney.history].sort((x, y) => y.date.localeCompare(x.date)))
+const past = computed(() => tourney.viewing)
+const pastResults = computed(() => [...(past.value?.results ?? [])].sort((x, y) => x.placement - y.placement))
+const pastDate = computed(() =>
+  past.value ? new Date(past.value.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '')
+
+async function openHistory() {
+  historyOpen.value = true
+  historyLoading.value = true
+  try {
+    await tourney.loadHistory()
+  } catch (err) {
+    toast.add({ title: humanizeError(err), color: 'error' })
+  } finally {
+    historyLoading.value = false
+  }
+}
+async function viewPast(id: UUID) {
+  viewLoading.value = id
+  try {
+    await tourney.view(id)
+    historyOpen.value = false
+    detailOpen.value = true
+  } catch (err) {
+    toast.add({ title: humanizeError(err), color: 'error' })
+  } finally {
+    viewLoading.value = null
+  }
+}
+async function replayPast(m: TournamentMatch) {
+  // La scène de combat est plein écran : on range la modale le temps du replay.
+  detailOpen.value = false
+  await replay(m)
+  detailOpen.value = true
+}
+function dateShort(d: string): string {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+onUnmounted(() => {
+  tourney.viewing = null
+})
+
 const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
 </script>
 
@@ -94,7 +182,16 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
           :class="`tn__status--${statusMeta.cls}`"
         >{{ statusMeta.label }}</span>
       </div>
-      <CoinBalance />
+      <div class="tn__head-actions">
+        <PButton
+          color="neutral"
+          icon="i-lucide-history"
+          @click="openHistory"
+        >
+          Tournois passés
+        </PButton>
+        <CoinBalance />
+      </div>
     </header>
 
     <div
@@ -139,6 +236,19 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
         <div class="recap__cell">
           <span class="recap__k">Participants</span>
           <span class="recap__v tabular">{{ t.participants.length }}</span>
+        </div>
+        <div
+          v-if="t.weeklyAdvantage"
+          class="recap__cell"
+        >
+          <span class="recap__k">Avantagés (+10 % chacun)</span>
+          <span class="recap__v recap__v--adv">
+            <span
+              class="tchip"
+              :style="{ '--tc': typeColor(t.weeklyAdvantage.type) }"
+            >{{ t.weeklyAdvantage.type }}</span>
+            <span class="tchip tchip--biome">{{ t.weeklyAdvantage.biome }}</span>
+          </span>
         </div>
         <div class="recap__cell recap__cell--pool">
           <span class="recap__k">Cagnotte</span>
@@ -236,6 +346,57 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
             ><CoinChip size="sm" />{{ r.prize }}</span>
           </div>
         </div>
+      </section>
+
+      <!-- Mon parcours (v5) -->
+      <section
+        v-if="myMatches.length"
+        class="block"
+      >
+        <h2 class="block__title font-display">
+          Mon parcours
+        </h2>
+        <ul class="path">
+          <li
+            v-for="(m, i) in myMatches"
+            :key="i"
+            class="path__m"
+            :class="{ 'path__m--win': iWon(m), 'path__m--lost': !m.isBye && !iWon(m) }"
+          >
+            <span class="path__label">{{ roundLabel(m.round, currentMaxRound) }}</span>
+            <span
+              v-if="m.isBye"
+              class="path__res"
+            >Passage automatique</span>
+            <template v-else>
+              <span class="path__opp">contre <b>{{ opponentOf(m) }}</b></span>
+              <span class="path__res">{{ iWon(m) ? 'Victoire' : 'Défaite' }}</span>
+              <PButton
+                v-if="m.rounds.length"
+                color="neutral"
+                icon="i-lucide-play"
+                @click="replay(m)"
+              >
+                Revoir
+              </PButton>
+            </template>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Tableau (v5) -->
+      <section
+        v-if="t.matches.length"
+        class="block"
+      >
+        <h2 class="block__title font-display">
+          Tableau
+        </h2>
+        <TournamentBracket
+          :tournament="t"
+          :me="me"
+          @replay="replay"
+        />
       </section>
 
       <!-- Préparation (inscrit·e) -->
@@ -370,6 +531,104 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
       </section>
     </template>
 
+    <!-- Historique des tournois (v5) -->
+    <UModal
+      v-model:open="historyOpen"
+      title="Tournois passés"
+    >
+      <template #body>
+        <div
+          v-if="historyLoading"
+          class="hist__load"
+        >
+          <UIcon
+            name="i-lucide-loader-circle"
+            class="size-5 animate-spin"
+          />
+        </div>
+        <p
+          v-else-if="!history.length"
+          class="hist__empty"
+        >
+          Aucun tournoi enregistré pour le moment.
+        </p>
+        <ul
+          v-else
+          class="hist"
+        >
+          <li
+            v-for="h in history"
+            :key="h.id"
+            class="hist__row"
+          >
+            <div class="hist__text">
+              <b>Tournoi du {{ dateShort(h.date) }}</b>
+              <span class="hist__sub">{{ h.participantCount }} participant{{ h.participantCount > 1 ? 's' : '' }} · cagnotte {{ h.prizePool }} 🪙 · {{ STATUS[h.status].label }}</span>
+            </div>
+            <PButton
+              color="neutral"
+              :loading="viewLoading === h.id"
+              :disabled="viewLoading !== null && viewLoading !== h.id"
+              @click="viewPast(h.id)"
+            >
+              Voir
+            </PButton>
+          </li>
+        </ul>
+      </template>
+    </UModal>
+
+    <!-- Détail d'un tournoi passé -->
+    <UModal
+      v-model:open="detailOpen"
+      :title="`Tournoi du ${pastDate}`"
+      :ui="{ content: 'max-w-2xl' }"
+    >
+      <template #body>
+        <div
+          v-if="past"
+          class="detail"
+        >
+          <div
+            v-if="pastResults.length"
+            class="results"
+          >
+            <div
+              v-for="r in pastResults"
+              :key="r.placement"
+              class="res"
+              :class="{ 'res--podium': r.placement <= 3 }"
+            >
+              <span class="res__place">{{ medalFor(r.placement) }}</span>
+              <TourneyAvatar
+                :src="r.avatarUrl"
+                :shiny="r.avatarIsShiny"
+                :size="34"
+                :alt="r.username"
+              />
+              <span class="res__name">{{ r.username }}</span>
+              <span
+                v-if="r.prize"
+                class="res__prize tabular"
+              ><CoinChip size="sm" />{{ r.prize }}</span>
+            </div>
+          </div>
+          <p
+            v-else
+            class="hist__empty"
+          >
+            {{ STATUS[past.status].label }} — {{ past.participants.length }} participant{{ past.participants.length > 1 ? 's' : '' }}.
+          </p>
+          <TournamentBracket
+            v-if="past.matches.length"
+            :tournament="past"
+            :me="me"
+            @replay="replayPast"
+          />
+        </div>
+      </template>
+    </UModal>
+
     <!-- Confirmation inscription -->
     <ConfirmDialog
       v-model:open="registerOpen"
@@ -409,7 +668,8 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
 .recap { display: flex; flex-wrap: wrap; gap: 10px 30px; align-items: flex-start; }
 .recap__cell { display: flex; flex-direction: column; gap: 2px; }
 .recap__k { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-text-dimmed); }
-.recap__v { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ui-text-highlighted); text-transform: capitalize; }
+.recap__v { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ui-text-highlighted); }
+.recap__v::first-letter { text-transform: uppercase; }
 .recap__cell--pool { margin-left: auto; text-align: right; align-items: flex-end; }
 .recap__prizes { display: flex; gap: 10px; font-size: .74rem; font-weight: 700; color: var(--ui-text-muted); margin-top: 2px; }
 
@@ -519,4 +779,36 @@ const { loading, errorMsg, retry } = usePageData(() => tourney.ensureFresh())
   border: 1px solid var(--ui-border);
 }
 .part__name { font-size: .82rem; font-weight: 700; color: var(--ui-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tn__head-actions { display: flex; align-items: center; gap: 10px; }
+.recap__v--adv { display: flex; gap: 6px; flex-wrap: wrap; }
+.tchip--biome { background: var(--ui-bg-accented); color: var(--ui-text); text-shadow: none; box-shadow: none; }
+
+.path { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.path__m {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  font-size: .88rem;
+}
+.path__m--win { border-color: color-mix(in oklab, #5bbf82 55%, transparent); }
+.path__m--lost { border-color: color-mix(in oklab, var(--color-poke-500) 40%, transparent); }
+.path__label { font-family: var(--font-display); font-weight: 700; color: var(--ui-text-highlighted); min-width: 7rem; }
+.path__opp { color: var(--ui-text-muted); flex: 1; }
+.path__res { font-weight: 800; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; }
+.path__m--win .path__res { color: #3f9e66; }
+.path__m--lost .path__res { color: var(--color-poke-600); }
+
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hist__row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--ui-bg-elevated); border: 1px solid var(--ui-border); }
+.hist__text { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: .9rem; }
+.hist__sub { font-size: .76rem; color: var(--ui-text-muted); }
+.hist__empty { color: var(--ui-text-muted); font-size: .9rem; margin: 0; }
+.hist__load { display: grid; place-items: center; padding: 24px; color: var(--ui-text-muted); }
+.detail { display: flex; flex-direction: column; gap: 16px; }
 </style>

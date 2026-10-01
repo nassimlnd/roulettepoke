@@ -9,7 +9,7 @@ type Sample = Pick<DomainOwnedCard, 'num' | 'name' | 'type' | 'rarity' | 'isShin
 
 function toCard(c: Sample): DomainOwnedCard {
   // Échantillons de vitrine : tous issus de Kanto.
-  return { id: c.name, generation: 1, parentCardId: '', standardId: null, obtainedAt: null, ...c }
+  return { id: c.name, generation: 1, parentCardId: '', standardId: null, contestStats: null, obtainedAt: null, ...c }
 }
 
 const heroes: Sample[] = [

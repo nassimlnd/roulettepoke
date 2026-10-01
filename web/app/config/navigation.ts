@@ -27,6 +27,7 @@ export const COMPETITION_LINKS: readonly NavLink[] = [
   { to: '/gyms', label: 'Arènes', icon: 'i-lucide-swords' },
   { to: '/league', label: 'Ligue des 4', icon: 'i-lucide-crown' },
   { to: '/tournament', label: 'Tournoi', icon: 'i-lucide-trophy' },
+  { to: '/contest', label: 'Concours', icon: 'i-lucide-drama' },
   { to: '/leaderboard', label: 'Classement', icon: 'i-lucide-medal' },
   { to: '/trades', label: 'Échanges', icon: 'i-lucide-arrow-left-right' }
 ]

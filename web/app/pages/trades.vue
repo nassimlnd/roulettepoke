@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DomainTrade, TradePlayer, TradeCard, RealRarity } from '~/types/domain'
+import type { DomainTrade, TradePlayer, TradeCard, RealRarity, ZarbiForm } from '~/types/domain'
 import { useTradesStore } from '~/stores/trades'
 
 // Page Échanges — éligibilité (≥120 standards uniques, 1/semaine, cooldown par
@@ -37,7 +37,36 @@ function isOnCooldown(p: TradePlayer): boolean {
 // ─── Création ─────────────────────────────────────────────────────────────────
 const createTarget = ref<TradePlayer | null>(null)
 const createOpen = ref(false)
-const createRarities: RealRarity[] = ['Commun', 'Rare', 'Épique']
+// Les Légendaires s'échangent depuis la v5 (ceux de Kanto pour l'instant,
+// deux générations plus récentes existant) : c'est le serveur qui filtre.
+const createRarities: RealRarity[] = ['Commun', 'Rare', 'Épique', 'Légendaire']
+
+// ─── Zarbi : la carte est générique, la FORME précise l'exemplaire ─────────────
+const zarbiOpen = ref(false)
+const zarbiTitle = ref('')
+const zarbiForms = ref<ZarbiForm[]>([])
+const zarbiLoading = ref(false)
+let zarbiOnPick: ((form: ZarbiForm) => Promise<unknown>) | null = null
+
+async function pickZarbiForm(title: string, load: () => Promise<ZarbiForm[]>, onPick: (form: ZarbiForm) => Promise<unknown>) {
+  zarbiTitle.value = title
+  zarbiOnPick = onPick
+  zarbiForms.value = []
+  zarbiOpen.value = true
+  zarbiLoading.value = true
+  try {
+    zarbiForms.value = await load()
+  } catch {
+    zarbiForms.value = []
+  } finally {
+    zarbiLoading.value = false
+  }
+}
+function onZarbiPick(form: ZarbiForm) {
+  const cb = zarbiOnPick
+  zarbiOpen.value = false
+  if (cb) return cb(form)
+}
 
 function startCreate(player: TradePlayer) {
   if (!canTrade.value) {
@@ -51,11 +80,19 @@ const createLoad = (r: RealRarity) => (createTarget.value ? trades.playerCards(c
 function onCreatePick(card: TradeCard) {
   const target = createTarget.value
   if (!target) return
-  return guard(async () => {
-    await trades.create(target.id, card.id)
+  const send = (formId: string | null) => guard(async () => {
+    await trades.create(target.id, card.id, formId)
     toast.add({ title: 'Demande d\'échange envoyée !', color: 'success', icon: 'i-lucide-send' })
     createOpen.value = false
   })
+  if (card.name === 'Zarbi') {
+    return pickZarbiForm(
+      `Quelle forme de Zarbi de ${target.username} veux-tu ?`,
+      () => trades.playerZarbiForms(target.id),
+      form => send(form.id)
+    )
+  }
+  return send(null)
 }
 
 // ─── Réponse (la cible propose une carte du même palier) ──────────────────────
@@ -75,11 +112,22 @@ function startRespond(trade: DomainTrade) {
 function onRespondPick(card: TradeCard) {
   const trade = respondTrade.value
   if (!trade) return
-  return guard(async () => {
-    await trades.respond(trade.id, true, card.id)
+  const send = (formId: string | null) => guard(async () => {
+    await trades.respond(trade.id, true, card.id, formId)
     toast.add({ title: 'Contre-offre envoyée !', color: 'success' })
     respondOpen.value = false
   })
+  if (card.name === 'Zarbi') {
+    return pickZarbiForm(
+      'Quelle forme de Zarbi proposes-tu ? (en double au moins)',
+      async () => {
+        await collection.ensureZarbi()
+        return collection.zarbi.filter(f => f.owned && f.quantity >= 2)
+      },
+      form => send(form.id)
+    )
+  }
+  return send(null)
 }
 
 // ─── Actions simples ──────────────────────────────────────────────────────────
@@ -299,6 +347,16 @@ const { loading, errorMsg, retry } = usePageData(async () => {
       :load="respondLoad"
       :busy="busy"
       @pick="onRespondPick"
+    />
+
+    <!-- Zarbi : seconde étape, la forme -->
+    <ZarbiFormPicker
+      v-model:open="zarbiOpen"
+      :title="zarbiTitle"
+      :forms="zarbiForms"
+      :loading="zarbiLoading"
+      :busy="busy"
+      @pick="onZarbiPick"
     />
   </div>
 </template>
