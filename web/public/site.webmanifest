@@ -1,0 +1,15 @@
+{
+  "name": "PokéRoulette",
+  "short_name": "PokéRoulette",
+  "description": "Ouvre des boosters, collectionne des cartes holographiques et pars à l'aventure.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f7",
+  "theme_color": "#e8402f",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

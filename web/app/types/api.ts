@@ -1,0 +1,949 @@
+// Types « wire » — la forme brute renvoyée par l'API existante.
+// Repris de docs/audit/api-inventory.md (observés sur 275 appels réels).
+// Ces types ne sont consommés QUE par la couche repositories, qui les
+// normalise en types `domain.ts` pour le reste de l'application.
+
+import type { UUID, ISODate, Rarity, Biome, PokeType, SlotSymbol, SlotLine } from './primitives'
+
+// Ré-export pour préserver les imports existants depuis `~/types/api`.
+export type { UUID, ISODate, Rarity, Biome, PokeType, SlotSymbol, SlotLine }
+
+export interface ApiError { error: string }
+
+// Depuis la v4 le porte-monnaie unique `coins` a disparu au profit d'une bourse
+// par génération, plus la génération active du joueur. Les endpoints de jeu
+// (`/roll`, `/training/status`, vente…) continuent, eux, de renvoyer un `coins`
+// scalaire : c'est le solde de la génération active.
+export interface WireUser {
+  id: UUID
+  username: string
+  email: string
+  coins_gen1: number
+  coins_gen2: number
+  coins_gen3: number
+  active_generation: number
+  avatar_url: string | null
+  avatar_is_alt: boolean
+  charme_chroma_rolls: number
+  /** Région qui porte la prime du jour (bureau de change, v5). */
+  dailyBonusGeneration?: number
+  /** Le bureau de change est-il ouvert ? (prime re-basculable à volonté) */
+  canExchangeDailyBonus?: boolean
+}
+
+// Zarbi est un cas à part dans le modèle : une seule carte du dex, déclinée en
+// 28 formes cosmétiques (! ? A-Z) gérées hors de `gacha_cards`. L'API les sert
+// donc par un endpoint dédié, et chaque forme existe en standard et en shiny —
+// 56 entrées au total.
+export interface WireZarbiForm {
+  id: UUID
+  /** Le glyphe : « ! », « ? » ou une lettre de A à Z. */
+  form: string
+  image_url: string
+  is_alt: boolean
+  quantity: number
+}
+
+// La prime de connexion est créditée dans UNE région. Si le joueur constate
+// qu'il l'a touchée du mauvais côté, il peut la déplacer une fois par jour.
+// Bureau de change (v5) : remplace « corriger la prime » (1×/jour, endpoint
+// disparu → 404). Réponse : la région qui porte désormais la prime, et le
+// montant de celle-ci dans chaque région.
+export interface DailyBonusExchange {
+  generation: number
+  amounts: Record<string, number>
+}
+
+// ─── Motus — le mot du jour ──────────────────────────────────────────────────
+// Un mot de 6 à 8 lettres, partagé par tous les joueurs, 6 essais, première
+// lettre donnée. Victoire = une forme de Zarbi tirée parmi les lettres du mot
+// (shiny possible) ; le premier gagnant du jour touche aussi +10 🪙.
+// Ces réponses sont déjà en camelCase (comme /trades/eligibility) : consommées
+// telles quelles, sans couche de normalisation. Formes relevées sur l'API le
+// 9 août 2026, essai réel compris.
+export type MotusCellState = 'correct' | 'present' | 'absent'
+export type MotusStatus = 'in_progress' | 'won' | 'lost'
+
+export interface MotusCell {
+  letter: string
+  state: MotusCellState
+}
+
+export interface MotusAttempt {
+  guess: string
+  result: MotusCell[]
+}
+
+/** Zarbi gagné à la victoire — une forme tirée parmi les lettres du mot. */
+export interface MotusRewardForm {
+  form: string
+  imageUrl: string
+  isAlt: boolean
+}
+
+export interface MotusToday {
+  wordDate: string
+  wordLength: number
+  maxAttempts: number
+  firstLetter: string | null
+  attempts: MotusAttempt[]
+  status: MotusStatus
+  /** Révélé seulement une fois la partie finie. */
+  word: string | null
+  rewardForm: MotusRewardForm | null
+}
+
+export interface MotusGuessResult {
+  guess: string
+  result: MotusCell[]
+  status: MotusStatus
+  attemptsUsed: number
+  maxAttempts: number
+  won: boolean
+  word: string | null
+  rewardForm: MotusRewardForm | null
+  firstWinnerBonus: boolean
+  firstWinnerBonusCoins: number
+}
+
+export interface MotusLeaderboardRow {
+  rank: number
+  username: string
+  attemptsUsed: number
+  firstWinner: boolean
+  completedAt: ISODate
+}
+
+// ─── Idées & sondages (la voix des joueurs) ──────────────────────────────────
+// Formes relevées sur l'API le 9 août 2026. Particularité vérifiée par l'essai :
+// revoter la MÊME valeur sur une suggestion retire le vote (toggle) — l'UI peut
+// donc proposer l'annulation. Les statuts observés en production couvrent
+// proposed/planned/archived ; le reste vient du front d'origine (STATUS_META).
+export type SuggestionStatus
+  = 'proposed' | 'planned' | 'in_progress' | 'done' | 'rejected' | 'archived'
+export type VoteValue = 1 | -1
+
+export interface WireSuggestion {
+  id: UUID
+  /** Non nul = entrée officielle de la roadmap (posée par l'équipe). */
+  title: string | null
+  text: string
+  status: SuggestionStatus
+  admin_note: string | null
+  note_voting_enabled: boolean
+  created_at: ISODate
+  username: string
+  author_is_admin: boolean
+  sugg_up: number
+  sugg_down: number
+  note_up: number
+  note_down: number
+  my_suggestion_vote: VoteValue | null
+  my_note_vote: VoteValue | null
+}
+
+export interface WirePollOption {
+  id: UUID
+  label: string
+  votes: number
+}
+
+export interface WirePoll {
+  id: UUID
+  question: string
+  status: 'open' | 'closed'
+  created_at: ISODate
+  closed_at: ISODate | null
+  my_option_id: UUID | null
+  options: WirePollOption[]
+}
+
+export interface WireCard {
+  id: UUID
+  num: number
+  name: string
+  image_url: string
+  rarity: Rarity
+  /** 0 = bébé (Pichu, Mélo…), 1 = forme de base, 2 et 3 = évolutions. */
+  level: 0 | 1 | 2 | 3
+  parent_card_id: UUID
+  is_alt: boolean
+  biome: Biome
+  type: PokeType
+  /** 1 (Kanto), 2 (Johto) ou 3 (Hoenn) — absent avant la v4. */
+  generation?: number
+  base_weight?: number
+  biome_id?: UUID
+  standard_id?: UUID | null
+  created_at?: ISODate
+  /** Stats de concours (v5), sur 100 — une par discipline. */
+  sang_froid?: number
+  beaute?: number
+  grace?: number
+  intelligence?: number
+  robustesse?: number
+}
+
+export interface WireOwnedCard extends WireCard {
+  quantity: number | null
+  obtained_at: ISODate | null
+  owned: boolean
+}
+
+export interface AuthResponse { user: WireUser, token: string }
+// Depuis la 4.1.0 l'inscription ne connecte PLUS : le compte est créé, un
+// e-mail de vérification part, et le serveur ne renvoie qu'un message.
+export interface RegisterResponse { message: string }
+
+export interface CardChoice {
+  id: UUID
+  leftCard: WireCard & { owned?: boolean }
+  rightCard: WireCard & { owned?: boolean }
+}
+
+export interface MeResponse {
+  user: WireUser
+  rewardClaimed: boolean
+  pendingChoice: CardChoice | null
+}
+
+// Résultat d'un POST /roll (toujours enveloppé dans { card })
+export type WireRollResult
+  = | (WireCard & { isNew: boolean, owned: boolean, rollCost: number })
+    | { isSpecialEvent: true, eventType: 'coins', amount: number, rollCost: number }
+    | { isSpecialEvent: true, eventType: 'charme_chroma', rollCost: number }
+    | {
+      isSpecialEvent: true
+      eventType: 'card_choice'
+      choiceId: UUID
+      leftCard: WireCard & { owned: boolean }
+      rightCard: WireCard & { owned: boolean }
+      rollCost: number
+    }
+    // L'œuf confié par la pension de l'Aventure éclôt ici, dans la roulette
+    // classique, après un certain nombre de tirages.
+    | {
+      isSpecialEvent: true
+      eventType: 'egg_hatch'
+      pokemon: WireCard
+      shiny: boolean
+      isNew: boolean
+      rollCost: number
+    }
+
+export interface WireBiome {
+  biome: Biome
+  card_count: number
+  biome_weight: number
+  cost: number
+  owned_count: number
+  /** Prix du jour, remise d'événement comprise (Soldes, Journée d'une région). */
+  effective_cost?: number
+}
+
+// Réponse mesurée : { success, sellPrice, newQuantity, newCoins, generation }.
+// `newCoins` est le solde de la bourse de `generation` — la génération de la
+// CARTE vendue, pas la région active (vendre une carte de Kanto en étant sur
+// Johto crédite Kanto : vérifié en croisé). Tous les champs sont optionnels :
+// la vente d'un shiny troque les coins contre `charmeObtained`.
+export interface SellResult {
+  success?: boolean
+  sellPrice?: number
+  newQuantity?: number
+  newCoins?: number
+  generation?: number
+  charmeObtained?: boolean
+  /** Le marchand du jour a acheté cette carte au prix fort (v5.1). */
+  merchantSale?: boolean
+}
+
+export interface WireInventory {
+  items: { item_type: string, quantity: number }[]
+  activeBiomeTicket: string | null
+  activeTypeTicket: string | null
+  /** Tirages restants avant l'éclosion de l'œuf en incubation ; null sans œuf. */
+  eggRollsRemaining?: number | null
+}
+
+export interface WireTeamMember {
+  team_entry_id: UUID
+  position: number
+  /** v4 : la carte est désormais identifiée par `card_id` (auparavant `id`). */
+  card_id: UUID
+  name: string
+  type: PokeType
+  rarity: Rarity
+  image_url: string
+  type_image_url?: string
+  generation?: number
+  level?: number
+  /** v5 : visible dans l'équipe Tournoi, où l'avantage de la semaine s'applique. */
+  biome?: Biome
+  added_at?: ISODate
+  type_color?: string
+}
+
+export interface WireBadge {
+  gym_id: UUID
+  order_num: number
+  badge_name: string
+  badge_image_url: string
+  obtained_at: ISODate
+}
+
+export interface WireGym {
+  id: UUID
+  /** Numéro global continu : Kanto 1-8, Johto 9-16, Hoenn 17-24. */
+  order_num: number
+  generation?: number
+  /** 1 d'ordinaire, 2 les semaines « Arènes ouvertes » (v5.1). */
+  attempts_allowed?: number
+  attempts_this_week?: number
+  name: string
+  type: PokeType
+  badge_name: string
+  badge_image_url: string
+  badge_obtained_at: ISODate | null
+  last_attempt_this_week: ISODate | null
+  has_badge: boolean
+  can_attempt: boolean
+}
+
+export interface TrainingStatus {
+  bonus: number
+  canFightToday: boolean
+  coins: number
+  active_generation?: number
+}
+
+export interface WireChampionMon {
+  position: number
+  id: UUID
+  name: string
+  type: PokeType
+  rarity: Rarity
+  image_url: string
+}
+
+export interface WireGymDetail {
+  id: UUID
+  order_num: number
+  name: string
+  type: PokeType
+  badge_name: string
+  badge_image_url: string
+  type_image_url: string
+  type_color: string
+  champion_team: WireChampionMon[]
+  recommended_types?: { name: string, image_url: string, color: string }[]
+}
+
+export interface WireGymEstimate {
+  estimated_win_probability: number
+  training_bonus?: number
+  matchups: { player: string, champion: string, probability: number }[]
+}
+
+export interface WireBattleRound {
+  round: number
+  player_pokemon: { name: string, image_url?: string }
+  champion_pokemon: { name: string, image_url?: string }
+  win_probability: number
+  player_wins_duel: boolean
+  roll_value?: number
+}
+
+export interface WireBattleResult {
+  won: boolean
+  badge_name?: string
+  log: WireBattleRound[]
+  player_team: WireCard[]
+  champion_team: WireCard[]
+}
+
+export interface WireTrainingResult {
+  won: boolean
+  coins_gained?: number
+  new_bonus: number
+  log: WireBattleRound[]
+  player_team: WireCard[]
+  trainer_team: WireCard[]
+}
+
+export interface SlotStatus {
+  canSpin: boolean
+  lastSpin: ISODate | null
+  coins: number
+  /** 1 d'ordinaire, 2 les jours de « Jackpot en folie » (v5.1). */
+  spinsAllowed?: number
+  spinsToday?: number
+  /** Bourse débitée/créditée : la génération active côté serveur. */
+  generation?: number
+}
+
+export type WireLineResult
+  = | { line: SlotLine, type: 'nothing' }
+    | { line: SlotLine, type: 'coins', amount: number }
+    | { line: SlotLine, type: 'charme' }
+    | { line: SlotLine, type: 'biome_ticket', slug: string, biome: Biome }
+    | { line: SlotLine, type: 'type_ticket', slug: string, typeName: PokeType }
+    | { line: SlotLine, type: 'legendary', card: WireCard }
+
+export interface WireSpinResult {
+  cells: Record<string, SlotSymbol>
+  lineResults: WireLineResult[]
+  cost: number
+  newCoins: number
+}
+
+export interface WireRecentWin {
+  username: string
+  prizes: WireLineResult[]
+  spun_at: ISODate
+}
+
+export interface WireLeagueLegendary { id: UUID, name: string, image_url: string, generation?: number }
+
+export interface LeagueStatus {
+  eligible: boolean
+  cycleStart: ISODate | null
+  alreadyAttempted: boolean
+  lastRun: WireLeagueRun | null
+  legendaries: WireLeagueLegendary[]
+  /** Régions dont le joueur a les 8 badges : devises et légendaires éligibles à la récompense. */
+  eligibleGenerations?: number[]
+}
+
+export interface WireLeagueStage {
+  opponent_name: string
+  opponent_type: 'player' | 'npc'
+  estimated_win_probability: number
+}
+
+export interface WireLeagueEstimate {
+  overall_win_probability: number
+  stages: WireLeagueStage[]
+  typeRecommendations: { toPrivilege: { type: string }[], toAvoid: { type: string }[] }
+}
+
+export interface WireLeagueBattleStage {
+  opponent_name: string
+  opponent_type: 'player' | 'npc'
+  won: boolean
+  log: WireBattleRound[]
+}
+
+export interface WireLeagueRun {
+  runId: UUID
+  won: boolean
+  battleLog: WireLeagueBattleStage[]
+}
+
+export interface WireLegendaryEstimate {
+  capture_probability: number
+  challengers: string[]
+}
+
+export interface WireLegendaryReward {
+  won: boolean
+  card: WireCard
+  log: WireBattleRound[]
+}
+
+export interface WireTournamentParticipant {
+  user_id: UUID
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+}
+
+export interface WireTournament {
+  id: UUID
+  tournament_date: ISODate
+  /** Type et biome avantagés cette semaine : +10 % par critère, +20 % max (v5). */
+  weeklyAdvantage?: { type: PokeType, biome: Biome } | null
+  status: 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
+  prize_pool: number
+  created_at: ISODate
+  completed_at: ISODate | null
+  participants: WireTournamentParticipant[]
+  is_registered?: boolean
+  teamsAreLocked?: boolean
+  /** Équipes figées, par identifiant de joueur. */
+  snapshots?: Record<UUID, WireCard[]>
+  matches?: WireTournamentMatch[]
+  results?: { placement: number, username: string, prize: number, avatar_url: string | null, avatar_is_alt: boolean | null }[]
+}
+
+export interface WireTypeRec {
+  type: PokeType
+  covered: number
+  threatened: number
+  netScore: number
+}
+
+export interface WireTournamentMatchup {
+  user_id: UUID
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  team: WireChampionMon[]
+  winProbability: number
+  oppWinProbability: number
+}
+
+export interface WireMyAnalysis {
+  myTeam: WireChampionMon[]
+  myTeamIsLocked: boolean
+  teamsAreLocked: boolean
+  hasOpponents: boolean
+  analysis: { strongPokemon: WireChampionMon[], weakPokemon: WireChampionMon[] }
+  matchups: WireTournamentMatchup[]
+  typeRecommendations: { toPrivilege: WireTypeRec[], toAvoid: WireTypeRec[] }
+}
+
+export interface SpinStatus {
+  hasStarters: boolean
+  rewardedThisWeek: boolean
+  legendaryGrantedThisWeek?: boolean
+  legendaryTransfersThisWeek?: number
+  legendaryTransferRate?: number
+  legendaryFailedTransfersThisWeek?: number
+  legendaryAttemptsExhausted?: boolean
+  active_generation?: number
+}
+
+// POST /spin/start (et /renew) : démarre une run côté serveur. Renvoie la
+// liste historique de starters (IGNORÉE côté front : on garde nos 4 Kanto) et
+// l'état de run utile (pity, légendaire déjà accordé cette semaine).
+export interface WireSpinStarter {
+  num: number
+  name: string
+  image_url: string
+  type: PokeType
+}
+export interface WireSpinStart {
+  starters: WireSpinStarter[]
+  consecutiveLosses: number
+  legendaryGrantedThisWeek?: boolean
+  legendaryTransfersThisWeek?: number
+  runAlreadyActive?: boolean
+}
+// POST /spin/claim : récompense hebdo (1×/semaine). `coins` = montant accordé.
+export interface WireSpinClaim {
+  rewardGranted: boolean
+  coins: number
+}
+// POST /spin/legendary-attempt : le serveur choisit le légendaire (rotation) et
+// gère capture + roulette de transfert vers la collection.
+export interface WireSpinLegendary {
+  pokemon: { num: number, name: string, image_url: string }
+  captured: boolean
+  transferred: boolean
+  card?: unknown
+  transferRateUsed?: number
+  captureRateUsed?: number
+}
+
+export interface WireTrade {
+  id: UUID
+  status: 'pending_target' | 'pending_initiator' | 'completed' | 'declined' | 'cancelled' | 'expired'
+  initiator_id: UUID
+  initiator_username: string
+  target_id: UUID
+  target_username: string
+  requested_card_id?: UUID
+  requested_card_name: string
+  requested_card_image?: string
+  requested_card_rarity: Rarity
+  offered_card_id?: UUID
+  offered_card_name?: string
+  offered_card_image?: string
+  offered_card_rarity?: Rarity
+  created_at: ISODate
+  target_responded_at?: ISODate
+  completed_at?: ISODate
+  /** v5 : exemplaires possédés par chaque partie, et formes de Zarbi. */
+  requested_card_target_quantity?: number | null
+  offered_card_initiator_quantity?: number | null
+  requested_card_generation?: number
+  requested_zarbi_form?: string | null
+  offered_zarbi_form?: string | null
+}
+
+export interface TradeEligibility {
+  uniqueStandardCount: number
+  minRequired: number
+  tradedThisWeek: boolean
+  eligible: boolean
+}
+
+export interface WireTradePlayer {
+  id: UUID
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  cooldown_until: ISODate | null
+}
+
+export interface WireTradeCard {
+  id: UUID
+  name: string
+  image_url: string
+  rarity: Rarity
+  quantity: number
+  viewer_owns: boolean
+  generation?: number
+}
+
+export interface WireNotification {
+  id: UUID
+  message: string
+  link: string | null
+  read: boolean
+  created_at: ISODate
+}
+
+export interface NotificationsResponse {
+  notifications: WireNotification[]
+  unreadCount: number
+}
+
+export interface WireBadgeRef {
+  image_url: string
+  name: string
+}
+
+export interface WireLeaderboardRow {
+  username: string
+  avatar_url: string | null
+  avatar_is_alt: boolean | null
+  avatar_rarity: Rarity | null
+  crowned: boolean
+  tournament_medal_placement: 1 | 2 | 3 | null
+  standard_count: number
+  legendary_count: number
+  shiny_count: number
+  score: number
+  badges: WireBadgeRef[]
+  rank: number
+}
+
+export interface WireLeaderboardResponse {
+  top10: WireLeaderboardRow[]
+  playerContext: {
+    above: WireLeaderboardRow | null
+    current: WireLeaderboardRow
+    below: WireLeaderboardRow | null
+  } | null
+  /** Maxima du jeu (taille du catalogue), pour afficher « x / max ». */
+  maxStandard?: number
+  maxLegendary?: number
+  maxShiny?: number
+}
+
+export interface WireRecentShiny {
+  username: string
+  name: string
+  image_url: string
+  is_alt: boolean
+  rarity: Rarity
+  rolled_at: ISODate
+  is_duplicate: boolean
+  source: string
+}
+
+// ─── Statistiques (GET /stats — gros payload agrégé, une requête) ──────────────
+// ─── Statistiques (GET /stats) — restructurées par la v4 ─────────────────────
+// Le payload a changé de fond en comble : `global` est décliné PAR JEU
+// (roulette, jackpot, aventure, motus), `gyms` et `pool.rarities` ont disparu,
+// chaque joueur porte ses duels de tournoi (némésis / souffre-douleur), et les
+// anecdotes deviennent un palmarès de 5 familles × 4 récompenses. Formes
+// relevées sur l'API le 10 août 2026.
+
+export interface WireStatsDuel {
+  opponents: string[]
+  count: number
+}
+
+export interface WireStatsPlayer {
+  username: string
+  total_rolls: number
+  shiny_rolls: number
+  legendary_rolls: number
+  owned_std: number
+  owned_shiny: number
+  spin_runs: number
+  spin_transfers: number
+  nemesis?: WireStatsDuel | null
+  victim?: WireStatsDuel | null
+}
+
+// Chaque récompense peut manquer (pas encore de données) : tout est nullable,
+// c'est le comportement du front d'origine (`if (!data) …`).
+export interface WireStatsAnecdotes {
+  roulette?: {
+    most_shiny_dupes?: { players: string[], dupes: number, shiny_total: number } | null
+    specialist?: { entries: { username: string, card_name: string, quantity: number }[] } | null
+    precious?: { entries: { username: string, card_name: string, quantity: number }[] } | null
+    shiny_hunter?: { players: string[], count: number } | null
+  }
+  jackpot?: {
+    ka_tching?: { players: string[], total_won: number } | null
+    big_winner?: { players: string[], wins: number } | null
+    banqueroute?: { players: string[], total_lost: number } | null
+    legendary_hunter?: { players: string[], leg_wins: number } | null
+  }
+  spin?: {
+    lucky?: { players: string[], attempts_count: number, transfers_count: number } | null
+    unlucky?: { players: string[], attempts_count: number, transfers_count: number } | null
+    determined?: { players: string[], attempts_count: number, transfers_count: number } | null
+    egg_master?: { players: string[], eggs: number } | null
+  }
+  // « On te voit… » (mots trouvés du premier coup) a été retirée en 5.0.0.
+  motus?: {
+    bernard_pivot?: { players: string[], wins: number } | null
+    rap_god?: { players: string[], forms_owned: number } | null
+    encore?: { players: string[], dupes: number } | null
+  }
+  concours?: {
+    palmares?: { players: string[], wins: number } | null
+    dance_king?: { players: string[], total_rounds: number } | null
+    underdog?: { entries: { username: string, card_name: string, discipline: string, base_stat: number }[] } | null
+  }
+  tournoi?: {
+    most_wins?: { players: string[], wins: number } | null
+    lucky?: { players: string[], win_low: number } | null
+    unlucky?: { players: string[], loss_high: number } | null
+    tyran_victime?: { entries: { tyran: string, victime: string, wins: number }[] } | null
+  }
+}
+
+export interface WireStats {
+  global: {
+    roulette: { total_rolls: number, shiny_obtained: number, shiny_rate: number, legendary_rate: number }
+    jackpot: { total_spins: number, total_coins: number, total_items: number, total_legendaries: number }
+    spin: { total_runs: number, total_transfers: number, avg_runs_for_reward: number, avg_runs_for_legendary: number }
+    motus: { total_games: number, total_wins: number }
+  }
+  players: WireStatsPlayer[]
+  pool: { total_std: number, total_shiny: number }
+  anecdotes?: WireStatsAnecdotes
+}
+
+// ─── Tchat (GET /chat/history + WebSocket /api/ws/chat) ────────────────────────
+export interface WireChatMessage {
+  id: string | number
+  user_id: UUID
+  message: string
+  created_at: ISODate
+  username: string
+}
+
+export interface WireChatHistory {
+  messages: WireChatMessage[]
+  isAdmin: boolean
+}
+
+// ─── Événements du jour & objectif de la semaine (v5.1) ──────────────────────
+// Un seul endpoint, /game-events/current, porte trois choses : les événements
+// surprise du jour, l'objectif collectif de la semaine, et le PRIX EFFECTIF du
+// tirage standard (remises d'événement comprises).
+export type GameEventType
+  = 'generation_day' | 'sales' | 'special_rain' | 'daily_bonus_x2'
+    | 'jackpot_frenzy' | 'open_gyms' | 'merchant' | 'spin_lucky'
+
+export interface WireGameEvent {
+  /** Un type inconnu (événement futur) doit être ignoré, pas planter. */
+  type: GameEventType | string
+  startsOn?: string
+  params?: { generation?: number }
+  merchant?: {
+    price?: number
+    wanted?: { cardId: UUID, name: string, generation: number }[]
+    soldCardIds?: UUID[]
+    drawnTodayCardIds?: UUID[]
+  }
+}
+
+export interface WireCommunityGoal {
+  weekStart: string
+  weekEnd: string
+  metric: 'rolls' | 'spin_runs' | 'gym_battles' | 'jackpot_spins' | string
+  target: number
+  progress: number
+  achieved: boolean
+  status: string
+  minContribution: number
+  myContribution: number
+  contributors: number
+  reward: { item: string, quantity: number, label: string } | null
+}
+
+export interface WireGameEvents {
+  events: { date: string, active: WireGameEvent[] }
+  goal: WireCommunityGoal | null
+  rollCost: { base: number, effective: number }
+}
+
+// ─── Activités du jour & Premiers pas ────────────────────────────────────────
+// Les liens sont les ancres du front d'origine (`#motus`) : à traduire via
+// hashToRoute avant affichage.
+export interface WireActivity {
+  key: string
+  label: string
+  done: boolean
+  link: string
+}
+
+export interface WireOnboardingStatus {
+  steps: { key: string, label: string, link: string, done: boolean }[]
+  allDone: boolean
+  rewardClaimed: boolean
+}
+
+export interface WireOnboardingClaim {
+  coinsGen1: number
+  coinsGen2: number
+  coinsGen3: number
+}
+
+// ─── Concours (v5.0) ─────────────────────────────────────────────────────────
+export type ContestDiscipline = 'Sang-froid' | 'Beauté' | 'Grâce' | 'Intelligence' | 'Robustesse'
+export type ContestStatus = 'registration_open' | 'registration_closed' | 'in_progress' | 'completed'
+
+/** Inscrits — renvoyés au seul joueur inscrit, tant que le concours n'est pas dévoilé. */
+export interface WireContestEntry {
+  user_id: UUID
+  username: string
+  image_url: string | null
+  card_name: string
+  stat: number | string
+  dance_rounds: number | null
+  dance_bonus: number | null
+  partial_score: number | string | null
+}
+
+export interface WireContestResult {
+  user_id: UUID
+  placement: number
+  username: string
+  card_name: string
+  /** Le serveur sérialise le score en chaîne (« 148.1469… »). */
+  score: number | string
+  card_removed: boolean
+  prize_card_id: UUID | null
+  prize_card_name: string | null
+  prize_card_image_url?: string | null
+  prize_coins?: number
+  prize_charme_chroma?: number
+  image_url: string | null
+}
+
+export interface WireContest {
+  id: UUID
+  contest_date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction_type: 'biome' | 'type' | 'aucune' | null
+  restriction_value: string | null
+  created_at: ISODate
+  revealed_at: ISODate | null
+  entry_count: number
+  is_registered?: boolean
+  my_dance_score?: number | null
+  entries?: WireContestEntry[] | null
+  results?: WireContestResult[]
+  /** Noms des trois juges (joueurs non participants), choisis côté serveur. */
+  judges?: string[]
+}
+
+export interface WireContestSummary {
+  id: UUID
+  contest_date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction_type: 'biome' | 'type' | 'aucune' | null
+  restriction_value: string | null
+  entry_count: number
+}
+
+export interface WireContestPrizeOption { id: UUID, name: string, image_url: string, generation: number }
+
+// ─── Tournoi : matchs et historique (v5) ─────────────────────────────────────
+export interface WireTournamentMatch {
+  /** 0 = match pour la 3ᵉ place ; le plus grand round = finale. */
+  round: number
+  match_index?: number
+  is_bye: boolean
+  is_third_place_match?: boolean
+  player1_id: UUID | null
+  player2_id: UUID | null
+  player1_name: string | null
+  player2_name: string | null
+  winner_id: UUID | null
+  winner_name?: string | null
+  loser_id?: UUID | null
+  battle_log?: WireBattleRound[] | null
+}
+
+export interface WireTournamentSummary {
+  id: UUID
+  tournament_date: ISODate
+  status: 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled'
+  prize_pool: number
+  completed_at: ISODate | null
+  participant_count: number
+}
+
+/** Forme de Zarbi proposable à l'échange (`/trades/players/:id/zarbi-forms`). */
+export interface WireTradeZarbiForm { id: UUID, form: string, image_url: string, quantity: number, is_alt?: boolean }
+
+// ─── Paintkemon : coloriage numéroté collaboratif (v5.0) ────────────────────
+export interface WireColoringColor { id: string, hex: string, name: string }
+export interface WireColoringCell {
+  x: number
+  y: number
+  /** null tant que la case n'est pas coloriée. */
+  color_id: string | null
+  /** null hors du dessin : la case n'est jamais jouable. */
+  target_color_id: string | null
+}
+export interface WireColoringGrid {
+  width: number
+  height: number
+  palette: WireColoringColor[]
+  cells: WireColoringCell[]
+  progress: { filled: number, playable: number }
+}
+/** Diffusion WebSocket /api/ws/coloring : une case vient d'être coloriée. */
+export interface WireColoringFrame {
+  type: string
+  x?: number
+  y?: number
+  color_id?: string | null
+  cell?: WireColoringCell
+}
+
+// ─── Historique des arènes (GET /gym/history) ───────────────────────────────
+export interface WireGymAttempt {
+  id: UUID
+  attempted_at: ISODate
+  won: boolean
+  battle_log: {
+    log: WireBattleRound[]
+    won?: boolean
+    player_team?: { name: string, type?: PokeType, rarity?: string, image_url: string }[]
+    player_knocked_out?: number
+    champion_knocked_out?: number
+  } | null
+  gym_name: string
+  order_num: number
+  type: PokeType
+  generation?: number
+  badge_name: string
+  badge_image_url: string
+}
+
+// ─── Jackpot : historique personnel (GET /slot-machine/my-history) ──────────
+export interface WireSlotRecord { prizes: WireLineResult[], cost: number, spun_at: ISODate }

@@ -1,15 +1,211 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme {
-  --font-sans: 'DM Sans', sans-serif;
+/* Polices Fredoka (display) + Nunito (texte) : auto-hébergées au build par
+   @nuxt/fonts (cf. nuxt.config.ts › fonts). Aucun CDN au runtime. */
+
+/* ============================================================
+   Direction visuelle : univers Pokémon doux (inspiration Mochidex)
+   Canevas blanc/gris · action rouge · cartes pastel par type
+   ============================================================ */
+
+@theme static {
+  /* Polices */
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-display: 'Fredoka', 'Nunito', ui-sans-serif, system-ui, sans-serif;
+
+  /* Primaire — rouge « Poké » (blanc/rouge-500 = 4.65:1, AA OK) */
+  --color-poke-50: #fef2f0;
+  --color-poke-100: #fcdfdb;
+  --color-poke-200: #f9c4bd;
+  --color-poke-300: #f39c90;
+  --color-poke-400: #ea6a58;
+  --color-poke-500: #dd3322;
+  --color-poke-600: #c62617;
+  --color-poke-700: #a41f14;
+  --color-poke-800: #871d16;
+  --color-poke-900: #701d18;
+  --color-poke-950: #3d0c08;
+
+  /* Neutre — gris « ash » (canevas blanc/gris) */
+  --color-ash-50: #f6f7f9;
+  --color-ash-100: #eceef2;
+  --color-ash-200: #dfe2e8;
+  --color-ash-300: #c8ccd4;
+  --color-ash-400: #9aa0ab;
+  --color-ash-500: #6e747f;
+  --color-ash-600: #525862;
+  --color-ash-700: #3d424b;
+  --color-ash-800: #262a31;
+  --color-ash-900: #171a1f;
+  --color-ash-950: #0d0f12;
+
+  /* Rareté — alignée sur les cartes (cf. utils/cardTheme.ts) */
+  --color-rarity-common: #b0a79a;
+  --color-rarity-rare: #5b9bd5;
+  --color-rarity-epic: #a06cc4;
+  --color-rarity-legendary: #e0a92e;
+  --color-rarity-shiny: #c9b3ff;
+
+  /* Pièce (monnaie du jeu) — source unique de la pastille dorée */
+  --color-coin-light: #ffffff;
+  --color-coin: #f6c453;
+  --color-coin-deep: #e0a92e;
+
+  /* Types Pokémon (18) — usages hors carte (la carte utilise cardTheme.ts).
+     Acier et Ténèbres sont arrivés avec Johto (v4) : sans eux, les cartes
+     concernées retombaient sur le beige neutre du fallback. */
+  --color-type-normal: #a8a77a;
+  --color-type-feu: #ee8130;
+  --color-type-eau: #6390f0;
+  --color-type-plante: #7ac74c;
+  --color-type-electrik: #f7d02c;
+  --color-type-glace: #96d9d6;
+  --color-type-combat: #c22e28;
+  --color-type-poison: #a33ea1;
+  --color-type-sol: #e2bf65;
+  --color-type-vol: #a98ff3;
+  --color-type-psy: #f95587;
+  --color-type-insecte: #a6b91a;
+  --color-type-roche: #b6a136;
+  --color-type-spectre: #735797;
+  --color-type-dragon: #6f35fc;
+  --color-type-fee: #ee99ac;
+  --color-type-acier: #b7b7ce;
+  --color-type-tenebres: #705746;
+
+  /* Biomes (9) */
+  --color-biome-foret: #4caf50;
+  --color-biome-lac: #26a3c7;
+  --color-biome-mer: #3f7fd8;
+  --color-biome-montagnes: #8792a8;
+  --color-biome-ville: #6d7280;
+  --color-biome-plaines: #b3a53a;
+  --color-biome-desert: #e0912b;
+  --color-biome-cave: #6a5b8a;
+  --color-biome-tundra: #7cc7d6;
+
+  /* Mouvement (easings « doux » façon Mochidex) */
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.3, 0.9, 0.3, 1);
+  --dur-instant: 90ms;
+  --dur-fast: 180ms;
+  --dur-base: 280ms;
+  --dur-slow: 480ms;
 }
+
+/* ---- Rôles sémantiques Nuxt UI (clair par défaut) ---- */
 
 :root {
-  --ui-radius: 0.5rem;
-  --ui-primary: black;
+  --ui-radius: 0.625rem; /* coins doux (Mochidex ~10-12px) */
 }
 
+/* Surfaces claires — thème par défaut : page gris très clair, panneaux blancs */
+:root,
+.light {
+  --ui-bg: var(--color-ash-50);
+  --ui-bg-muted: var(--color-ash-100);
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: var(--color-ash-200);
+  --ui-border: color-mix(in oklab, var(--color-ash-950) 9%, transparent);
+  --ui-border-muted: color-mix(in oklab, var(--color-ash-950) 6%, transparent);
+  --ui-border-accented: color-mix(in oklab, var(--color-ash-950) 14%, transparent);
+  --ui-text-highlighted: var(--color-ash-950);
+  --ui-text: var(--color-ash-900);
+  --ui-text-toned: var(--color-ash-700);
+  --ui-text-muted: var(--color-ash-600);
+  --ui-text-dimmed: var(--color-ash-500);
+}
+
+/* Mode sombre (secondaire, activable) */
 .dark {
-  --ui-primary: white;
+  --ui-bg: var(--color-ash-950);
+  --ui-bg-muted: var(--color-ash-900);
+  --ui-bg-elevated: var(--color-ash-800);
+  --ui-bg-accented: var(--color-ash-700);
+  --ui-border: color-mix(in oklab, white 9%, transparent);
+  --ui-border-muted: color-mix(in oklab, white 6%, transparent);
+  --ui-border-accented: color-mix(in oklab, white 14%, transparent);
+  --ui-text-highlighted: var(--color-ash-50);
+  --ui-text: var(--color-ash-100);
+  --ui-text-toned: var(--color-ash-300);
+  --ui-text-muted: var(--color-ash-400);
+  --ui-text-dimmed: var(--color-ash-500);
+}
+
+/* ---- Base ---- */
+
+html {
+  font-family: var(--font-sans);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  scrollbar-gutter: stable;
+}
+
+/* Overlays plein écran (combat, aventure, arène) : on neutralise la gouttière
+   de scrollbar réservée le temps de l'overlay — sinon elle apparaît comme une
+   bande claire à droite (cf. useViewportLock). */
+html.viewport-locked {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Animations d'ouverture de booster (direction Mochidex) ── */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-6%) rotate(1deg); }
+}
+@keyframes shineSweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes glowpulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(224, 169, 46, 0); }
+  50% { box-shadow: 0 0 44px rgba(255, 210, 90, .75); }
+}
+@keyframes orbitGlow {
+  0%, 100% { transform: translate(-50%, -50%) scale(.7); opacity: .35; }
+  50% { transform: translate(-50%, -50%) scale(1.25); opacity: .7; }
+}
+@keyframes burst {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: .9; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+@keyframes emerge {
+  0% { transform: scale(.15) rotate(-220deg); opacity: 0; filter: blur(6px); }
+  45% { opacity: 1; filter: blur(0); }
+  70% { transform: scale(1.12) rotate(6deg); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+}
+/* Chaque dos de carte tourne autour du centre (--a angle de départ, --r rayon) */
+@keyframes orbit {
+  0% { transform: rotate(var(--a)) translateY(0) rotate(calc(-1 * var(--a))) scale(.5); opacity: 0; }
+  14% { opacity: 1; }
+  30% { transform: rotate(calc(var(--a) + 160deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 160deg))) scale(1); opacity: 1; }
+  58% { transform: rotate(calc(var(--a) + 380deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 380deg))) scale(1); opacity: 1; }
+  82% { transform: rotate(calc(var(--a) + 560deg)) translateY(var(--r)) rotate(calc(-1 * (var(--a) + 560deg))) scale(.92); opacity: 1; }
+  100% { transform: rotate(calc(var(--a) + 640deg)) translateY(0) rotate(calc(-1 * (var(--a) + 640deg))) scale(.42); opacity: 0; }
+}
+
+/* Interrupteur global de mouvement (préférence système + réglage in-app) */
+:root[data-reduced-motion="true"] * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

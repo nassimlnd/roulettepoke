@@ -1,0 +1,632 @@
+// Types « domaine » — normalisés, consommés par les stores et composants.
+// La couche repositories convertit les types `api.ts` (wire) en ceux-ci :
+// notamment la rareté 'Alt' (shiny dans /collection) est réconciliée en
+// `isShiny` + rareté réelle.
+
+import type { UUID, Biome, PokeType, ISODate, SlotSymbol, SlotLine, RealRarity, TradeStatus, TournamentStatus } from './primitives'
+import type { SuggestionStatus, VoteValue, ContestDiscipline, ContestStatus } from './api'
+import type { Generation } from '~/constants/generation'
+
+// Ré-export pour préserver les imports existants depuis `~/types/domain`.
+export type { RealRarity, TradeStatus, TournamentStatus }
+
+export interface DomainCard {
+  id: UUID
+  num: number
+  generation: Generation
+  name: string
+  imageUrl: string
+  rarity: RealRarity
+  isShiny: boolean
+  /** 0 = bébé (Pichu, Mélo…), 1 = forme de base, 2 et 3 = évolutions. */
+  level: 0 | 1 | 2 | 3
+  biome: Biome
+  type: PokeType
+  parentCardId: UUID
+  standardId: UUID | null
+  /** Stats de concours sur 100 (v5), par discipline ; null quand la charge utile ne les porte pas. */
+  contestStats: ContestStats | null
+}
+
+export type ContestStats = Record<ContestDiscipline, number>
+
+export interface DomainOwnedCard extends DomainCard {
+  quantity: number
+  owned: boolean
+  obtainedAt: ISODate | null
+}
+
+// ─── Idées & sondages ────────────────────────────────────────────────────────
+export interface DomainSuggestion {
+  id: UUID
+  /** Non nul = entrée officielle de la roadmap. */
+  title: string | null
+  text: string
+  status: SuggestionStatus
+  adminNote: string | null
+  noteVotingEnabled: boolean
+  createdAt: ISODate
+  username: string
+  authorIsAdmin: boolean
+  upVotes: number
+  downVotes: number
+  noteUpVotes: number
+  noteDownVotes: number
+  myVote: VoteValue | null
+  myNoteVote: VoteValue | null
+  official: boolean
+}
+
+export interface PollOption {
+  id: UUID
+  label: string
+  votes: number
+}
+
+export interface DomainPoll {
+  id: UUID
+  question: string
+  open: boolean
+  createdAt: ISODate
+  myOptionId: UUID | null
+  options: PollOption[]
+  totalVotes: number
+}
+
+/** Une des 28 formes de Zarbi, en version standard ou shiny. */
+export interface ZarbiForm {
+  id: UUID
+  form: string
+  imageUrl: string
+  isShiny: boolean
+  quantity: number
+  owned: boolean
+}
+
+// Résultat normalisé d'un tirage (union discriminée par `kind`)
+export type RollOutcome
+  = | { kind: 'card', card: DomainCard, isNew: boolean, rollCost: number }
+    | { kind: 'coins', amount: number, rollCost: number }
+    | { kind: 'charme', rollCost: number }
+    | { kind: 'choice', choiceId: UUID, left: DomainCard, right: DomainCard, rollCost: number }
+    | { kind: 'egg', card: DomainCard, isNew: boolean, rollCost: number }
+
+export type CelebrationTier
+  = | 'common' | 'rare' | 'epic' | 'legendary' | 'shiny' | 'shiny-legendary'
+
+export interface BiomeInfo {
+  biome: Biome
+  cardCount: number
+  /** Prix hors événement. */
+  cost: number
+  /** Prix du jour, remise d'événement comprise — celui qui est débité. */
+  effectiveCost: number
+  ownedCount: number
+}
+
+// ─── Échanges ────────────────────────────────────────────────────────────────
+export interface TradeCardRef {
+  id: UUID | null
+  name: string
+  imageUrl: string | null
+  rarity: RealRarity
+  /** Lettre de la forme quand la carte est Zarbi (v5). */
+  zarbiForm: string | null
+}
+
+export interface DomainTrade {
+  id: UUID
+  status: TradeStatus
+  initiatorId: UUID
+  initiatorUsername: string
+  targetId: UUID
+  targetUsername: string
+  requested: TradeCardRef
+  offered: TradeCardRef | null
+  /** Exemplaires de la carte demandée chez la cible, et de la carte offerte chez l'initiateur (v5). */
+  requestedOwnedByTarget: number | null
+  offeredOwnedByInitiator: number | null
+  createdAt: ISODate
+  completedAt: ISODate | null
+}
+
+export interface TradePlayer {
+  id: UUID
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+  cooldownUntil: ISODate | null
+}
+
+export interface TradeCard {
+  id: UUID
+  name: string
+  imageUrl: string
+  rarity: RealRarity
+  quantity: number
+  viewerOwns: boolean
+}
+
+// ─── Concours ────────────────────────────────────────────────────────────────
+export interface ContestRestriction { type: 'biome' | 'type', value: string }
+
+export interface ContestEntry {
+  userId: UUID
+  username: string
+  imageUrl: string | null
+  cardName: string
+  stat: number
+  /** null = répétition de danse pas encore jouée. */
+  danceRounds: number | null
+  danceBonus: number | null
+  partialScore: number | null
+}
+
+export interface ContestResult {
+  userId: UUID
+  placement: number
+  username: string
+  cardName: string
+  imageUrl: string | null
+  score: number
+  cardRemoved: boolean
+  prizeCardId: UUID | null
+  prizeCardName: string | null
+  prizeCardImageUrl: string | null
+}
+
+export interface DomainContest {
+  id: UUID
+  /** Date du dévoilement (le mardi). */
+  date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction: ContestRestriction | null
+  entryCount: number
+  isRegistered: boolean
+  myDanceScore: number | null
+  entries: ContestEntry[]
+  results: ContestResult[]
+  judges: string[]
+}
+
+export interface ContestSummary {
+  id: UUID
+  date: ISODate
+  status: ContestStatus
+  discipline: ContestDiscipline
+  restriction: ContestRestriction | null
+  entryCount: number
+}
+
+export interface ContestPrizeOption { id: UUID, name: string, imageUrl: string, generation: Generation }
+
+// ─── Tournoi ─────────────────────────────────────────────────────────────────
+export interface TournamentParticipant {
+  userId: UUID
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+}
+
+export interface TournamentResult {
+  placement: number
+  username: string
+  prize: number
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+}
+
+export interface TournamentMatch {
+  /** 0 = match pour la 3ᵉ place ; le plus grand round = finale. */
+  round: number
+  isBye: boolean
+  isThirdPlace: boolean
+  player1Id: UUID | null
+  player2Id: UUID | null
+  player1Name: string
+  player2Name: string
+  winnerId: UUID | null
+  rounds: BattleRound[]
+}
+
+export interface TournamentSnapshotCard {
+  name: string
+  type: PokeType
+  biome: Biome | null
+  imageUrl: string
+  isShiny: boolean
+  rarity: RealRarity
+}
+
+export interface DomainTournament {
+  id: UUID
+  date: ISODate
+  status: TournamentStatus
+  prizePool: number
+  participants: TournamentParticipant[]
+  isRegistered: boolean
+  teamsAreLocked: boolean
+  results: TournamentResult[]
+  /** Type et biome avantagés cette semaine (+10 % par critère, v5). */
+  weeklyAdvantage: { type: PokeType, biome: Biome } | null
+  matches: TournamentMatch[]
+  /** Équipes figées par identifiant de joueur. */
+  snapshots: Record<UUID, TournamentSnapshotCard[]>
+}
+
+export interface TournamentSummary {
+  id: UUID
+  date: ISODate
+  status: TournamentStatus
+  prizePool: number
+  participantCount: number
+}
+
+export interface TypeRec {
+  type: PokeType
+  covered: number
+  threatened: number
+  netScore: number
+}
+
+export interface TournamentMatchup {
+  username: string
+  avatarUrl: string | null
+  avatarIsShiny: boolean
+  team: ChampionMon[]
+  winProbability: number
+  oppWinProbability: number
+}
+
+export interface TournamentAnalysis {
+  myTeam: ChampionMon[]
+  myTeamLocked: boolean
+  teamsLocked: boolean
+  hasOpponents: boolean
+  strong: ChampionMon[]
+  weak: ChampionMon[]
+  matchups: TournamentMatchup[]
+  toPrivilege: TypeRec[]
+  toAvoid: TypeRec[]
+}
+
+// ─── Jackpot (machine à sous) ────────────────────────────────────────────────
+export type LineReward
+  = | { line: SlotLine, type: 'nothing' }
+    | { line: SlotLine, type: 'coins', amount: number }
+    | { line: SlotLine, type: 'charme' }
+    | { line: SlotLine, type: 'biome_ticket', biome: Biome }
+    | { line: SlotLine, type: 'type_ticket', typeName: PokeType }
+    | { line: SlotLine, type: 'legendary', card: DomainCard }
+
+export interface SpinResult {
+  cells: Record<string, SlotSymbol>
+  lines: LineReward[]
+  cost: number
+  newCoins: number
+}
+
+export interface RecentWin {
+  username: string
+  prizes: LineReward[]
+  spunAt: ISODate
+}
+
+// ─── Arènes ─────────────────────────────────────────────────────────────────────
+export interface DomainGym {
+  id: UUID
+  /** Rang global continu (1..24). Le rang AU SEIN d'un parcours est `orderInCircuit`. */
+  order: number
+  generation: Generation
+  /** 1..8 — position dans son propre parcours, celle affichée au joueur. */
+  orderInCircuit: number
+  name: string
+  type: PokeType
+  badgeName: string
+  badgeImageUrl: string
+  badgeObtainedAt: ISODate | null
+  hasBadge: boolean
+  canAttempt: boolean
+  lastAttemptThisWeek: ISODate | null
+}
+
+export interface ChampionMon {
+  position: number
+  name: string
+  type: PokeType
+  rarity: RealRarity
+  isShiny: boolean
+  imageUrl: string
+}
+
+export interface GymDetail {
+  id: UUID
+  typeColor: string
+  typeImageUrl: string
+  champions: ChampionMon[]
+  recommendedTypes: { name: string, imageUrl: string, color: string }[]
+}
+
+export interface GymEstimate {
+  winProbability: number
+  trainingBonus: number
+  matchups: { player: string, champion: string, probability: number }[]
+}
+
+export interface BattleRound {
+  round: number
+  player: { name: string, imageUrl: string | null }
+  champion: { name: string, imageUrl: string | null }
+  winProbability: number
+  playerWon: boolean
+}
+
+export interface BattleResult {
+  won: boolean
+  badgeName: string | null
+  rounds: BattleRound[]
+}
+
+export interface TrainingOutcome {
+  won: boolean
+  coinsGained: number
+  newBonus: number
+  rounds: BattleRound[]
+}
+
+// ─── Classement ───────────────────────────────────────────────────────────────
+export interface LeaderboardRow {
+  rank: number
+  username: string
+  avatarUrl: string | null
+  avatarRarity: RealRarity | null
+  isShinyAvatar: boolean
+  crowned: boolean
+  medal: 1 | 2 | 3 | null // médaille de tournoi (couronne prioritaire)
+  standardCount: number
+  legendaryCount: number
+  shinyCount: number
+  score: number
+  badges: { imageUrl: string, name: string }[]
+}
+
+export interface PlayerContext {
+  above: LeaderboardRow | null
+  current: LeaderboardRow
+  below: LeaderboardRow | null
+}
+
+export interface LeaderboardData {
+  top: LeaderboardRow[]
+  player: PlayerContext | null
+}
+
+export interface RecentShiny {
+  username: string
+  name: string
+  imageUrl: string
+  isShiny: boolean
+  rarity: RealRarity
+  rolledAt: ISODate
+  isDuplicate: boolean
+  source: string
+}
+
+// Membre d'équipe — forme normalisée de WireTeamMember. Un membre ne porte pas
+// toutes les infos d'une carte (pas de num/biome/niveau) : il s'affiche via
+// TeamCard, pas HoloCard.
+export interface TeamMember {
+  teamEntryId: UUID
+  position: number
+  cardId: UUID
+  name: string
+  type: PokeType
+  rarity: RealRarity
+  isShiny: boolean
+  imageUrl: string
+  typeImageUrl: string | null
+  /** Biome d'origine — porté par l'équipe Tournoi, où l'avantage de la semaine s'applique. */
+  biome: Biome | null
+}
+
+// ─── Statistiques (forme normalisée de WireStats) ─────────────────────────────
+// Duels de tournoi d'un joueur : qui le bat le plus / qui il bat le plus.
+export interface StatDuel {
+  opponents: string[]
+  count: number
+}
+
+export interface StatPlayer {
+  username: string
+  totalRolls: number
+  shinyRolls: number
+  legendaryRolls: number
+  ownedStd: number
+  ownedShiny: number
+  spinRuns: number
+  spinTransfers: number
+  nemesis: StatDuel | null
+  victim: StatDuel | null
+}
+
+// Une récompense du palmarès, prête à afficher : la normalisation résout
+// libellé, ton et phrase chiffrée pour que la page reste bête. `names` vide =
+// pas encore de données, `detail` porte alors le message d'attente.
+export interface StatAward {
+  key: string
+  icon: string
+  label: string
+  tone: 'good' | 'bad' | 'gold' | 'neutral'
+  names: string[]
+  detail: string
+  /** Ce que mesure la récompense — infobulle, repris du jeu d'origine. */
+  hint: string
+}
+
+export interface StatAwardGroup {
+  key: string
+  label: string
+  icon: string
+  awards: StatAward[]
+}
+
+export interface DomainStats {
+  roulette: { totalRolls: number, shinyObtained: number, shinyRate: number, legendaryRate: number }
+  jackpot: { totalSpins: number, totalCoins: number, totalItems: number, totalLegendaries: number }
+  spin: { totalRuns: number, totalTransfers: number, avgRunsForReward: number, avgRunsForLegendary: number }
+  motus: { totalGames: number, totalWins: number }
+  players: StatPlayer[]
+  pool: { totalStd: number, totalShiny: number }
+  awardGroups: StatAwardGroup[]
+}
+
+// ─── Tchat ────────────────────────────────────────────────────────────────────
+export interface ChatMessage {
+  id: string
+  userId: UUID
+  username: string
+  message: string
+  createdAt: ISODate
+}
+
+// ─── Ligue des 4 (Elite Four) ─────────────────────────────────────────────────
+export interface LeagueLegendary { id: UUID, name: string, imageUrl: string, generation: Generation | null }
+
+export interface LeagueStage {
+  opponentName: string
+  opponentType: 'player' | 'npc'
+  winProbability: number
+}
+
+export interface LeagueEstimate {
+  overallWinProbability: number
+  stages: LeagueStage[]
+  toPrivilege: string[]
+  toAvoid: string[]
+}
+
+export interface LeagueBattleStage {
+  opponentName: string
+  opponentType: 'player' | 'npc'
+  won: boolean
+  rounds: BattleRound[]
+}
+
+export interface LeagueRun {
+  runId: UUID
+  won: boolean
+  stages: LeagueBattleStage[]
+}
+
+export interface DomainLeagueStatus {
+  eligible: boolean
+  cycleStart: ISODate | null
+  alreadyAttempted: boolean
+  lastRun: LeagueRun | null
+  legendaries: LeagueLegendary[]
+  /** Régions dont le joueur a les 8 badges — devises et légendaires éligibles. */
+  eligibleGenerations: Generation[]
+}
+
+export interface LegendaryOdds { captureProbability: number, challengers: string[] }
+export interface LegendaryReward { won: boolean, card: DomainCard, rounds: BattleRound[] }
+
+// ─── Spin / Aventure ─────────────────────────────────────────────────────────
+// Un Pokémon de l'aventure (starter ou adversaire). `num` = n° national.
+export interface AdventureMon {
+  num: number
+  name: string
+  imageUrl: string
+  type: PokeType
+}
+
+// Un dresseur adverse (Conseil des 4 / Champion) : personnage + dialogues.
+// `portraitUrl` null → silhouette stylisée (en attendant de vrais portraits).
+export interface AdvTrainer {
+  name: string
+  title: string
+  portraitUrl: string | null
+  ace: AdventureMon
+  intro: string[] // répliques avant le combat
+  concede: string // réplique si le joueur gagne
+  taunt: string // réplique si le joueur perd
+}
+
+// Étapes du parcours (façon rogue-lite). Combats plein écran : `gym` (Champion
+// d'Arène, Acte 1, non létal), `elite` (Conseil des 4, létal), `champion`,
+// `legendary`, `wild` (dresseur de route, optionnel). `treasure` accorde un
+// bonus, `threshold` marque le passage à l'Acte 2. Nœuds à choix : `fork`
+// (carrefour), `camp` (feu de camp), `center` (Centre Pokémon), `merchant`
+// (marchand), `grass` (hautes herbes), `event` (rencontre narrative).
+export type AdvNodeKind = 'start' | 'threshold' | 'gym' | 'elite' | 'champion' | 'treasure' | 'legendary' | 'fork' | 'wild' | 'camp' | 'center' | 'merchant' | 'grass' | 'event'
+
+// Gimmick d'arène : un modificateur télégraphié, propre au type du Champion.
+export interface GymGimmick {
+  key: 'rock' | 'water' | 'electric' | 'grass' | 'poison' | 'psy' | 'fire' | 'ground'
+  tell: string // phrase affichée avant le combat
+}
+
+// Une option présentée au joueur (feu de camp, autel, combat optionnel).
+export interface AdvChoice {
+  key: string // identifiant traité par la scène (rest/train/forge, evolve/delay, fight/skip)
+  label: string
+  icon: string
+  desc?: string
+  disabled?: boolean // ex. évolution non débloquée
+}
+
+// Un chemin d'un carrefour : le nœud choisi est inséré juste après.
+export interface AdvPath {
+  label: string
+  icon: string
+  desc: string
+  node: AdvNode
+}
+
+export interface AdvNode {
+  kind: AdvNodeKind
+  title: string
+  opponent?: AdventureMon // combats (sprite adverse)
+  trainer?: AdvTrainer // elite / champion (personnage + dialogues)
+  baseWinChance?: number // combats : cote de base (0-100), avant leviers
+  themeColor?: string // teinte de la scène
+  narration?: string[] // texte narratif
+  choices?: AdvChoice[] // camp / wild / event : options
+  paths?: AdvPath[] // fork : chemins candidats
+  optional?: boolean // wild : le combat peut être évité
+  lethal?: boolean // combat : une défaite met fin au run (Conseil / Champion)
+  badge?: number // gym : n° du badge décerné à la victoire
+  gimmick?: GymGimmick // gym : modificateur de combat télégraphié
+}
+
+// ─── Paintkemon ──────────────────────────────────────────────────────────────
+export interface ColoringColor { id: string, hex: string, name: string, number: number }
+export interface ColoringCell { x: number, y: number, colorId: string | null, targetId: string | null }
+export interface ColoringGrid {
+  width: number
+  height: number
+  palette: ColoringColor[]
+  /** Ligne par ligne, de gauche à droite. */
+  cells: ColoringCell[]
+  filled: number
+  playable: number
+}
+
+// ─── Historique des arènes ───────────────────────────────────────────────────
+export interface GymAttempt {
+  id: UUID
+  attemptedAt: ISODate
+  won: boolean
+  gymName: string
+  generation: Generation
+  orderInCircuit: number
+  type: PokeType
+  badgeName: string
+  badgeImageUrl: string
+  team: { name: string, imageUrl: string }[]
+  rounds: BattleRound[]
+}
+
+// ─── Jackpot : historique personnel ─────────────────────────────────────────
+export interface SlotRecord { prizes: LineReward[], cost: number, spunAt: ISODate }

@@ -1,0 +1,88 @@
+// Normalisation des arènes : arène, détail (champions), estimation, combat,
+// entraînement.
+import type {
+  WireGym, WireGymDetail, WireGymEstimate, WireBattleResult, WireTrainingResult, WireGymAttempt
+} from '~/types/api'
+import type {
+  DomainGym, GymDetail, GymEstimate, BattleResult, TrainingOutcome, GymAttempt
+} from '~/types/domain'
+import { normalizeBattleRound, normalizeChampionMon } from './battle'
+import { asGeneration } from '~/constants/generation'
+
+// Les arènes sont numérotées en continu (Kanto 1-8, Johto 9-16, Hoenn 17-24).
+// Le joueur, lui, parcourt un circuit de 8 par région : on ramène donc le rang
+// dans son propre circuit, sans quoi Johto s'afficherait « Arène 9 » à
+// « Arène 16 » et Hoenn « Arène 17 » à « Arène 24 » (vu en production).
+const GYMS_PER_CIRCUIT = 8
+
+export function normalizeGym(g: WireGym): DomainGym {
+  const generation = asGeneration(g.generation)
+  return {
+    id: g.id,
+    order: g.order_num,
+    generation,
+    orderInCircuit: g.order_num - (generation - 1) * GYMS_PER_CIRCUIT,
+    name: g.name,
+    type: g.type,
+    badgeName: g.badge_name,
+    badgeImageUrl: g.badge_image_url,
+    badgeObtainedAt: g.badge_obtained_at,
+    hasBadge: g.has_badge,
+    canAttempt: g.can_attempt,
+    lastAttemptThisWeek: g.last_attempt_this_week
+  }
+}
+
+export function normalizeGymDetail(d: WireGymDetail): GymDetail {
+  return {
+    id: d.id,
+    typeColor: d.type_color,
+    typeImageUrl: d.type_image_url,
+    champions: (d.champion_team ?? []).map(normalizeChampionMon),
+    recommendedTypes: (d.recommended_types ?? []).map(t => ({ name: t.name, imageUrl: t.image_url, color: t.color }))
+  }
+}
+
+export function normalizeGymEstimate(e: WireGymEstimate): GymEstimate {
+  return {
+    winProbability: e.estimated_win_probability,
+    trainingBonus: e.training_bonus ?? 0,
+    matchups: e.matchups ?? []
+  }
+}
+
+export function normalizeBattleResult(b: WireBattleResult): BattleResult {
+  return {
+    won: b.won,
+    badgeName: b.badge_name ?? null,
+    rounds: (b.log ?? []).map(normalizeBattleRound)
+  }
+}
+
+// Tentative passée (v5) : le journal serveur suffit à rejouer le combat. La
+// génération manque sur d'anciens enregistrements → déduite du rang global.
+export function normalizeGymAttempt(a: WireGymAttempt): GymAttempt {
+  const generation = asGeneration(a.generation ?? Math.ceil(a.order_num / GYMS_PER_CIRCUIT))
+  return {
+    id: a.id,
+    attemptedAt: a.attempted_at,
+    won: a.won,
+    gymName: a.gym_name,
+    generation,
+    orderInCircuit: a.order_num - (generation - 1) * GYMS_PER_CIRCUIT,
+    type: a.type,
+    badgeName: a.badge_name,
+    badgeImageUrl: a.badge_image_url,
+    team: (a.battle_log?.player_team ?? []).map(p => ({ name: p.name, imageUrl: p.image_url })),
+    rounds: (a.battle_log?.log ?? []).map(normalizeBattleRound)
+  }
+}
+
+export function normalizeTrainingOutcome(t: WireTrainingResult): TrainingOutcome {
+  return {
+    won: t.won,
+    coinsGained: t.coins_gained ?? 0,
+    newBonus: t.new_bonus,
+    rounds: (t.log ?? []).map(normalizeBattleRound)
+  }
+}
